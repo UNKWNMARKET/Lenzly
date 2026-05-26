@@ -34,10 +34,10 @@ workflows:
 
       - name: Set up code signing
         script: |
-          # Start with a completely fresh keychain — no revoked certs can enter
+          # Fresh keychain — no revoked certs can enter
           keychain initialize
 
-          # Create a brand new distribution certificate (new serial, new key)
+          # Always create a brand-new distribution cert (new serial + private key)
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \
             --save
@@ -45,42 +45,23 @@ workflows:
           # Add ONLY the new cert to the fresh keychain
           keychain add-certificates
 
-          # Confirm what is in the keychain
+          # Diagnostic — confirm only the new cert is present
           echo "=== Keychain identities ==="
           security find-identity -v -p codesigning
 
-          # Create a fresh provisioning profile for the new cert
+          # Create a fresh provisioning profile linked to the new cert
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
 
-          # Configure Xcode project with the new profile
+          # Write the profile into the Xcode project and generate export_options.plist
           xcode-project use-profiles
 
-      - name: Build IPA
+      - name: Build and export IPA
         script: |
-          set -o pipefail
-          xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            archive \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            2>&1
-
-      - name: Export IPA
-        script: |
-          set -o pipefail
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            -exportOptionsPlist /Users/builder/export_options.plist \
-            -exportPath "$CM_BUILD_DIR/ipa" \
-            2>&1
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - "**/*.ipa"
