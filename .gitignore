@@ -8,3 +8,9 @@ dist
 Thumbs.db
 
 .vercel
+
+# Capacitor
+ios/App/Pods
+ios/App/App.xcworkspace/xcuserdata
+android/.gradle
+android/app/build
