@@ -42,9 +42,25 @@ workflows:
 
       - name: Build IPA
         script: |
-          xcode-project -v build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          set -o pipefail
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            archive \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            2>&1
+
+      - name: Export IPA
+        script: |
+          set -o pipefail
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath "$CM_BUILD_DIR/ipa" \
+            2>&1
 
     artifacts:
       - build/ios/ipa/*.ipa
