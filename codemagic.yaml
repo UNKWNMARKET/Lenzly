@@ -40,9 +40,44 @@ workflows:
 
       - name: Build and export IPA
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          set -e
+          mkdir -p /tmp/xcodebuild_logs
+
+          # Read the UUID of the provisioning profile installed by ios_signing
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No provisioning profile found in ~/Library/MobileDevice/Provisioning Profiles/"
+            exit 1
+          fi
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
+          echo "Provisioning profile: $PROFILE_PATH"
+          echo "UUID: $PROFILE_UUID"
+          echo "Keychain identities:"
+          security find-identity -v -p codesigning
+
+          set -o pipefail
+
+          # Archive — explicitly supply the profile UUID so Xcode never has to guess
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            archive \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            PROVISIONING_PROFILE="$PROFILE_UUID" \
+            2>&1 | tee /tmp/xcodebuild_logs/archive.log
+
+          # Export — use the plist written by use-profiles
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath "$CM_BUILD_DIR/ipa" \
+            2>&1 | tee /tmp/xcodebuild_logs/export.log
 
     artifacts:
       - "**/*.ipa"
