@@ -8,6 +8,9 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.unkwnmarket.lenzly
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -32,41 +35,28 @@ workflows:
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
 
-      - name: Set up code signing
+      - name: Configure code signing
         script: |
           set -e
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          # Fresh keychain
-          keychain initialize
-
-          # Generate a brand-new RSA private key.
-          # No existing Apple cert was signed with this key, so fetch-signing-files
-          # MUST create a new certificate — the old revoked cert cannot match.
-          openssl genrsa -out /tmp/ios_dist_key.pem 2048
-
-          # Wipe any locally cached provisioning profiles
+          # Wipe the local profile file cache so the old revoked profile
+          # (UUID 3251be6b) cannot be reinstalled from a previous build
           rm -rf "$PROFILES_DIR"
           mkdir -p "$PROFILES_DIR"
 
-          # Fetch/create cert + profile using the new key
+          # ios_signing already set up the cert + keychain above.
+          # Fetch a fresh provisioning profile from Apple linked to that cert.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --certificate-key "@file:/tmp/ios_dist_key.pem" \
             --profiles-dir "$PROFILES_DIR"
-
-          # Install the new cert into the keychain
-          keychain add-certificates
-
-          echo "=== Keychain identities ==="
-          security find-identity -v -p codesigning
 
           # Hard check — fail here if no profile landed on disk
           PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
           echo "Profiles downloaded: $PROFILE_COUNT"
           if [ "$PROFILE_COUNT" -eq 0 ]; then
-            echo "ERROR: fetch-signing-files did not save a profile to $PROFILES_DIR"
+            echo "ERROR: fetch-signing-files did not save a profile"
             exit 1
           fi
 
@@ -78,6 +68,9 @@ workflows:
 
           # Generate export_options.plist and configure Xcode project
           xcode-project use-profiles
+
+          echo "=== Keychain identities ==="
+          security find-identity -v -p codesigning
 
       - name: Build and export IPA
         script: |
@@ -95,9 +88,8 @@ workflows:
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
           echo "Using profile UUID: $PROFILE_UUID"
 
-          # Guard against the old revoked profile coming back
           if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
-            echo "ERROR: Still got the old revoked profile. Contact Codemagic support."
+            echo "ERROR: Old revoked profile came back — Codemagic cache not cleared."
             exit 1
           fi
 
