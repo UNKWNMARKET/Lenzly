@@ -34,10 +34,13 @@ workflows:
 
       - name: Set up code signing
         script: |
-          # Fresh keychain — nothing from previous builds can survive here
+          set -e
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          # Fresh keychain — nothing from previous builds survives
           keychain initialize
 
-          # Create a brand-new distribution cert (new serial + new private key)
+          # Brand-new distribution cert (new serial + new private key)
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \
             --save
@@ -48,19 +51,26 @@ workflows:
           echo "=== Keychain identities ==="
           security find-identity -v -p codesigning
 
-          # Wipe locally cached provisioning profiles — Codemagic reuses these
-          # across builds and was reinstalling the old revoked profile (3251be6b)
-          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+          # Wipe the local profile cache completely
+          rm -rf "$PROFILES_DIR"
+          mkdir -p "$PROFILES_DIR"
 
-          # Fetch a fresh provisioning profile from Apple linked to the new cert
+          # Fetch a fresh provisioning profile — explicitly target the profiles dir
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --profiles-dir "$PROFILES_DIR"
 
-          # List what was downloaded
-          echo "=== Installed provisioning profiles ==="
-          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+          # Hard check — fail here if no profile landed on disk
+          PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
+          echo "Profiles downloaded: $PROFILE_COUNT"
+          if [ "$PROFILE_COUNT" -eq 0 ]; then
+            echo "ERROR: fetch-signing-files did not save a profile to $PROFILES_DIR"
+            exit 1
+          fi
+
+          # Show what we got
+          for f in "$PROFILES_DIR"/*.mobileprovision; do
             security cms -D -i "$f" -o /tmp/profile.plist
             echo "  Name: $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
             echo "  UUID: $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
@@ -73,8 +83,9 @@ workflows:
         script: |
           set -e
           mkdir -p /tmp/xcodebuild_logs
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          PROFILE_PATH=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -1)
           if [ -z "$PROFILE_PATH" ]; then
             echo "ERROR: No provisioning profile installed"
             exit 1
@@ -84,7 +95,7 @@ workflows:
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
           echo "Using profile UUID: $PROFILE_UUID"
 
-          # Guard: reject the old revoked profile if it somehow came back
+          # Guard against the old revoked profile being reinstalled
           if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
             echo "ERROR: Got the cached revoked profile. Contact Codemagic support to clear the signing cache."
             exit 1
