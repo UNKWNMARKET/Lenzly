@@ -32,8 +32,7 @@ workflows:
         script: |
           xcodebuild -resolvePackageDependencies \
             -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SwiftPackages"
+            -scheme "$XCODE_SCHEME"
 
       - name: Set up Xcode code signing
         script: xcode-project use-profiles
