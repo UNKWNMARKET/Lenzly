@@ -26,7 +26,10 @@ workflows:
         script: npm run build
 
       - name: Sync Capacitor
-        script: npx cap sync ios
+        script: |
+          npx cap sync ios
+          echo "=== Package.swift after sync ==="
+          cat ios/App/CapApp-SPM/Package.swift
 
       - name: Resolve Swift packages
         script: |
@@ -39,7 +42,7 @@ workflows:
 
       - name: Build IPA
         script: |
-          xcode-project build-ipa \
+          xcode-project -v build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
 
