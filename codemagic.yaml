@@ -8,6 +8,9 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.unkwnmarket.lenzly
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -32,10 +35,14 @@ workflows:
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
 
-      - name: Build archive
+      - name: Set up Xcode code signing
+        script: |
+          xcode-project use-profiles
+          security find-identity -v -p codesigning || true
+
+      - name: Build IPA
         script: |
           set -o pipefail
-          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
@@ -43,37 +50,20 @@ workflows:
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
             archive \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "/tmp/AuthKey.p8" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             2>&1
 
       - name: Export IPA
         script: |
           set -o pipefail
-          {
-            echo '<?xml version="1.0" encoding="UTF-8"?>'
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
-            echo '<plist version="1.0"><dict>'
-            echo '  <key>method</key><string>app-store-connect</string>'
-            echo '  <key>teamID</key><string>'"$DEVELOPMENT_TEAM"'</string>'
-            echo '  <key>signingStyle</key><string>automatic</string>'
-            echo '</dict></plist>'
-          } > /tmp/ExportOptions.plist
           xcodebuild \
             -exportArchive \
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -exportOptionsPlist /Users/builder/export_options.plist \
             -exportPath "$CM_BUILD_DIR/ipa" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "/tmp/AuthKey.p8" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             2>&1
-          rm -f /tmp/AuthKey.p8
 
     artifacts:
       - "**/*.ipa"
