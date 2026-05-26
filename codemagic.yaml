@@ -10,11 +10,11 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.lenzly.app
+        bundle_identifier: com.unkwnmarket.lenzly
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.lenzly.app"
+        BUNDLE_ID: "com.unkwnmarket.lenzly"
       node: 20.9.0
       xcode: latest
       cocoapods: default

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.lenzly.app',
+  appId: 'com.unkwnmarket.lenzly',
   appName: 'LENZLY',
   webDir: 'dist',
   ios: {
