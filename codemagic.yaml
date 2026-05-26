@@ -14,7 +14,6 @@ workflows:
         BUNDLE_ID: "com.unkwnmarket.lenzly"
       node: 22.12.0
       xcode: latest
-      cocoapods: default
 
     scripts:
       - name: Install npm dependencies
@@ -26,10 +25,12 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Resolve Swift packages
         script: |
-          cd ios/App
-          pod install --repo-update
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SwiftPackages"
 
       - name: Initialize keychain
         script: keychain initialize
