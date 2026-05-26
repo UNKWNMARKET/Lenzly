@@ -8,6 +8,9 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.unkwnmarket.lenzly
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -31,31 +34,6 @@ workflows:
           xcodebuild -resolvePackageDependencies \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
-
-      - name: Set up code signing
-        script: |
-          # Fresh keychain — no revoked certs can enter
-          keychain initialize
-
-          # Always create a brand-new distribution cert (new serial + private key)
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
-
-          # Add ONLY the new cert to the fresh keychain
-          keychain add-certificates
-
-          # Diagnostic — confirm only the new cert is present
-          echo "=== Keychain identities ==="
-          security find-identity -v -p codesigning
-
-          # Create a fresh provisioning profile linked to the new cert
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-
-          # Write the profile into the Xcode project and generate export_options.plist
-          xcode-project use-profiles
 
       - name: Build and export IPA
         script: |
