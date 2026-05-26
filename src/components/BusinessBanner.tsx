@@ -17,7 +17,7 @@ export default function BusinessBanner() {
               <div>
                 <p className="text-xs font-bold text-gold tracking-wider uppercase">For Brands</p>
                 <p className="text-sm font-semibold text-white mt-0.5">Find & hire photographers</p>
-                <p className="text-[11px] text-white/40 mt-0.5">NatGeo · Hermès · Vogue use LENZLY</p>
+                <p className="text-[11px] text-white/40 mt-0.5">WildScope · Maison Élite · Lumière use LENZLY</p>
               </div>
             </div>
             <ChevronRight size={18} className="text-gold/60 group-hover:text-gold transition-colors" />

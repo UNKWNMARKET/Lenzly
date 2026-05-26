@@ -137,7 +137,7 @@ export const photographers: Photographer[] = [
     username: 'nadia.lens',
     name: 'Nadia Reyes',
     avatar: unsplash('1494790108755-2616b612b786', 200),
-    bio: 'Landscape & travel photographer. 47 countries and counting. NatGeo contributor.',
+    bio: 'Landscape & travel photographer. 47 countries and counting. Published in WildScope & Lumière.',
     specialty: ['Landscape', 'Travel', 'Nature'],
     location: 'Austin, TX',
     city: 'Austin',

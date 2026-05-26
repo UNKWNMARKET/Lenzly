@@ -1,10 +1,13 @@
 import { useState, useMemo } from 'react'
-import { Search, Zap, MapPin, TrendingUp, Building2, ChevronRight } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
+import { floridaSpots } from '@/data/floridaData'
 import { cn } from '@/lib/utils'
+
+const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
 
 const US_STATES = [
   'All','AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
@@ -14,7 +17,7 @@ const US_STATES = [
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ]
 
-const allFilters = [...specialtyFilters, 'Architecture']
+const allFilters = [...specialtyFilters, 'Architecture', 'Florida']
 
 export default function Explore() {
   const [activeFilter, setActiveFilter] = useState('All')
@@ -41,8 +44,19 @@ export default function Explore() {
     )
   }, [activeState, query])
 
+  const [activeFlCity, setActiveFlCity] = useState('All')
+
+  const filteredFlSpots = useMemo(() =>
+    floridaSpots.filter(s =>
+      (activeFlCity === 'All' || s.city === activeFlCity) &&
+      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+        s.city.toLowerCase().includes(query.toLowerCase()) ||
+        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase()))
+    ), [activeFlCity, query])
+
   const showArchitecture = activeFilter === 'All' || activeFilter === 'Architecture'
   const showFeed = activeFilter !== 'Architecture'
+  const showFlorida = activeFilter === 'All' || activeFilter === 'Florida'
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-24">
@@ -75,6 +89,7 @@ export default function Explore() {
               )}
             >
               {f === 'Architecture' && <Building2 size={11} />}
+              {f === 'Florida' && <Sun size={11} />}
               {f}
             </button>
           ))}
@@ -182,6 +197,50 @@ export default function Explore() {
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── Florida Cities ── */}
+        {showFlorida && (
+          <section>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Sun size={14} className="text-gold" />
+                <h2 className="text-sm font-bold text-white tracking-wide">Florida</h2>
+                <span className="text-[10px] text-white/30">Buildings & Locations</span>
+              </div>
+              <span className="text-[11px] text-white/30">{filteredFlSpots.length} spots</span>
+            </div>
+
+            {/* City filter strip */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar py-3">
+              {FL_CITIES.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setActiveFlCity(c)}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all duration-200 whitespace-nowrap',
+                    activeFlCity === c
+                      ? 'bg-gold text-lenz-bg'
+                      : 'bg-lenz-card border border-lenz-border text-white/40 hover:border-white/20'
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            {filteredFlSpots.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-white/20 text-sm">No spots match your search.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredFlSpots.map(spot => (
+                  <LocationSpotCard key={spot.id} spot={spot} />
                 ))}
               </div>
             )}

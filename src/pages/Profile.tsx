@@ -144,7 +144,7 @@ export default function Profile() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gold tracking-wide">Get Discovered by Brands</p>
-                <p className="text-[11px] text-white/30">Upgrade to Pro · Connect with NatGeo, Hermès &amp; more</p>
+                <p className="text-[11px] text-white/30">Upgrade to Pro · Get discovered by top brands &amp; publications</p>
               </div>
             </div>
             <ChevronRight size={15} className="text-gold/50 group-hover:text-gold transition-colors shrink-0" />
@@ -188,7 +188,7 @@ export default function Profile() {
           </div>
           <h3 className="font-bold text-white text-base mb-1">Go Pro</h3>
           <p className="text-xs text-white/40 mb-4 leading-relaxed">
-            Get verified, appear in brand searches, unlock analytics, and get discovered by companies like NatGeo and Hermès.
+            Get verified, appear in brand searches, unlock analytics, and get discovered by leading publications, luxury brands, and commercial clients.
           </p>
           <button className="btn-primary w-full">Upgrade to LENZLY Pro</button>
           <p className="text-[10px] text-white/20 mt-2">Starting at $19/month</p>

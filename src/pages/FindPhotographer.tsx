@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, MapPin } from 'lucide-react'
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
+import { floridaPhotographers } from '@/data/floridaData'
+
+const allPhotographers = [...photographers, ...floridaPhotographers]
 import { cn, formatCount } from '@/lib/utils'
 
 // Lazy-load the map to avoid SSR issues
@@ -86,7 +89,7 @@ export default function FindPhotographer() {
     }
   }, [view])
 
-  const filtered = photographers.filter(p => {
+  const filtered = allPhotographers.filter(p => {
     if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
     if (filters.secondShooter && !p.secondShooter) return false
     if (filters.availableOnly && !p.available) return false

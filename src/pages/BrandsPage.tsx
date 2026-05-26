@@ -4,7 +4,7 @@ import { useLocation } from 'wouter'
 import { photographers } from '@/data/mockData'
 import { formatCount } from '@/lib/utils'
 
-const brandLogos = ['NatGeo', 'Hermès', 'Vogue', 'Nike', 'Apple', 'Rolex']
+const brandLogos = ['WildScope', 'Maison Élite', 'Lumière', 'ApexGear', 'Nexar', 'Meridian']
 
 const perks = [
   { icon: Search, title: 'Talent Discovery', desc: 'Search verified photographers by specialty, location, and style.' },
@@ -167,7 +167,7 @@ export default function BrandsPage() {
             </div>
 
             {[
-              { label: 'Company Name', placeholder: 'Hermès, NatGeo, Vogue...', type: 'text' },
+              { label: 'Company Name', placeholder: 'Your company name...', type: 'text' },
               { label: 'Work Email', placeholder: 'you@company.com', type: 'email' },
               { label: 'Website', placeholder: 'company.com', type: 'url' },
             ].map(({ label, placeholder, type }) => (
