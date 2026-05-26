@@ -37,40 +37,21 @@ workflows:
 
       - name: Configure code signing
         script: |
-          set -e
-          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-
-          # Wipe the local profile file cache so the old revoked profile
-          # (UUID 3251be6b) cannot be reinstalled from a previous build
-          rm -rf "$PROFILES_DIR"
-          mkdir -p "$PROFILES_DIR"
-
-          # ios_signing already set up the cert + keychain above.
-          # Fetch a fresh provisioning profile from Apple linked to that cert.
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --profiles-dir "$PROFILES_DIR"
-
-          # Hard check — fail here if no profile landed on disk
-          PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
-          echo "Profiles downloaded: $PROFILE_COUNT"
-          if [ "$PROFILE_COUNT" -eq 0 ]; then
-            echo "ERROR: fetch-signing-files did not save a profile"
-            exit 1
-          fi
-
-          for f in "$PROFILES_DIR"/*.mobileprovision; do
-            security cms -D -i "$f" -o /tmp/profile.plist
-            echo "  Name : $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
-            echo "  UUID : $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
-          done
-
-          # Generate export_options.plist and configure Xcode project
+          # ios_signing (automatic step above) created a fresh cert + profile
+          # and installed them in the keychain. Just configure the Xcode project.
           xcode-project use-profiles
 
           echo "=== Keychain identities ==="
           security find-identity -v -p codesigning
+
+          echo "=== Installed profiles ==="
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          for f in "$PROFILES_DIR"/*.mobileprovision 2>/dev/null; do
+            [ -f "$f" ] || continue
+            security cms -D -i "$f" -o /tmp/profile.plist 2>/dev/null || continue
+            echo "  Name : $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
+            echo "  UUID : $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
+          done
 
       - name: Build and export IPA
         script: |
@@ -89,7 +70,7 @@ workflows:
           echo "Using profile UUID: $PROFILE_UUID"
 
           if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
-            echo "ERROR: Old revoked profile came back — Codemagic cache not cleared."
+            echo "ERROR: Old revoked profile reinstalled — clear Codemagic signing cache."
             exit 1
           fi
 
