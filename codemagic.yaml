@@ -49,7 +49,8 @@ workflows:
             echo "ERROR: No provisioning profile found in ~/Library/MobileDevice/Provisioning Profiles/"
             exit 1
           fi
-          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
+          security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
           echo "Provisioning profile: $PROFILE_PATH"
           echo "UUID: $PROFILE_UUID"
           echo "Keychain identities:"
