@@ -35,7 +35,7 @@ workflows:
       - name: Build archive
         script: |
           set -o pipefail
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
