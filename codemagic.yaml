@@ -35,6 +35,9 @@ workflows:
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
 
+      - name: Configure code signing
+        script: xcode-project use-profiles
+
       - name: Build and export IPA
         script: |
           xcode-project build-ipa \
