@@ -8,9 +8,6 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.unkwnmarket.lenzly
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -35,30 +32,66 @@ workflows:
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
 
-      - name: Configure code signing
-        script: xcode-project use-profiles
+      - name: Set up code signing
+        script: |
+          # Fresh keychain — nothing from previous builds can survive here
+          keychain initialize
+
+          # Create a brand-new distribution cert (new serial + new private key)
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --save
+
+          # Install the new cert into the fresh keychain
+          keychain add-certificates
+
+          echo "=== Keychain identities ==="
+          security find-identity -v -p codesigning
+
+          # Wipe locally cached provisioning profiles — Codemagic reuses these
+          # across builds and was reinstalling the old revoked profile (3251be6b)
+          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          # Fetch a fresh provisioning profile from Apple linked to the new cert
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+          # List what was downloaded
+          echo "=== Installed provisioning profiles ==="
+          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            security cms -D -i "$f" -o /tmp/profile.plist
+            echo "  Name: $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
+            echo "  UUID: $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
+          done
+
+          # Generate export_options.plist and configure Xcode project
+          xcode-project use-profiles
 
       - name: Build and export IPA
         script: |
           set -e
           mkdir -p /tmp/xcodebuild_logs
 
-          # Read the UUID of the provisioning profile installed by ios_signing
           PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
           if [ -z "$PROFILE_PATH" ]; then
-            echo "ERROR: No provisioning profile found in ~/Library/MobileDevice/Provisioning Profiles/"
+            echo "ERROR: No provisioning profile installed"
             exit 1
           fi
+
           security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
-          echo "Provisioning profile: $PROFILE_PATH"
-          echo "UUID: $PROFILE_UUID"
-          echo "Keychain identities:"
-          security find-identity -v -p codesigning
+          echo "Using profile UUID: $PROFILE_UUID"
+
+          # Guard: reject the old revoked profile if it somehow came back
+          if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
+            echo "ERROR: Got the cached revoked profile. Contact Codemagic support to clear the signing cache."
+            exit 1
+          fi
 
           set -o pipefail
 
-          # Archive — explicitly supply the profile UUID so Xcode never has to guess
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
@@ -72,7 +105,6 @@ workflows:
             PROVISIONING_PROFILE="$PROFILE_UUID" \
             2>&1 | tee /tmp/xcodebuild_logs/archive.log
 
-          # Export — use the plist written by use-profiles
           xcodebuild \
             -exportArchive \
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
