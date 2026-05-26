@@ -26,10 +26,7 @@ workflows:
         script: npm run build
 
       - name: Sync Capacitor
-        script: |
-          npx cap sync ios
-          echo "=== Package.swift after sync ==="
-          cat ios/App/CapApp-SPM/Package.swift
+        script: npx cap sync ios
 
       - name: Resolve Swift packages
         script: |
@@ -42,28 +39,12 @@ workflows:
 
       - name: Build IPA
         script: |
-          set -o pipefail
-          xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            archive \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            2>&1
-
-      - name: Export IPA
-        script: |
-          set -o pipefail
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            -exportOptionsPlist /Users/builder/export_options.plist \
-            -exportPath "$CM_BUILD_DIR/ipa" \
-            2>&1
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - "**/*.ipa"
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
