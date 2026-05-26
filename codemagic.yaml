@@ -23,13 +23,13 @@ workflows:
       - name: Build web app
         script: npm run build
 
+      - name: Sync Capacitor
+        script: npx cap sync ios
+
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
-
-      - name: Sync Capacitor
-        script: npx cap sync ios
 
       - name: Initialize keychain
         script: keychain initialize
