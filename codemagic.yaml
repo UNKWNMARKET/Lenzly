@@ -37,29 +37,30 @@ workflows:
           set -e
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          # Fresh keychain — nothing from previous builds survives
+          # Fresh keychain
           keychain initialize
 
-          # Brand-new distribution cert (new serial + new private key)
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
+          # Generate a brand-new RSA private key.
+          # No existing Apple cert was signed with this key, so fetch-signing-files
+          # MUST create a new certificate — the old revoked cert cannot match.
+          openssl genrsa -out /tmp/ios_dist_key.pem 2048
 
-          # Install the new cert into the fresh keychain
+          # Wipe any locally cached provisioning profiles
+          rm -rf "$PROFILES_DIR"
+          mkdir -p "$PROFILES_DIR"
+
+          # Fetch/create cert + profile using the new key
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key "@file:/tmp/ios_dist_key.pem" \
+            --profiles-dir "$PROFILES_DIR"
+
+          # Install the new cert into the keychain
           keychain add-certificates
 
           echo "=== Keychain identities ==="
           security find-identity -v -p codesigning
-
-          # Wipe the local profile cache completely
-          rm -rf "$PROFILES_DIR"
-          mkdir -p "$PROFILES_DIR"
-
-          # Fetch a fresh provisioning profile — explicitly target the profiles dir
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --profiles-dir "$PROFILES_DIR"
 
           # Hard check — fail here if no profile landed on disk
           PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
@@ -69,11 +70,10 @@ workflows:
             exit 1
           fi
 
-          # Show what we got
           for f in "$PROFILES_DIR"/*.mobileprovision; do
             security cms -D -i "$f" -o /tmp/profile.plist
-            echo "  Name: $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
-            echo "  UUID: $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
+            echo "  Name : $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
+            echo "  UUID : $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
           done
 
           # Generate export_options.plist and configure Xcode project
@@ -95,9 +95,9 @@ workflows:
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
           echo "Using profile UUID: $PROFILE_UUID"
 
-          # Guard against the old revoked profile being reinstalled
+          # Guard against the old revoked profile coming back
           if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
-            echo "ERROR: Got the cached revoked profile. Contact Codemagic support to clear the signing cache."
+            echo "ERROR: Still got the old revoked profile. Contact Codemagic support."
             exit 1
           fi
 
