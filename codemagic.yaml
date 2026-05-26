@@ -8,9 +8,8 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.unkwnmarket.lenzly
+      groups:
+        - ios_credentials        # contains APPLE_DIST_PRIVATE_KEY
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -35,23 +34,53 @@ workflows:
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
 
-      - name: Configure code signing
+      - name: Set up code signing
         script: |
-          # ios_signing (automatic step above) created a fresh cert + profile
-          # and installed them in the keychain. Just configure the Xcode project.
-          xcode-project use-profiles
+          set -e
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          # Fresh keychain — no cached revoked cert can survive
+          keychain initialize
+
+          # Decode the private key stored in Codemagic's secure environment
+          # Same key every build = same cert reused every build (no 409 limit errors)
+          echo "$APPLE_DIST_PRIVATE_KEY" | base64 --decode > /tmp/ios_dist_key.pem
+
+          # Wipe locally cached provisioning profiles
+          rm -rf "$PROFILES_DIR"
+          mkdir -p "$PROFILES_DIR"
+
+          # First build: no cert matches this key → creates a new cert + new profile
+          # Every build after: finds the matching cert → reuses it (no new cert created)
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key "@file:/tmp/ios_dist_key.pem" \
+            --profiles-dir "$PROFILES_DIR"
+
+          # Install the cert into the keychain
+          keychain add-certificates
 
           echo "=== Keychain identities ==="
           security find-identity -v -p codesigning
 
-          echo "=== Installed profiles ==="
-          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          for f in "$PROFILES_DIR"/*.mobileprovision 2>/dev/null; do
+          # Verify a profile landed on disk
+          PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
+          echo "Profiles downloaded: $PROFILE_COUNT"
+          if [ "$PROFILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No profile downloaded — check API key permissions and cert limit."
+            exit 1
+          fi
+
+          for f in "$PROFILES_DIR"/*.mobileprovision; do
             [ -f "$f" ] || continue
-            security cms -D -i "$f" -o /tmp/profile.plist 2>/dev/null || continue
+            security cms -D -i "$f" -o /tmp/profile.plist
             echo "  Name : $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
             echo "  UUID : $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
           done
+
+          # Generate export_options.plist and configure Xcode project
+          xcode-project use-profiles
 
       - name: Build and export IPA
         script: |
@@ -70,7 +99,7 @@ workflows:
           echo "Using profile UUID: $PROFILE_UUID"
 
           if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
-            echo "ERROR: Old revoked profile reinstalled — clear Codemagic signing cache."
+            echo "ERROR: Old revoked profile reinstalled — delete it from Apple Developer Portal."
             exit 1
           fi
 
