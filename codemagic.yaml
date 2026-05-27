@@ -28,6 +28,11 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
+      - name: Set build number
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
+          echo "CFBundleVersion set to: $BUILD_NUMBER"
+
       - name: Resolve Swift packages
         script: |
           xcodebuild -resolvePackageDependencies \
