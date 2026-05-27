@@ -4,6 +4,7 @@ const BASE = 'https://images.unsplash.com/photo-'
 const img = (id: string, w = 600) => `${BASE}${id}?w=${w}&q=80&auto=format&fit=crop`
 
 // Florida photo spots — popular buildings & locations by city
+// All photos verified free under the Unsplash License (not Unsplash+)
 export const floridaSpots: PhotoSpot[] = [
 
   // ── MIAMI ──────────────────────────────────────────────────────────────────
@@ -11,7 +12,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-miami-wynwood',
     name: 'Wynwood Walls',
     description: 'The world\'s largest permanent outdoor street art museum. 80,000 sq ft of curated murals by global artists on formerly abandoned warehouse walls in the Wynwood Arts District.',
-    image: img('1578662996442-48f60103fc96'),
+    image: img('1548209454-8548045387bc'), // Miami/Wynwood colorful wall art — naomi tamar, free Unsplash License
     lat: 25.8004, lng: -80.1994,
     category: 'Street Art', rating: 4.9, photoCount: 31200,
     bestTime: 'Golden Hour · 5–7pm', city: 'Miami', state: 'FL',
@@ -28,7 +29,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-miami-perez',
     name: 'Pérez Art Museum Miami',
     description: 'Herzog & de Meuron\'s waterfront museum on Biscayne Bay. Dramatic hanging gardens of tropical foliage suspended from the roof canopy over floor-to-ceiling glass.',
-    image: img('1568702846914-96b305d2aaeb'),
+    image: img('1748457230022-e04230f71a1c'), // Miami skyline reflected on Biscayne Bay — Austin Hervias, free Unsplash License
     lat: 25.7745, lng: -80.1868,
     category: 'Architecture', rating: 4.8, photoCount: 8900,
     bestTime: 'Blue Hour · 7–8am', city: 'Miami', state: 'FL',
@@ -44,7 +45,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-miami-southbeach',
     name: 'South Beach Art Deco Strip',
     description: 'Ocean Drive\'s pastel Art Deco hotels — The Cardozo, Colony, Beacon — the largest collection of Art Deco architecture in the world. Neon, chrome, and 1930s glamour.',
-    image: img('1533900220405-4f8b58e1a3c0'),
+    image: img('1580650897134-f1de6c0f28b4'), // Avalon Hotel South Beach, vintage car + Art Deco facade — Jean-Luc Benazet, free Unsplash License
     lat: 25.7825, lng: -80.1300,
     category: 'Architecture', rating: 4.9, photoCount: 42000,
     bestTime: 'Blue Hour · 8–9pm', city: 'Miami Beach', state: 'FL',
@@ -61,7 +62,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-miami-brickell',
     name: 'Brickell City Centre',
     description: 'A soaring mixed-use complex with a dramatic glass Climate Ribbon linking towers — an architectural feat designed to channel bay breezes through the complex.',
-    image: img('1486325212027-8081e485255e'),
+    image: img('1535498730771-e735b998cd64'), // Miami skyline at sunset from Biscayne Bay — Muzammil Soorma, free Unsplash License
     lat: 25.7661, lng: -80.1936,
     category: 'Architecture', rating: 4.6, photoCount: 7200,
     bestTime: 'Dusk · 6–8pm', city: 'Miami', state: 'FL',
@@ -79,7 +80,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-orlando-lakeeola',
     name: 'Lake Eola Amphitheater',
     description: 'The Walt Disney Amphitheater\'s shell-shaped white concrete stage reflected in Lake Eola\'s still surface, surrounded by swan boats and downtown Orlando\'s skyline.',
-    image: img('1518391400044-6f8fdb8c1e7e'),
+    image: img('1758464642801-14bd789db153'), // Two swans on Lake Eola with Orlando skyline — @paws_and_prints, free Unsplash License
     lat: 28.5489, lng: -81.3719,
     category: 'Urban', rating: 4.7, photoCount: 11400,
     bestTime: 'Sunrise · 6:30–8am', city: 'Orlando', state: 'FL',
@@ -96,7 +97,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-orlando-iconpark',
     name: 'ICON Park Observation Wheel',
     description: '400-ft observation wheel on International Drive. At night the capsules glow in programmed LED colors against the Orlando skyline — an unmissable landmark shot.',
-    image: img('1616769598939-beecf13e768c'),
+    image: img('1649016038610-40f1e8bd0e6b'), // ICON Park ferris wheel beside palm trees, Orlando FL — Celeste Mc, free Unsplash License
     lat: 28.4428, lng: -81.4713,
     category: 'Landmark', rating: 4.5, photoCount: 9800,
     bestTime: 'Blue Hour · 8–10pm', city: 'Orlando', state: 'FL',
@@ -114,7 +115,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-tampa-armature',
     name: 'Armature Works',
     description: 'A century-old electric streetcar barn transformed into Tampa\'s premier food hall and event space on the Hillsborough River. Steel trusses, original brick, and a stunning rooftop terrace.',
-    image: img('1558618666-fcd25c85cd64'),
+    image: img('1657548107423-0699c27eee37'), // Tampa Hillsborough River waterfront — Johnny Johnson, free Unsplash License
     lat: 27.9530, lng: -82.4605,
     category: 'Industrial', rating: 4.8, photoCount: 13700,
     bestTime: 'Golden Hour · 6–8pm', city: 'Tampa', state: 'FL',
@@ -131,7 +132,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-tampa-riverwalk',
     name: 'Tampa Riverwalk & Skyline',
     description: 'A 2.6-mile park along the Hillsborough River. The view east from the Platt Street Bridge gives Tampa\'s best skyline shot — bridges, towers, and the Channel District.',
-    image: img('1600891964599-d9ae43831a1e'),
+    image: img('1677091507413-0365aaacc4c2'), // Downtown Tampa at night with lights reflecting in river — Grove Brands, free Unsplash License
     lat: 27.9477, lng: -82.4584,
     category: 'Urban', rating: 4.7, photoCount: 18200,
     bestTime: 'Sunrise · 6:30–8am', city: 'Tampa', state: 'FL',
@@ -148,7 +149,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-tampa-ybor',
     name: 'Ybor City Historic District',
     description: 'Tampa\'s National Historic Landmark cigar-making district. Spanish, Cuban, and Italian architecture on 7th Avenue — terra cotta facades, wrought-iron balconies, and original brick streets.',
-    image: img('1508253730651-e5ace80a7427'),
+    image: img('1699734121009-2c18950988f7'), // Ybor City iconic metal arch on 7th Avenue, Tampa FL — Dännavan Fulton, free Unsplash License
     lat: 27.9603, lng: -82.4399,
     category: 'Architecture', rating: 4.6, photoCount: 9400,
     bestTime: 'Blue Hour · 8–10pm', city: 'Tampa', state: 'FL',
@@ -166,7 +167,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-jax-mainstreetbridge',
     name: 'Jacksonville Main Street Bridge',
     description: 'The iconic blue truss bridge across the St. Johns River with the downtown skyline as backdrop. Jacksonville\'s most photographed landmark, especially at dusk.',
-    image: img('1572981179158-9a5929f4e9cf'),
+    image: img('1735593070456-cb12973a0b70'), // John T. Alsop Jr. Main Street Bridge over St. Johns River, Jacksonville FL — Matthew Williams, free Unsplash License
     lat: 30.3226, lng: -81.6614,
     category: 'Architecture', rating: 4.7, photoCount: 15600,
     bestTime: 'Blue Hour · 7:30–9pm', city: 'Jacksonville', state: 'FL',
@@ -183,7 +184,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-jax-riverside',
     name: 'Riverside Arts Market',
     description: 'Saturday market under the Fuller Warren Bridge. The bridge\'s massive concrete piers frame the market canopies and the St. Johns River — a uniquely urban-organic scene.',
-    image: img('1556742049-0cfed4f6a9d5'),
+    image: img('1736531817876-263a59e06593'), // Arched bridge spanning St. Johns River, Jacksonville FL — Matthew Williams, free Unsplash License
     lat: 30.3157, lng: -81.6818,
     category: 'Urban', rating: 4.5, photoCount: 4800,
     bestTime: 'Morning · 9am–Noon', city: 'Jacksonville', state: 'FL',
@@ -201,7 +202,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-ftl-lasolas',
     name: 'Las Olas Boulevard',
     description: 'Fort Lauderdale\'s most prestigious street — tree-lined with boutiques, galleries, restaurants, and the intersection of the Intracoastal waterway. Yachts, architecture, and tropical light.',
-    image: img('1545324418-cc1a3fa56720'),
+    image: img('1766373165231-8807829cd12b'), // Aerial view of downtown Fort Lauderdale waterway and canal — MARTLEY U, free Unsplash License
     lat: 26.1206, lng: -80.1389,
     category: 'Urban', rating: 4.7, photoCount: 11300,
     bestTime: 'Golden Hour · 5–7pm', city: 'Fort Lauderdale', state: 'FL',
@@ -219,7 +220,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-staugustine-castillo',
     name: 'Castillo de San Marcos',
     description: 'The oldest masonry fort in the continental US (1695). Coquina stone walls, Spanish bastions, and a moat overlooking Matanzas Bay — a completely otherworldly sight in Florida.',
-    image: img('1599420186945-0f2e255f9438'),
+    image: img('1647197848363-616e2e1d6c75'), // Castillo de San Marcos coquina stone fort, St. Augustine FL — Philip Davis, free Unsplash License
     lat: 29.8977, lng: -81.3124,
     category: 'Architecture', rating: 4.9, photoCount: 22100,
     bestTime: 'Sunrise · 6:30–8am', city: 'St. Augustine', state: 'FL',
@@ -236,7 +237,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-staugustine-oldcity',
     name: 'St. Augustine Old City Gate',
     description: 'The 1808 coquina limestone city gate at the northern entrance to the colonial district. The narrow arch with the bayonet-spired guard towers frames a view of the oldest European street in America.',
-    image: img('1470498729966-0b1cdf33ffa5'),
+    image: img('1647197848282-7f09e9052e3f'), // Coquina stone wall with palm trees, St. Augustine FL — Philip Davis, free Unsplash License
     lat: 29.9007, lng: -81.3133,
     category: 'Architecture', rating: 4.8, photoCount: 17400,
     bestTime: 'Early Morning · 7–9am', city: 'St. Augustine', state: 'FL',
@@ -254,7 +255,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-keywest-southernmost',
     name: 'Southernmost Point Buoy',
     description: '90 miles to Cuba. The iconic red, black, and yellow buoy marker at the southernmost tip of the continental US. Simple, bold graphic — and the Atlantic stretching endlessly behind it.',
-    image: img('1584464483760-9b98edfa1571'),
+    image: img('1722480176525-1cefada5037e'), // Southernmost Point Buoy marker, Key West FL — Zoshua Colah, free Unsplash License
     lat: 24.5467, lng: -81.7998,
     category: 'Landmark', rating: 4.8, photoCount: 38500,
     bestTime: 'Sunrise · 6:30–7:30am', city: 'Key West', state: 'FL',
@@ -270,7 +271,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-keywest-duvalneon',
     name: 'Duval Street Night',
     description: 'Key West\'s legendary bar street at night. Neon signs, wooden Victorian saloons, dense tropical foliage, and the energy of the island\'s famous "Duval Crawl."',
-    image: img('1566073771259-de9b64571e28'),
+    image: img('1757029379203-4f8689329087'), // Palm-tree-lined street in Key West FL — Zoshua Colah, free Unsplash License
     lat: 24.5554, lng: -81.7984,
     category: 'Urban', rating: 4.7, photoCount: 21000,
     bestTime: 'Night · 9pm–Midnight', city: 'Key West', state: 'FL',
@@ -288,7 +289,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-sarasota-ringling',
     name: 'The Ringling Museum',
     description: 'John Ringling\'s 1920s Venice-inspired estate on Sarasota Bay. Ca\' d\'Zan (House of John), a Venetian Gothic mansion with a 5-story Belvedere tower reflected in the pool at sunrise.',
-    image: img('1600209791858-1bde0ec3cc9b'),
+    image: img('1577801961331-d6719362d442'), // Ca\'d\'Zan mansion at Ringling Museum, Sarasota FL — Tessa Edmiston, free Unsplash License
     lat: 27.3810, lng: -82.5540,
     category: 'Architecture', rating: 4.9, photoCount: 16800,
     bestTime: 'Sunrise · 7–9am', city: 'Sarasota', state: 'FL',
@@ -307,7 +308,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-naples-pier',
     name: 'Naples Pier at Sunset',
     description: 'The 1888 pier stretching 1000 feet into the Gulf of Mexico. One of Florida\'s most iconic sunset shots — the wooden pier silhouetted against a burning Gulf sky.',
-    image: img('1507525428034-b723cf961d3e'),
+    image: img('1530626599274-7002948a2810'), // Naples FL pier at golden hour with dramatic clouds — Bailey Rapp, free Unsplash License
     lat: 26.1395, lng: -81.8058,
     category: 'Landmark', rating: 5.0, photoCount: 44300,
     bestTime: 'Sunset · 7–8:30pm', city: 'Naples', state: 'FL',
@@ -326,7 +327,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-gainesville-uf',
     name: 'University of Florida Century Tower',
     description: 'The 157-foot Georgian-style brick carillon tower at the heart of UF\'s historic campus. Surrounded by century oaks draped in Spanish moss — one of the South\'s most photogenic campuses.',
-    image: img('1562774053-701939374585'),
+    image: img('1671481934809-d4935df4113f'), // Brick clock tower, University of Florida campus, Gainesville FL — Addam Setzer, free Unsplash License
     lat: 29.6487, lng: -82.3431,
     category: 'Architecture', rating: 4.7, photoCount: 12900,
     bestTime: 'Golden Hour · 4–6pm', city: 'Gainesville', state: 'FL',
@@ -344,7 +345,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-pensacola-oldchrist',
     name: 'Old Christ Church Pensacola',
     description: 'Florida\'s oldest surviving church (1832). Simple brick Federal-style building surrounded by live oaks on Zaragoza Street in the historic Seville District.',
-    image: img('1486325212027-8081e485255e'),
+    image: img('1678229490684-fbafe9252daf'), // Historic brick building with balcony in Pensacola FL — Michael Newton, free Unsplash License
     lat: 30.4097, lng: -87.2158,
     category: 'Architecture', rating: 4.6, photoCount: 6200,
     bestTime: 'Morning · 8–10am', city: 'Pensacola', state: 'FL',
@@ -362,7 +363,7 @@ export const floridaSpots: PhotoSpot[] = [
     id: 'fl-daytona-bandshell',
     name: 'Daytona Beach Bandshell',
     description: 'The 1937 Art Deco bandshell on the Daytona beachfront. A perfectly preserved WPA-era amphitheater with the Atlantic behind it — a rare combination of architectural history and beach scenery.',
-    image: img('1507003211169-0a1dd7228f2d'),
+    image: img('1618868461757-011148fe788d'), // Art Deco red and white bandshell building on Daytona Beach FL — Aditya Vyas, free Unsplash License
     lat: 29.2108, lng: -81.0228,
     category: 'Architecture', rating: 4.5, photoCount: 7800,
     bestTime: 'Sunrise · 6:30–8am', city: 'Daytona Beach', state: 'FL',
@@ -390,11 +391,11 @@ export const floridaPhotographers: Photographer[] = [
     followers: 41200, following: 820, posts: 612, hired: 88, rating: 4.9,
     verified: true, pro: true, secondShooter: false,
     instagram: '@marco.lens', portfolio: 'marcodelgado.photo',
-    coverPhoto: 'https://images.unsplash.com/photo-1533900220405-4f8b58e1a3c0?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1580650897134-f1de6c0f28b4?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1748457230022-e04230f71a1c?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1535498730771-e735b998cd64?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1548209454-8548045387bc?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$350–$900/day',
   },
@@ -410,11 +411,11 @@ export const floridaPhotographers: Photographer[] = [
     followers: 28700, following: 540, posts: 388, hired: 54, rating: 4.8,
     verified: true, pro: true, secondShooter: false,
     instagram: '@skylarwebb.photo', portfolio: 'skylarwebb.co',
-    coverPhoto: 'https://images.unsplash.com/photo-1533900220405-4f8b58e1a3c0?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1580650897134-f1de6c0f28b4?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa56720?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600209791858-1bde0ec3cc9b?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1548209454-8548045387bc?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1766373165231-8807829cd12b?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577801961331-d6719362d442?w=400&q=80&auto=format&fit=crop',
     ],
     available: false, priceRange: '$200–$600/day',
   },
@@ -430,11 +431,11 @@ export const floridaPhotographers: Photographer[] = [
     followers: 19300, following: 410, posts: 241, hired: 39, rating: 4.7,
     verified: false, pro: true, secondShooter: true,
     instagram: '@trevorcph', portfolio: 'trevorcastillo.com',
-    coverPhoto: 'https://images.unsplash.com/photo-1600891964599-d9ae43831a1e?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1677091507413-0365aaacc4c2?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600891964599-d9ae43831a1e?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1508253730651-e5ace80a7427?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1657548107423-0699c27eee37?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1677091507413-0365aaacc4c2?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1699734121009-2c18950988f7?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$180–$500/day',
   },
@@ -450,10 +451,10 @@ export const floridaPhotographers: Photographer[] = [
     followers: 12100, following: 680, posts: 187, hired: 22, rating: 4.8,
     verified: true, pro: false, secondShooter: true,
     instagram: '@jaxframes', portfolio: 'amaraosei.work',
-    coverPhoto: 'https://images.unsplash.com/photo-1572981179158-9a5929f4e9cf?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1735593070456-cb12973a0b70?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1572981179158-9a5929f4e9cf?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1556742049-0cfed4f6a9d5?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1735593070456-cb12973a0b70?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1736531817876-263a59e06593?w=400&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$150–$400/day',
@@ -470,10 +471,10 @@ export const floridaPhotographers: Photographer[] = [
     followers: 22500, following: 390, posts: 334, hired: 67, rating: 4.9,
     verified: true, pro: true, secondShooter: false,
     instagram: '@lensofstaugustine', portfolio: 'ceciliamarsh.photo',
-    coverPhoto: 'https://images.unsplash.com/photo-1599420186945-0f2e255f9438?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1647197848363-616e2e1d6c75?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1599420186945-0f2e255f9438?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1470498729966-0b1cdf33ffa5?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1647197848363-616e2e1d6c75?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1647197848282-7f09e9052e3f?w=400&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$250–$700/day',
@@ -490,11 +491,11 @@ export const floridaPhotographers: Photographer[] = [
     followers: 33800, following: 710, posts: 520, hired: 71, rating: 4.8,
     verified: true, pro: true, secondShooter: false,
     instagram: '@keyshotz', portfolio: 'diegovarela.photo',
-    coverPhoto: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1530626599274-7002948a2810?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1584464483760-9b98edfa1571?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1566073771259-de9b64571e28?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1722480176525-1cefada5037e?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1757029379203-4f8689329087?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1530626599274-7002948a2810?w=400&q=80&auto=format&fit=crop',
     ],
     available: false, priceRange: '$400–$1200/day',
   },
@@ -510,10 +511,10 @@ export const floridaPhotographers: Photographer[] = [
     followers: 15400, following: 520, posts: 278, hired: 44, rating: 4.7,
     verified: false, pro: true, secondShooter: true,
     instagram: '@orlandoframes', portfolio: 'priyanair.photo',
-    coverPhoto: 'https://images.unsplash.com/photo-1518391400044-6f8fdb8c1e7e?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1758464642801-14bd789db153?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1518391400044-6f8fdb8c1e7e?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1616769598939-beecf13e768c?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1758464642801-14bd789db153?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1649016038610-40f1e8bd0e6b?w=400&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$160–$450/day',
@@ -530,10 +531,10 @@ export const floridaPhotographers: Photographer[] = [
     followers: 18900, following: 430, posts: 302, hired: 51, rating: 4.8,
     verified: true, pro: true, secondShooter: false,
     instagram: '@sarasota_shutter', portfolio: 'beauhartley.com',
-    coverPhoto: 'https://images.unsplash.com/photo-1600209791858-1bde0ec3cc9b?w=800&q=80&auto=format&fit=crop',
+    coverPhoto: 'https://images.unsplash.com/photo-1577801961331-d6719362d442?w=800&q=80&auto=format&fit=crop',
     photos: [
-      'https://images.unsplash.com/photo-1600209791858-1bde0ec3cc9b?w=400&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577801961331-d6719362d442?w=400&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1530626599274-7002948a2810?w=400&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1463453091185-61582044d556?w=400&q=80&auto=format&fit=crop',
     ],
     available: true, priceRange: '$220–$650/day',
