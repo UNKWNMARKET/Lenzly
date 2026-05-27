@@ -191,7 +191,7 @@ export default function Profile() {
             Get verified, appear in brand searches, unlock analytics, and get discovered by leading publications, luxury brands, and commercial clients.
           </p>
           <button className="btn-primary w-full">Upgrade to LENZLY Pro</button>
-          <p className="text-[10px] text-white/20 mt-2">Starting at $19/month</p>
+          <p className="text-[10px] text-white/20 mt-2">Starting at $5/month</p>
         </div>
       )}
     </div>

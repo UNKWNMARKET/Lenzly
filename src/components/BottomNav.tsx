@@ -1,10 +1,11 @@
-import { Home, Compass, MapPin, User } from 'lucide-react'
+import { Home, Compass, MapPin, User, PlusSquare } from 'lucide-react'
 import { useLocation, Link } from 'wouter'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { path: '/', icon: Home, label: 'Feed' },
   { path: '/explore', icon: Compass, label: 'Explore' },
+  { path: '/upload', icon: PlusSquare, label: 'Post', isUpload: true },
   { path: '/find', icon: MapPin, label: 'Find' },
   { path: '/profile', icon: User, label: 'Profile' },
 ]
@@ -14,15 +15,27 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] glass-dark z-50 safe-bottom">
-      <div className="flex items-center justify-around px-4 py-2">
-        {tabs.map(({ path, icon: Icon, label }) => {
+      <div className="flex items-center justify-around px-2 py-2">
+        {tabs.map(({ path, icon: Icon, label, isUpload }) => {
           const active = path === '/'
             ? location === '/'
             : location.startsWith(path)
 
+          if (isUpload) {
+            return (
+              <Link key={path} href={path}>
+                <button className="flex flex-col items-center gap-1 py-1 px-3 group">
+                  <div className="w-11 h-11 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-gold/20">
+                    <Icon size={22} strokeWidth={2} className="text-lenz-bg" />
+                  </div>
+                </button>
+              </Link>
+            )
+          }
+
           return (
             <Link key={path} href={path}>
-              <button className="flex flex-col items-center gap-1 py-2 px-4 group">
+              <button className="flex flex-col items-center gap-1 py-2 px-3 group">
                 <div className="relative">
                   <Icon
                     size={22}

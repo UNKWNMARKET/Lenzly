@@ -2,8 +2,12 @@
   "settings": {
     "appName": "LENZLY",
     "tagline": "Photography Platform",
-    "primaryColor": "#C9A84C",
-    "featuredSpotIds": ["s1", "s2", "s3"],
+    "primaryColor": "#846d52",
+    "featuredSpotIds": [
+      "s1",
+      "s2",
+      "s3"
+    ],
     "maintenanceMode": false,
     "allowNewRegistrations": true,
     "proMonthlyPrice": 19,
@@ -26,7 +30,10 @@
       "company": "WildScope Media",
       "email": "photo@wildscope.com",
       "website": "wildscope.com",
-      "needs": ["Editorial", "Commercial"],
+      "needs": [
+        "Editorial",
+        "Commercial"
+      ],
       "status": "pending",
       "createdAt": "2026-05-20T10:00:00Z"
     },
@@ -35,7 +42,10 @@
       "company": "Maison Élite Paris",
       "email": "talent@maisonelite.fr",
       "website": "maisonelite.fr",
-      "needs": ["Fashion", "Campaign"],
+      "needs": [
+        "Fashion",
+        "Campaign"
+      ],
       "status": "approved",
       "createdAt": "2026-05-18T14:22:00Z"
     },
@@ -44,7 +54,11 @@
       "company": "Lumière Magazine",
       "email": "photo-desk@lumiere.com",
       "website": "lumiere.com",
-      "needs": ["Editorial", "Fashion", "Events"],
+      "needs": [
+        "Editorial",
+        "Fashion",
+        "Events"
+      ],
       "status": "approved",
       "createdAt": "2026-05-15T09:11:00Z"
     }
