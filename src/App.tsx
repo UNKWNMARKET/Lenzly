@@ -16,6 +16,8 @@ import NotFound from './pages/NotFound'
 import Login from './pages/auth/Login'
 import SignUp from './pages/auth/SignUp'
 import UploadPost from './pages/UploadPost'
+import EditProfile from './pages/EditProfile'
+import Settings from './pages/Settings'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -64,6 +66,8 @@ function Router() {
       <Route path="/find">{() => <ProtectedRoute component={FindPhotographer} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
       <Route path="/upload">{() => <ProtectedRoute component={UploadPost} />}</Route>
+      <Route path="/profile/edit">{() => <ProtectedRoute component={EditProfile} />}</Route>
+      <Route path="/settings">{() => <ProtectedRoute component={Settings} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
@@ -115,7 +119,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup']
-  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload') {
+  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings') {
     return null
   }
   return <BottomNav />

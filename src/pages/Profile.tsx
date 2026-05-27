@@ -1,19 +1,28 @@
 import { useState } from 'react'
 import {
-  Settings, Grid3X3, Heart, Bookmark, Instagram,
+  Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, CheckCircle, Edit3, Camera,
-  ChevronRight, Star, Users, Building2, Share2
+  ChevronRight, Star, Users, Building2, Share2, X,
+  AtSign, ChevronLeft, MessageSquare
 } from 'lucide-react'
-import { currentUser } from '@/data/mockData'
+import { currentUser, photographers } from '@/data/mockData'
 import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Link } from 'wouter'
+import { Link, useLocation } from 'wouter'
 
 type ProfileTab = 'posts' | 'liked' | 'saved'
+type ModalType = 'followers' | 'following' | 'photo' | 'reviews' | null
+
+// Mock liked/saved posts (different from the posts grid)
+const likedPhotos = currentUser.photos.slice(0, 6).reverse()
+const savedPhotos = currentUser.photos.slice(3)
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts')
-  const [following, setFollowing] = useState(false)
+  const [modal, setModal] = useState<ModalType>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [, navigate] = useLocation()
+
   const u = currentUser
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [
@@ -21,6 +30,35 @@ export default function Profile() {
     { key: 'liked', icon: Heart, label: 'Liked' },
     { key: 'saved', icon: Bookmark, label: 'Saved' },
   ]
+
+  const tabPhotos = {
+    posts: u.photos,
+    liked: likedPhotos,
+    saved: savedPhotos,
+  }
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      await navigator.share({
+        title: `${u.name} on LENZLY`,
+        text: u.bio,
+        url: window.location.href,
+      })
+    } else {
+      await navigator.clipboard.writeText(window.location.href)
+      alert('Profile link copied!')
+    }
+  }
+
+  const openPhoto = (src: string) => {
+    setSelectedPhoto(src)
+    setModal('photo')
+  }
+
+  const closeModal = () => {
+    setModal(null)
+    setSelectedPhoto(null)
+  }
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-24">
@@ -31,10 +69,16 @@ export default function Profile() {
 
         {/* Top actions */}
         <div className="absolute top-4 right-4 flex items-center gap-2 safe-top">
-          <button className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors">
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors"
+          >
             <Share2 size={17} />
           </button>
-          <button className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors">
+          <button
+            onClick={() => navigate('/settings')}
+            className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors"
+          >
             <Settings size={17} />
           </button>
         </div>
@@ -56,11 +100,24 @@ export default function Profile() {
 
           <div className="flex items-center gap-2 mb-2">
             {u.pro ? (
-              <button className="btn-primary text-xs py-2 px-4">Edit Profile</button>
+              <button
+                onClick={() => navigate('/profile/edit')}
+                className="btn-primary text-xs py-2 px-4"
+              >
+                Edit Profile
+              </button>
             ) : (
-              <button className="btn-ghost text-xs py-2 px-4">Edit Profile</button>
+              <button
+                onClick={() => navigate('/profile/edit')}
+                className="btn-ghost text-xs py-2 px-4"
+              >
+                Edit Profile
+              </button>
             )}
-            <button className="w-9 h-9 rounded-full bg-lenz-card border border-lenz-border flex items-center justify-center">
+            <button
+              onClick={() => navigate('/profile/edit')}
+              className="w-9 h-9 rounded-full bg-lenz-card border border-lenz-border flex items-center justify-center"
+            >
               <Edit3 size={15} className="text-white/60" />
             </button>
           </div>
@@ -86,54 +143,79 @@ export default function Profile() {
 
         {/* Meta links */}
         <div className="flex flex-col gap-1.5 mt-3">
-          <div className="flex items-center gap-1.5">
-            <MapPin size={13} className="text-white/30" />
-            <span className="text-sm text-white/50">{u.location}</span>
-          </div>
-          <button className="flex items-center gap-1.5 group">
-            <Instagram size={13} className="text-white/30 group-hover:text-[#E1306C] transition-colors" />
-            <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.instagram}</span>
-          </button>
-          <button className="flex items-center gap-1.5 group">
-            <ExternalLink size={13} className="text-white/30 group-hover:text-gold transition-colors" />
-            <span className="text-sm text-white/50 group-hover:text-gold transition-colors">{u.portfolio}</span>
-          </button>
+          {u.location && (
+            <button
+              onClick={() => navigate('/find')}
+              className="flex items-center gap-1.5 group"
+            >
+              <MapPin size={13} className="text-white/30 group-hover:text-gold transition-colors" />
+              <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.location}</span>
+            </button>
+          )}
+          {u.instagram && (
+            <button
+              onClick={() => window.open(`https://instagram.com/${u.instagram.replace('@', '')}`, '_blank')}
+              className="flex items-center gap-1.5 group"
+            >
+              <AtSign size={13} className="text-white/30 group-hover:text-gold transition-colors" />
+              <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.instagram}</span>
+            </button>
+          )}
+          {u.portfolio && (
+            <button
+              onClick={() => window.open(`https://${u.portfolio}`, '_blank')}
+              className="flex items-center gap-1.5 group"
+            >
+              <ExternalLink size={13} className="text-white/30 group-hover:text-gold transition-colors" />
+              <span className="text-sm text-white/50 group-hover:text-gold transition-colors">{u.portfolio}</span>
+            </button>
+          )}
         </div>
 
         {/* Specialty badges */}
         <div className="flex flex-wrap gap-1.5 mt-3">
           {u.specialty.map(s => (
-            <span key={s} className="flex items-center gap-1 text-[11px] font-medium text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+            <button
+              key={s}
+              onClick={() => navigate(`/find?specialty=${encodeURIComponent(s)}`)}
+              className="flex items-center gap-1 text-[11px] font-medium text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full hover:border-gold/40 hover:text-gold/80 transition-colors"
+            >
               <Camera size={9} className="text-white/30" />
               {s}
-            </span>
+            </button>
           ))}
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-2 mt-4 py-4 border-t border-b border-lenz-border">
           {[
-            { label: 'Posts', value: u.posts },
-            { label: 'Followers', value: formatCount(u.followers) },
-            { label: 'Following', value: u.following },
-            { label: 'Hired', value: u.hired },
-          ].map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <p className="text-base font-bold text-white">{value}</p>
-              <p className="text-[10px] text-white/30 mt-0.5 tracking-wide">{label}</p>
-            </div>
+            { label: 'Posts', value: u.posts, action: () => setActiveTab('posts') },
+            { label: 'Followers', value: formatCount(u.followers), action: () => setModal('followers') },
+            { label: 'Following', value: u.following, action: () => setModal('following') },
+            { label: 'Hired', value: u.hired, action: () => setModal('reviews') },
+          ].map(({ label, value, action }) => (
+            <button key={label} onClick={action} className="text-center group">
+              <p className="text-base font-bold text-white group-hover:text-gold transition-colors">{value}</p>
+              <p className="text-[10px] text-white/30 mt-0.5 tracking-wide group-hover:text-white/50 transition-colors">{label}</p>
+            </button>
           ))}
         </div>
 
         {/* Rating */}
-        <div className="flex items-center justify-between py-3 border-b border-lenz-border">
+        <button
+          onClick={() => setModal('reviews')}
+          className="flex items-center justify-between py-3 border-b border-lenz-border w-full group"
+        >
           <div className="flex items-center gap-2">
             <Star size={16} className="text-gold fill-gold" />
-            <span className="text-sm font-semibold text-white">{u.rating} Rating</span>
+            <span className="text-sm font-semibold text-white group-hover:text-gold transition-colors">{u.rating} Rating</span>
             <span className="text-xs text-white/30">from {u.hired} clients</span>
           </div>
-          <span className="text-xs text-gold font-medium">{u.priceRange}</span>
-        </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gold font-medium">{u.priceRange}</span>
+            <ChevronRight size={13} className="text-white/30 group-hover:text-gold transition-colors" />
+          </div>
+        </button>
 
         {/* For Brands Banner */}
         <Link href="/brands">
@@ -172,13 +254,25 @@ export default function Profile() {
       </div>
 
       {/* Photo Grid */}
-      <div className="grid grid-cols-3 gap-0.5 mt-0.5">
-        {u.photos.map((photo, i) => (
-          <div key={i} className="photo-grid-item">
-            <img src={photo} alt="" loading="lazy" />
-          </div>
-        ))}
-      </div>
+      {tabPhotos[activeTab].length > 0 ? (
+        <div className="grid grid-cols-3 gap-0.5 mt-0.5">
+          {tabPhotos[activeTab].map((photo, i) => (
+            <button
+              key={i}
+              onClick={() => openPhoto(photo)}
+              className="photo-grid-item relative group overflow-hidden"
+            >
+              <img src={photo} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Camera size={32} className="text-white/10 mb-3" />
+          <p className="text-sm text-white/25">No photos yet</p>
+        </div>
+      )}
 
       {/* Upgrade to Pro CTA (if not pro) */}
       {!u.pro && (
@@ -190,10 +284,178 @@ export default function Profile() {
           <p className="text-xs text-white/40 mb-4 leading-relaxed">
             Get verified, appear in brand searches, unlock analytics, and get discovered by leading publications, luxury brands, and commercial clients.
           </p>
-          <button className="btn-primary w-full">Upgrade to LENZLY Pro</button>
+          <Link href="/brands">
+            <button className="btn-primary w-full">Upgrade to LENZLY Pro</button>
+          </Link>
           <p className="text-[10px] text-white/20 mt-2">Starting at $5/month</p>
         </div>
       )}
+
+      {/* ── MODALS ─────────────────────────────────────────────────────────── */}
+
+      {/* Photo Viewer Modal */}
+      {modal === 'photo' && selectedPhoto && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={closeModal}>
+          <button
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+            onClick={closeModal}
+          >
+            <X size={20} className="text-white" />
+          </button>
+          <img
+            src={selectedPhoto.replace('w=400', 'w=800')}
+            alt=""
+            className="max-w-full max-h-full object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* Followers Modal */}
+      {modal === 'followers' && (
+        <PeopleModal
+          title={`Followers · ${formatCount(u.followers)}`}
+          people={photographers.slice(0, 8)}
+          onClose={closeModal}
+        />
+      )}
+
+      {/* Following Modal */}
+      {modal === 'following' && (
+        <PeopleModal
+          title={`Following · ${u.following}`}
+          people={photographers.slice(0, 6)}
+          onClose={closeModal}
+        />
+      )}
+
+      {/* Reviews / Hired Modal */}
+      {modal === 'reviews' && (
+        <ReviewsModal hired={u.hired} rating={u.rating} priceRange={u.priceRange} onClose={closeModal} />
+      )}
+    </div>
+  )
+}
+
+// ── People Modal ──────────────────────────────────────────────────────────────
+function PeopleModal({ title, people, onClose }: {
+  title: string
+  people: typeof photographers
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
+      <div
+        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-lenz-border">
+          <h3 className="text-sm font-bold text-white tracking-wide">{title}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+            <X size={16} className="text-white/60" />
+          </button>
+        </div>
+        <div className="overflow-y-auto max-h-[60vh] pb-6">
+          {people.map(p => (
+            <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 hover:bg-white/3 transition-colors">
+              <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border">
+                <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-white truncate">{p.name}</p>
+                  {p.pro && (
+                    <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
+                  )}
+                </div>
+                <p className="text-xs text-white/40 truncate">@{p.username} · {p.location}</p>
+              </div>
+              <button className="text-xs font-semibold text-gold border border-gold/30 px-3 py-1.5 rounded-full hover:bg-gold/10 transition-colors shrink-0">
+                Follow
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Reviews Modal ─────────────────────────────────────────────────────────────
+const mockReviews = [
+  { id: 1, name: 'Sarah M.', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80&auto=format&fit=crop', rating: 5, text: 'Incredible eye for detail. The photos from our brand campaign exceeded every expectation.', date: '2 weeks ago' },
+  { id: 2, name: 'James R.', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80&auto=format&fit=crop', rating: 5, text: 'Booked for a wedding shoot. Absolutely stunning results. Highly recommend!', date: '1 month ago' },
+  { id: 3, name: 'Aisha T.', avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&q=80&auto=format&fit=crop', rating: 4, text: 'Great communicator, showed up on time, beautiful portfolio. Will hire again.', date: '2 months ago' },
+  { id: 4, name: 'Carlos D.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80&auto=format&fit=crop', rating: 5, text: 'Captured the vibe of our restaurant launch perfectly. Very talented.', date: '3 months ago' },
+]
+
+function ReviewsModal({ hired, rating, priceRange, onClose }: {
+  hired: number
+  rating: number
+  priceRange: string
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
+      <div
+        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-lenz-border">
+          <div className="flex items-center gap-2">
+            <Star size={16} className="text-gold fill-gold" />
+            <h3 className="text-sm font-bold text-white">{rating} · {hired} Reviews</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+            <X size={16} className="text-white/60" />
+          </button>
+        </div>
+
+        {/* Summary row */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-lenz-border/50">
+          <div className="flex items-center gap-1">
+            {[1,2,3,4,5].map(s => (
+              <Star key={s} size={14} className={s <= Math.round(rating) ? 'text-gold fill-gold' : 'text-white/15'} />
+            ))}
+            <span className="text-xs text-white/50 ml-1">avg. {rating}</span>
+          </div>
+          <span className="text-xs text-gold font-medium">{priceRange}</span>
+        </div>
+
+        {/* Reviews list */}
+        <div className="overflow-y-auto max-h-[60vh] pb-6">
+          {mockReviews.map(r => (
+            <div key={r.id} className="px-4 py-4 border-b border-lenz-border/50">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-lenz-border">
+                  <img src={r.avatar} alt={r.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-semibold text-white">{r.name}</p>
+                    <span className="text-[10px] text-white/30">{r.date}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 mb-1.5">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={10} className={s <= r.rating ? 'text-gold fill-gold' : 'text-white/15'} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-white/60 leading-relaxed">{r.text}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Leave a review CTA */}
+          <div className="mx-4 mt-4 p-4 rounded-xl bg-lenz-card border border-lenz-border text-center">
+            <MessageSquare size={20} className="text-white/20 mx-auto mb-2" />
+            <p className="text-xs text-white/40 mb-3">Worked with this photographer? Share your experience.</p>
+            <button className="btn-primary text-xs py-2 px-5">Leave a Review</button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
