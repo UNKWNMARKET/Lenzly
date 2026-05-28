@@ -49,5 +49,17 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>LENZLY uses your camera to capture photos for your portfolio and posts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LENZLY accesses your photo library so you can select and share images.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>LENZLY saves photos to your library when you download images.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LENZLY uses your location to tag photo spots and show nearby photography locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>LENZLY uses your location to tag photo spots and show nearby photography locations.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LENZLY may access the microphone when recording video content.</string>
 </dict>
 </plist>
