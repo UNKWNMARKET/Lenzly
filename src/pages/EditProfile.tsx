@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { ChevronLeft, Camera, Check, MapPin, Globe, AtSign } from 'lucide-react'
-import { currentUser } from '@/data/mockData'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 const ALL_SPECIALTIES = [
@@ -12,20 +13,31 @@ const ALL_SPECIALTIES = [
 
 export default function EditProfile() {
   const [, navigate] = useLocation()
-  const u = currentUser
+  const { user, profile, refreshProfile } = useAuth()
 
-  const [name, setName] = useState(u.name)
-  const [username, setUsername] = useState(u.username)
-  const [bio, setBio] = useState(u.bio)
-  const [location, setLocation] = useState(u.location)
-  const [social, setSocial] = useState(u.instagram)
-  const [portfolio, setPortfolio] = useState(u.portfolio)
+  const [name, setName] = useState(profile?.name ?? '')
+  const [username, setUsername] = useState(profile?.username ?? '')
+  const [bio, setBio] = useState(profile?.bio ?? '')
+  const [location, setLocation] = useState(profile?.location ?? '')
+  const [social, setSocial] = useState('')
+  const [portfolio, setPortfolio] = useState('')
   const [priceMin, setPriceMin] = useState('200')
   const [priceMax, setPriceMax] = useState('800')
-  const [specialties, setSpecialties] = useState<string[]>(u.specialty)
-  const [available, setAvailable] = useState(u.available)
-  const [secondShooter, setSecondShooter] = useState(u.secondShooter)
+  const [specialties, setSpecialties] = useState<string[]>(profile?.specialty ?? [])
+  const [available, setAvailable] = useState(false)
+  const [secondShooter, setSecondShooter] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Re-sync form state when profile first loads (e.g. on cold mount)
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name ?? '')
+      setUsername(profile.username ?? '')
+      setBio(profile.bio ?? '')
+      setLocation(profile.location ?? '')
+      setSpecialties(profile.specialty ?? [])
+    }
+  }, [profile?.id])
 
   const toggleSpecialty = (s: string) => {
     setSpecialties(prev =>
@@ -36,8 +48,28 @@ export default function EditProfile() {
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Name is required'); return }
     if (!username.trim()) { toast.error('Username is required'); return }
+    if (!user) { toast.error('Not signed in'); return }
+
     setSaving(true)
-    await new Promise(r => setTimeout(r, 800))
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name: name.trim(),
+        username: username.trim().toLowerCase(),
+        bio: bio.trim() || null,
+        location: location.trim() || null,
+        specialty: specialties,
+      })
+      .eq('id', user.id)
+
+    if (error) {
+      toast.error(error.message)
+      setSaving(false)
+      return
+    }
+
+    await refreshProfile()
     toast.success('Profile updated!')
     setSaving(false)
     navigate('/profile')
@@ -66,7 +98,7 @@ export default function EditProfile() {
         <div className="relative">
           {/* Cover */}
           <div className="h-28 rounded-2xl overflow-hidden bg-lenz-card border border-lenz-border relative group cursor-pointer">
-            <img src={u.coverPhoto} alt="cover" className="w-full h-full object-cover" />
+            <div className="w-full h-full bg-gradient-to-br from-lenz-card to-black" />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex items-center gap-2 text-white text-xs font-medium">
                 <Camera size={15} />
@@ -77,8 +109,14 @@ export default function EditProfile() {
           {/* Avatar */}
           <div className="absolute -bottom-5 left-4">
             <div className="relative cursor-pointer group">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-lenz-bg">
-                <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-lenz-bg bg-lenz-card">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/20 text-2xl font-bold">
+                    {name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={13} className="text-white" />

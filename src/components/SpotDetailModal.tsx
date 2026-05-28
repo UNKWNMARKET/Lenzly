@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckCircle } from 'lucide-react'
 import { useWeather } from '@/hooks/useWeather'
 import type { PhotoSpot } from '@/data/mockData'
@@ -10,6 +11,15 @@ interface Props {
 
 export default function SpotDetailModal({ spot, onClose }: Props) {
   const { forecast, loading, error } = useWeather(spot.lat, spot.lng)
+  const [showMapPicker, setShowMapPicker] = useState(false)
+
+  const openMaps = (app: 'apple' | 'google') => {
+    const url = app === 'apple'
+      ? `https://maps.apple.com/?daddr=${spot.lat},${spot.lng}&dirflg=d`
+      : `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`
+    window.open(url, '_blank')
+    setShowMapPicker(false)
+  }
 
   return (
     <div
@@ -23,8 +33,10 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
       />
 
       {/* Bottom sheet */}
-      <div className="relative bg-lenz-bg rounded-t-3xl overflow-y-auto animate-slide-up"
-        style={{ maxHeight: '92vh' }}>
+      <div
+        className="relative bg-lenz-bg rounded-t-3xl overflow-y-auto animate-slide-up"
+        style={{ maxHeight: '92vh', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+      >
 
         {/* Hero image */}
         <div className="relative h-60 shrink-0">
@@ -199,10 +211,39 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
           </div>
 
           {/* Directions CTA */}
-          <button className="mt-5 w-full btn-primary py-4 flex items-center justify-center gap-2 text-sm">
-            <Navigation size={15} />
-            Navigate to This Spot
-          </button>
+          {!showMapPicker ? (
+            <button
+              onClick={() => setShowMapPicker(true)}
+              className="mt-5 w-full btn-primary py-4 flex items-center justify-center gap-2 text-sm"
+            >
+              <Navigation size={15} />
+              Navigate to This Spot
+            </button>
+          ) : (
+            <div className="mt-5 space-y-2">
+              <p className="text-[10px] font-semibold text-white/30 tracking-widest uppercase text-center mb-3">Open directions in</p>
+              <button
+                onClick={() => openMaps('apple')}
+                className="w-full py-4 flex items-center justify-center gap-2.5 text-sm font-semibold bg-lenz-card border border-lenz-border rounded-2xl text-white active:scale-[0.98] transition-transform"
+              >
+                <span className="text-base">🍎</span>
+                Apple Maps
+              </button>
+              <button
+                onClick={() => openMaps('google')}
+                className="w-full py-4 flex items-center justify-center gap-2.5 text-sm font-semibold bg-lenz-card border border-lenz-border rounded-2xl text-white active:scale-[0.98] transition-transform"
+              >
+                <span className="text-base">🗺️</span>
+                Google Maps
+              </button>
+              <button
+                onClick={() => setShowMapPicker(false)}
+                className="w-full py-3 text-xs text-white/25 hover:text-white/50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

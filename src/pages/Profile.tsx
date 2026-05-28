@@ -6,6 +6,7 @@ import {
   AtSign, ChevronLeft, MessageSquare
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
+import { useAuth } from '@/contexts/AuthContext'
 import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from 'wouter'
@@ -22,8 +23,24 @@ export default function Profile() {
   const [modal, setModal] = useState<ModalType>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [, navigate] = useLocation()
+  const { profile } = useAuth()
 
-  const u = currentUser
+  // Merge real Supabase profile data over mock for the fields that users can edit.
+  // Everything else (photos grid, cover, rating, etc.) falls back to mock data
+  // until those columns are added to the database.
+  const u = {
+    ...currentUser,
+    name:      profile?.name      ?? currentUser.name,
+    username:  profile?.username  ?? currentUser.username,
+    bio:       profile?.bio       ?? currentUser.bio,
+    location:  profile?.location  ?? currentUser.location,
+    specialty: (profile?.specialty?.length ? profile.specialty : currentUser.specialty),
+    avatar:    profile?.avatar_url ?? currentUser.avatar,
+    pro:       profile?.is_pro    ?? currentUser.pro,
+    followers: profile?.followers_count ?? currentUser.followers,
+    following: profile?.following_count ?? currentUser.following,
+    posts:     profile?.posts_count     ?? currentUser.posts,
+  }
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [
     { key: 'posts', icon: Grid3X3, label: 'Posts' },
