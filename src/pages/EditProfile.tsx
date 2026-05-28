@@ -40,7 +40,8 @@ export default function EditProfile() {
   const [uploadingCover,  setUploadingCover]  = useState(false)
 
   // ── Username restriction ─────────────────────────────────────────────────────
-  const usernameChanged = username.toLowerCase() !== (profile?.username ?? '').toLowerCase()
+  // Only counts as "changed" when a row already exists — initial profile creation is free
+  const usernameChanged = !!profile && username.toLowerCase() !== (profile.username ?? '').toLowerCase()
 
   const canChangeUsername = (): boolean => {
     const lastChanged = profile?.username_changed_at
@@ -117,8 +118,11 @@ export default function EditProfile() {
 
     setSaving(true)
 
+    const isFirstSave = !profile  // no DB row exists yet — upsert will INSERT
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, any> = {
+      id:        user.id,          // required for upsert conflict resolution
       name:      name.trim(),
       username:  username.trim().toLowerCase(),
       bio:       bio.trim() || null,
@@ -128,15 +132,14 @@ export default function EditProfile() {
 
     if (newAvatarUrl) updateData.avatar_url = newAvatarUrl
     if (newCoverUrl)  updateData.cover_url  = newCoverUrl
-    // Record the timestamp only when the username actually changed
-    if (usernameChanged && canChangeUsername()) {
+    // Stamp timestamp only on a real change (not initial profile creation)
+    if (!isFirstSave && usernameChanged && canChangeUsername()) {
       updateData.username_changed_at = new Date().toISOString()
     }
 
     const { error } = await supabase
       .from('profiles')
-      .update(updateData)
-      .eq('id', user.id)
+      .upsert(updateData, { onConflict: 'id' })
 
     if (error) {
       toast.error(error.message)
