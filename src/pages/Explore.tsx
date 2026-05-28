@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
 import { floridaSpots } from '@/data/floridaData'
+import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
 import { cn } from '@/lib/utils'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
@@ -17,12 +18,15 @@ const US_STATES = [
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ]
 
-const allFilters = [...specialtyFilters, 'Architecture', 'Florida']
+const allFilters = [...specialtyFilters, 'Architecture', 'Florida', 'Engagement', 'Car']
 
 export default function Explore() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [activeState, setActiveState] = useState('All')
+  const [activeFlCity, setActiveFlCity] = useState('All')
+  const [activeEngState, setActiveEngState] = useState('All')
+  const [activeCarState, setActiveCarState] = useState('All')
 
   const filteredPosts = posts.filter(p => {
     const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
@@ -44,8 +48,6 @@ export default function Explore() {
     )
   }, [activeState, query])
 
-  const [activeFlCity, setActiveFlCity] = useState('All')
-
   const filteredFlSpots = useMemo(() =>
     floridaSpots.filter(s =>
       (activeFlCity === 'All' || s.city === activeFlCity) &&
@@ -54,9 +56,25 @@ export default function Explore() {
         (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase()))
     ), [activeFlCity, query])
 
+  const filteredEngSpots = useMemo(() =>
+    engagementSpotData.filter(s =>
+      (activeEngState === 'All' || s.state === activeEngState) &&
+      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()))
+    ), [activeEngState, query])
+
+  const filteredCarSpots = useMemo(() =>
+    carSpotData.filter(s =>
+      (activeCarState === 'All' || s.state === activeCarState) &&
+      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()))
+    ), [activeCarState, query])
+
   const showArchitecture = activeFilter === 'All' || activeFilter === 'Architecture'
-  const showFeed = activeFilter !== 'Architecture'
+  const showFeed = activeFilter === 'All' || !['Architecture', 'Florida', 'Engagement', 'Car'].includes(activeFilter)
   const showFlorida = activeFilter === 'All' || activeFilter === 'Florida'
+  const showEngagement = activeFilter === 'All' || activeFilter === 'Engagement'
+  const showCar = activeFilter === 'All' || activeFilter === 'Car'
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-24">
@@ -90,6 +108,8 @@ export default function Explore() {
             >
               {f === 'Architecture' && <Building2 size={11} />}
               {f === 'Florida' && <Sun size={11} />}
+              {f === 'Engagement' && <Heart size={11} />}
+              {f === 'Car' && <Car size={11} />}
               {f}
             </button>
           ))}
@@ -99,7 +119,7 @@ export default function Explore() {
       <div className="px-4 py-4 space-y-8">
 
         {/* ── AI Photo Spots ── */}
-        {activeFilter !== 'Architecture' && (
+        {activeFilter === 'All' && (
           <section>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -129,7 +149,10 @@ export default function Explore() {
             </div>
 
             {/* State filter strip */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar py-3">
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar py-3"
+              style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+            >
               {US_STATES.map(st => (
                 <button
                   key={st}
@@ -247,13 +270,107 @@ export default function Explore() {
           </section>
         )}
 
+        {/* ── Engagement Photography — All 50 States ── */}
+        {showEngagement && (
+          <section>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Heart size={14} className="text-gold fill-gold/30" />
+                <h2 className="text-sm font-bold text-white tracking-wide">Engagement</h2>
+                <span className="text-[10px] text-white/30">All 50 States</span>
+              </div>
+              <span className="text-[11px] text-white/30">{filteredEngSpots.length} spots</span>
+            </div>
+
+            {/* State filter strip */}
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar py-3"
+              style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+            >
+              {US_STATES.map(st => (
+                <button
+                  key={st}
+                  onClick={() => setActiveEngState(st)}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider transition-all duration-200',
+                    activeEngState === st
+                      ? 'bg-gold text-lenz-bg'
+                      : 'bg-lenz-card border border-lenz-border text-white/40 hover:border-white/20'
+                  )}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+
+            {filteredEngSpots.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-white/20 text-sm">No engagement spots match your search.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredEngSpots.map(spot => (
+                  <LocationSpotCard key={spot.id} spot={spot} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── Car Photography — All 50 States ── */}
+        {showCar && (
+          <section>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Car size={14} className="text-gold" />
+                <h2 className="text-sm font-bold text-white tracking-wide">Car Photography</h2>
+                <span className="text-[10px] text-white/30">All 50 States</span>
+              </div>
+              <span className="text-[11px] text-white/30">{filteredCarSpots.length} spots</span>
+            </div>
+
+            {/* State filter strip */}
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar py-3"
+              style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+            >
+              {US_STATES.map(st => (
+                <button
+                  key={st}
+                  onClick={() => setActiveCarState(st)}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider transition-all duration-200',
+                    activeCarState === st
+                      ? 'bg-gold text-lenz-bg'
+                      : 'bg-lenz-card border border-lenz-border text-white/40 hover:border-white/20'
+                  )}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+
+            {filteredCarSpots.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-white/20 text-sm">No car photography spots match your search.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredCarSpots.map(spot => (
+                  <LocationSpotCard key={spot.id} spot={spot} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Business Banner */}
         <div className="-mx-4">
           <BusinessBanner />
         </div>
 
         {/* ── All Photo Spots ── */}
-        {activeFilter !== 'Architecture' && (
+        {activeFilter === 'All' && (
           <section>
             <div className="flex items-center gap-2 mb-3">
               <MapPin size={14} className="text-white/40" />
