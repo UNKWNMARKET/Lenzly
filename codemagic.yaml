@@ -110,12 +110,13 @@ workflows:
 
           set -o pipefail
 
-          # NOTE: Do NOT pass PROVISIONING_PROFILE or CODE_SIGN_STYLE as global
-          # xcodebuild overrides — they propagate to all SPM package targets
-          # (IONCameraLib, IONGeolocationLib, etc.) which do not support provisioning
-          # profiles and will error out. xcode-project use-profiles already wrote the
-          # correct settings into the App target's xcodeproj, so we only need to
-          # supply the signing identity and team here.
+          # Do NOT pass any code-signing settings (CODE_SIGN_IDENTITY,
+          # CODE_SIGN_STYLE, PROVISIONING_PROFILE, DEVELOPMENT_TEAM) as global
+          # xcodebuild CLI overrides. They propagate to every target in the build —
+          # including SPM packages (IONCameraLib, IONGeolocationLib, etc.) that use
+          # Automatic signing and will conflict or error with distribution settings.
+          # xcode-project use-profiles has already written all signing settings into
+          # the App target's xcodeproj; those per-target values are used automatically.
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
@@ -123,8 +124,6 @@ workflows:
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
             archive \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
             2>&1 | tee /tmp/xcodebuild_logs/archive.log
 
           xcodebuild \
