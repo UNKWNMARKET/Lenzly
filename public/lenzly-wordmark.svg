@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1800" height="500" viewBox="0 0 1800 500" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect width="1800" height="500" fill="#0A0804"/>
+
+  <!-- ══════════════════════════════
+       APERTURE ICON  (left, 420×420 centered at 250,250)
+       Scale factor: 420/1024 ≈ 0.41
+       Translated: (250-512*0.41, 250-512*0.41) = (40, 40)
+       All coords: new = 40 + old*0.41
+       ══════════════════════════════ -->
+
+  <!-- Outer glow -->
+  <circle cx="250" cy="250" r="162" fill="#B87010" opacity="0.08"/>
+  <!-- Outer ring -->
+  <circle cx="250" cy="250" r="157" fill="none" stroke="#B87010" stroke-width="1.2" opacity="0.35"/>
+
+  <!-- 6 Blade arcs scaled (R=220*0.41≈90, stroke=68*0.41≈28) -->
+  <!-- Blade 0  -45° → 45° -->
+  <path d="M324,173 A90,90 0 0,1 324,325"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+  <!-- Blade 1  15° → 105° -->
+  <path d="M347,277 A90,90 0 0,1 226,347"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+  <!-- Blade 2  75° → 165° -->
+  <path d="M273,347 A90,90 0 0,1 153,277"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+  <!-- Blade 3  135° → 225° -->
+  <path d="M176,325 A90,90 0 0,1 176,173"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+  <!-- Blade 4  195° → 285° -->
+  <path d="M153,221 A90,90 0 0,1 273,151"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+  <!-- Blade 5  255° → 345° -->
+  <path d="M226,151 A90,90 0 0,1 347,221"
+        fill="none" stroke="#CC9820" stroke-width="28" stroke-linecap="round" opacity="0.88"/>
+
+  <!-- Highlight shimmer -->
+  <path d="M324,173 A90,90 0 0,1 324,325" fill="none" stroke="#F2DC6A" stroke-width="7" stroke-linecap="round" opacity="0.22"/>
+  <path d="M455,300 A220,220 0 0,1 724,455" fill="none" stroke="#F2DC6A" stroke-width="7" stroke-linecap="round" opacity="0.26"/>
+  <path d="M226,151 A90,90 0 0,1 347,221"  fill="none" stroke="#F2DC6A" stroke-width="7" stroke-linecap="round" opacity="0.26"/>
+
+  <!-- Center opening (r=112*0.41≈46) -->
+  <circle cx="250" cy="250" r="46" fill="#0A0804"/>
+  <circle cx="250" cy="250" r="46" fill="none" stroke="#B87010" stroke-width="1" opacity="0.55"/>
+
+  <!-- Lens reflection -->
+  <ellipse cx="235" cy="235" rx="11" ry="7" fill="#F5E090" opacity="0.28"/>
+  <circle  cx="231" cy="231" r="2"         fill="#FFFFFF"  opacity="0.30"/>
+
+  <!-- ══════════════════════════════
+       WORDMARK TEXT  (right of icon)
+       ══════════════════════════════ -->
+
+  <!-- "LENZLY" main wordmark -->
+  <text
+    x="530" y="292"
+    font-family="'Helvetica Neue', 'Arial', sans-serif"
+    font-size="168"
+    font-weight="300"
+    letter-spacing="28"
+    fill="#D4A030">LENZLY</text>
+
+  <!-- Subtle underline rule -->
+  <line x1="530" y1="320" x2="1740" y2="320" stroke="#D4A030" stroke-width="1.5" opacity="0.22"/>
+
+  <!-- Tagline -->
+  <text
+    x="534" y="362"
+    font-family="'Helvetica Neue', 'Arial', sans-serif"
+    font-size="22"
+    font-weight="400"
+    letter-spacing="8"
+    fill="#C07818"
+    opacity="0.70">PHOTOGRAPHY COMMUNITY</text>
+
+</svg>
