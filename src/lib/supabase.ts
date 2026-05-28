@@ -10,6 +10,7 @@ export type Profile = {
   username: string
   name: string
   avatar_url: string | null
+  cover_url: string | null
   bio: string | null
   specialty: string[]
   location: string | null
@@ -21,6 +22,7 @@ export type Profile = {
   following_count: number
   posts_count: number
   created_at: string
+  username_changed_at: string | null
 }
 
 export type Post = {

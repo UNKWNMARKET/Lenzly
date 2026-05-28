@@ -2,8 +2,8 @@ import { useState } from 'react'
 import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, CheckCircle, Edit3, Camera,
-  ChevronRight, Star, Users, Building2, Share2, X,
-  AtSign, ChevronLeft, MessageSquare
+  ChevronRight, Star, Building2, Share2, X,
+  ChevronLeft, MessageSquare
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
@@ -30,16 +30,17 @@ export default function Profile() {
   // until those columns are added to the database.
   const u = {
     ...currentUser,
-    name:      profile?.name      ?? currentUser.name,
-    username:  profile?.username  ?? currentUser.username,
-    bio:       profile?.bio       ?? currentUser.bio,
-    location:  profile?.location  ?? currentUser.location,
-    specialty: (profile?.specialty?.length ? profile.specialty : currentUser.specialty),
-    avatar:    profile?.avatar_url ?? currentUser.avatar,
-    pro:       profile?.is_pro    ?? currentUser.pro,
-    followers: profile?.followers_count ?? currentUser.followers,
-    following: profile?.following_count ?? currentUser.following,
-    posts:     profile?.posts_count     ?? currentUser.posts,
+    name:       profile?.name       ?? currentUser.name,
+    username:   profile?.username   ?? currentUser.username,
+    bio:        profile?.bio        ?? currentUser.bio,
+    location:   profile?.location   ?? currentUser.location,
+    specialty:  (profile?.specialty?.length ? profile.specialty : currentUser.specialty),
+    avatar:     profile?.avatar_url  ?? currentUser.avatar,
+    coverPhoto: profile?.cover_url   ?? currentUser.coverPhoto,
+    pro:        profile?.is_pro      ?? currentUser.pro,
+    followers:  profile?.followers_count ?? currentUser.followers,
+    following:  profile?.following_count ?? currentUser.following,
+    posts:      profile?.posts_count     ?? currentUser.posts,
   }
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [
@@ -167,15 +168,6 @@ export default function Profile() {
             >
               <MapPin size={13} className="text-white/30 group-hover:text-gold transition-colors" />
               <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.location}</span>
-            </button>
-          )}
-          {u.instagram && (
-            <button
-              onClick={() => window.open(`https://instagram.com/${u.instagram.replace('@', '')}`, '_blank')}
-              className="flex items-center gap-1.5 group"
-            >
-              <AtSign size={13} className="text-white/30 group-hover:text-gold transition-colors" />
-              <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.instagram}</span>
             </button>
           )}
           {u.portfolio && (
