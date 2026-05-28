@@ -23,7 +23,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
+      className="fixed inset-0 z-50"
       style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0 }}
     >
       {/* Scrim */}
@@ -32,10 +32,15 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
         onClick={onClose}
       />
 
-      {/* Bottom sheet */}
+      {/* Bottom sheet — absolute-positioned so flex-justify-end doesn't fight iOS scroll */}
       <div
-        className="relative bg-lenz-bg rounded-t-3xl overflow-y-auto animate-slide-up"
-        style={{ maxHeight: '92vh', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+        className="absolute bottom-0 left-0 right-0 bg-lenz-bg rounded-t-3xl animate-slide-up"
+        style={{
+          height: '92vh',
+          overflowY: 'scroll',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
       >
 
         {/* Hero image */}
