@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
 import { floridaSpots } from '@/data/floridaData'
 import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
+import { useLiveSpots } from '@/hooks/useLiveSpots'
 import { cn } from '@/lib/utils'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
@@ -27,6 +28,7 @@ export default function Explore() {
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
+  const { spots: liveSpots, loading: liveSpotsLoading } = useLiveSpots(12)
 
   const filteredPosts = posts.filter(p => {
     const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
@@ -117,6 +119,77 @@ export default function Explore() {
       </header>
 
       <div className="px-4 py-4 space-y-8">
+
+        {/* ── Community Discovered (live from DB) ── */}
+        {activeFilter === 'All' && (liveSpots.length > 0 || liveSpotsLoading) && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-gold" />
+                <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
+                {!liveSpotsLoading && (
+                  <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
+                    {liveSpots.length} spots
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[10px] text-white/30">Live</span>
+              </div>
+            </div>
+
+            {liveSpotsLoading ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {liveSpots.map(spot => (
+                  <div
+                    key={spot.id}
+                    className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer group"
+                  >
+                    {spot.cover_image_url ? (
+                      <img
+                        src={spot.cover_image_url}
+                        alt={spot.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <MapPin size={24} className="text-white/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                      <p className="text-xs font-semibold text-white truncate leading-tight">{spot.name}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1">
+                          <Users size={9} className="text-white/50" />
+                          <span className="text-[10px] text-white/50">{spot.photo_count} photos</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Zap size={9} className="text-gold fill-gold" />
+                          <span className="text-[10px] text-gold font-bold">{spot.ai_score}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Category badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[9px] font-medium bg-black/50 backdrop-blur-sm text-white/70 px-1.5 py-0.5 rounded-full">
+                        {spot.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── AI Photo Spots ── */}
         {activeFilter === 'All' && (
