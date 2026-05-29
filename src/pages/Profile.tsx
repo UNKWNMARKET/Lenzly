@@ -7,7 +7,7 @@ import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, Edit3, Camera,
   ChevronRight, Star, Building2, Share2, X,
-  ChevronLeft, MessageSquare
+  ChevronLeft, MessageSquare, MoreVertical, Archive, Trash2
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
@@ -27,23 +27,38 @@ const savedPhotos = currentUser.photos.slice(3)
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts')
   const [modal, setModal] = useState<ModalType>(null)
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [mockSelectedPhoto, setMockSelectedPhoto] = useState<string | null>(null)
   const [, navigate] = useLocation()
   const { user, profile, refreshProfile } = useAuth()
 
-  // The current user's own uploaded posts (id + image so we can show & delete them)
-  const [myPosts, setMyPosts] = useState<{ id: string; image_url: string }[]>([])
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+  type MyPost = {
+    id: string
+    image_url: string
+    likes_count: number
+    comments_count: number
+    caption: string | null
+    archived: boolean
+  }
+
+  // The current user's own uploaded posts
+  const [myPosts, setMyPosts] = useState<MyPost[]>([])
+  const [selectedPost, setSelectedPost] = useState<MyPost | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const [postMenuOpen, setPostMenuOpen] = useState(false)
+
+  // Derived for backwards-compat
+  const selectedPostId = selectedPost?.id ?? null
+  const selectedPhoto = selectedPost?.image_url ?? null
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return
     const { data } = await supabase
       .from('posts')
-      .select('id, image_url')
+      .select('id, image_url, likes_count, comments_count, caption, archived')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-    if (data) setMyPosts(data.filter(p => p.image_url))
+    if (data) setMyPosts(data.filter(p => p.image_url) as MyPost[])
   }, [user])
 
   useEffect(() => { loadMyPosts() }, [loadMyPosts])
@@ -57,14 +72,26 @@ export default function Profile() {
       .from('posts')
       .delete()
       .eq('id', selectedPostId)
-      .eq('user_id', user.id) // RLS also enforces this, belt-and-suspenders
+      .eq('user_id', user.id)
     setDeleting(false)
-    if (error) {
-      toast.error('Could not delete post')
-      return
-    }
+    if (error) { toast.error('Could not delete post'); return }
     setMyPosts(prev => prev.filter(p => p.id !== selectedPostId))
     toast.success('Post deleted')
+    closeModal()
+  }
+
+  const handleArchivePost = async () => {
+    if (!selectedPostId || !user) return
+    setArchiving(true)
+    const { error } = await supabase
+      .from('posts')
+      .update({ archived: true })
+      .eq('id', selectedPostId)
+      .eq('user_id', user.id)
+    setArchiving(false)
+    if (error) { toast.error('Could not archive post'); return }
+    setMyPosts(prev => prev.filter(p => p.id !== selectedPostId))
+    toast.success('Post archived')
     closeModal()
   }
 
@@ -128,14 +155,15 @@ export default function Profile() {
   }
 
   const openPhoto = (src: string) => {
-    setSelectedPhoto(src)
+    setMockSelectedPhoto(src)
     setModal('photo')
   }
 
   const closeModal = () => {
     setModal(null)
-    setSelectedPhoto(null)
-    setSelectedPostId(null)
+    setMockSelectedPhoto(null)
+    setSelectedPost(null)
+    setPostMenuOpen(false)
   }
 
   return (
@@ -344,7 +372,7 @@ export default function Profile() {
             {myPosts.map(post => (
               <button
                 key={post.id}
-                onClick={() => { setSelectedPhoto(post.image_url); setSelectedPostId(post.id); setModal('photo') }}
+                onClick={() => { setSelectedPost(post); setModal('photo') }}
                 className="photo-grid-item relative group overflow-hidden"
               >
                 <img src={post.image_url} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -369,7 +397,7 @@ export default function Profile() {
           {tabPhotos[activeTab].map((photo, i) => (
             <button
               key={i}
-              onClick={() => openPhoto(photo)}
+              onClick={() => { setMockSelectedPhoto(photo); setModal('photo') }}
               className="photo-grid-item relative group overflow-hidden"
             >
               <img src={photo} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -404,30 +432,79 @@ export default function Profile() {
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
 
       {/* Photo Viewer Modal */}
-      {modal === 'photo' && selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={closeModal}>
-          <button
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-            onClick={closeModal}
-          >
-            <X size={20} className="text-white" />
-          </button>
-          <img
-            src={selectedPhoto.replace('w=400', 'w=800')}
-            alt=""
-            className="max-w-full max-h-full object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-          {/* Delete — only for the user's own real posts */}
-          {selectedPostId && (
+      {modal === 'photo' && (selectedPost || mockSelectedPhoto) && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+          onClick={() => { if (postMenuOpen) { setPostMenuOpen(false) } else { closeModal() } }}
+        >
+          {/* Header bar */}
+          <div className="flex items-center justify-between px-4 pt-12 pb-3 shrink-0" onClick={e => e.stopPropagation()}>
             <button
-              onClick={e => { e.stopPropagation(); handleDeletePost() }}
-              disabled={deleting}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold px-5 py-3 rounded-full disabled:opacity-50 transition-colors"
+              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+              onClick={closeModal}
             >
-              <X size={16} />
-              {deleting ? 'Deleting…' : 'Delete post'}
+              <X size={18} className="text-white" />
             </button>
+            {selectedPost && (
+              <div className="relative">
+                <button
+                  className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+                  onClick={e => { e.stopPropagation(); setPostMenuOpen(o => !o) }}
+                >
+                  <MoreVertical size={18} className="text-white" />
+                </button>
+                {postMenuOpen && (
+                  <div className="absolute right-0 top-11 w-44 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/50 z-10">
+                    <button
+                      onClick={e => { e.stopPropagation(); setPostMenuOpen(false); handleArchivePost() }}
+                      disabled={archiving}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-white/80 hover:bg-white/5 transition-colors border-b border-lenz-border/50 disabled:opacity-50"
+                    >
+                      <Archive size={15} className="text-white/50" />
+                      {archiving ? 'Archiving…' : 'Archive'}
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setPostMenuOpen(false); handleDeletePost() }}
+                      disabled={deleting}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 size={15} className="text-red-400" />
+                      {deleting ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Image */}
+          <div className="flex-1 flex items-center justify-center overflow-hidden" onClick={e => e.stopPropagation()}>
+            <img
+              src={(selectedPost?.image_url ?? mockSelectedPhoto ?? '').replace('w=400', 'w=800')}
+              alt=""
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+
+          {/* Engagement bar — only for real posts */}
+          {selectedPost && (
+            <div
+              className="shrink-0 flex items-center justify-around px-6 py-5 border-t border-white/10"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2">
+                <Heart size={20} className="text-white/60" />
+                <span className="text-sm font-semibold text-white">{selectedPost.likes_count ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageSquare size={20} className="text-white/60" />
+                <span className="text-sm font-semibold text-white">{selectedPost.comments_count ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Share2 size={20} className="text-white/60" />
+                <span className="text-sm font-semibold text-white">Share</span>
+              </div>
+            </div>
           )}
         </div>
       )}
