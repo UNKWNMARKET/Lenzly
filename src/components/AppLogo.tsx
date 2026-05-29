@@ -13,7 +13,7 @@ interface AppLogoProps {
 }
 
 export default function AppLogo({ className = 'h-9', variant = 'wordmark' }: AppLogoProps) {
-  const src = variant === 'icon' ? '/lenzly-icon.svg' : '/lenzly-wordmark.svg'
+  const src = variant === 'icon' ? '/logo.svg' : '/lenzly-wordmark.svg'
   return (
     <img
       src={src}
