@@ -77,16 +77,25 @@ export function spotMatchesLocation(
   const spotName = (spot.name ?? '').toLowerCase()
   const spotLocation = (spot.location ?? '').toLowerCase()
 
-  const stateMatch = loc.state
-    ? spotState === loc.state.toLowerCase() ||
-      spotLocation.includes(loc.state.toLowerCase()) ||
-      spotName.includes(loc.state.toLowerCase())
+  // State match: prefer the explicit state field. Only fall back to the
+  // location string (e.g. "New York, NY") so we don't loosely match a state
+  // abbreviation that happens to appear inside a spot name.
+  const ls = loc.state?.toLowerCase()
+  const stateMatch = ls
+    ? spotState === ls ||
+      spotLocation.endsWith(`, ${ls}`) ||
+      spotLocation.endsWith(` ${ls}`) ||
+      spotLocation === ls
     : true
 
-  const cityMatch = loc.city
-    ? spotCity.includes(loc.city.toLowerCase()) ||
-      spotLocation.includes(loc.city.toLowerCase()) ||
-      spotName.includes(loc.city.toLowerCase())
+  // City match: bidirectional contains so "new york city" matches "new york"
+  // and vice-versa.
+  const lc = loc.city?.toLowerCase()
+  const cityMatch = lc
+    ? spotCity.includes(lc) ||
+      (spotCity.length > 2 && lc.includes(spotCity)) ||
+      spotLocation.includes(lc) ||
+      spotName.includes(lc)
     : true
 
   return stateMatch && cityMatch

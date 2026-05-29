@@ -161,6 +161,21 @@ export default function Explore() {
       )
     }), [activeCarState, query, locQuery])
 
+  // Generic photoSpots filter used by "AI-Discovered" and "All Photo Spots"
+  const matchPhotoSpot = (s: typeof photoSpots[number]) => {
+    if (!query) return true
+    if (locQuery.isLocationSearch) {
+      return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+    }
+    return (
+      s.name.toLowerCase().includes(query.toLowerCase()) ||
+      s.city.toLowerCase().includes(query.toLowerCase()) ||
+      (s.state ?? '').toLowerCase().includes(query.toLowerCase())
+    )
+  }
+  const filteredAiSpots = useMemo(() => photoSpots.filter(s => s.aiDiscovered && matchPhotoSpot(s)), [query, locQuery])
+  const filteredAllSpots = useMemo(() => photoSpots.filter(matchPhotoSpot), [query, locQuery])
+
   const showArchitecture = activeFilter === 'All' || activeFilter === 'Architecture'
   const showFeed = activeFilter === 'All' || !['Architecture', 'Florida', 'Engagement', 'Car'].includes(activeFilter)
   const showFlorida = activeFilter === 'All' || activeFilter === 'Florida'
@@ -324,7 +339,7 @@ export default function Explore() {
         )}
 
         {/* ── AI Photo Spots ── */}
-        {activeFilter === 'All' && (
+        {activeFilter === 'All' && filteredAiSpots.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -334,7 +349,7 @@ export default function Explore() {
               <button className="text-[11px] text-gold font-medium">View All</button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {photoSpots.filter(s => s.aiDiscovered).map(spot => (
+              {filteredAiSpots.map(spot => (
                 <LocationSpotCard key={spot.id} spot={spot} />
               ))}
             </div>
@@ -575,14 +590,14 @@ export default function Explore() {
         </div>
 
         {/* ── All Photo Spots ── */}
-        {activeFilter === 'All' && (
+        {activeFilter === 'All' && filteredAllSpots.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-3">
               <MapPin size={14} className="text-white/40" />
               <h2 className="text-sm font-bold text-white tracking-wide">All Photo Spots</h2>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {photoSpots.map(spot => (
+              {filteredAllSpots.map(spot => (
                 <LocationSpotCard key={spot.id} spot={spot} />
               ))}
             </div>
