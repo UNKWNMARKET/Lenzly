@@ -27,9 +27,28 @@ const US_STATES = [
 
 const allFilters = [...specialtyFilters, 'Architecture', 'Florida', 'Engagement', 'Car']
 
+// Build a deduped list of all searchable "City, ST" locations from every data source
+const LOCATION_INDEX: { label: string; city: string; state: string }[] = (() => {
+  const seen = new Set<string>()
+  const out: { label: string; city: string; state: string }[] = []
+  const add = (city?: string, state?: string) => {
+    if (!city || !state) return
+    const label = `${city}, ${state}`
+    if (seen.has(label)) return
+    seen.add(label)
+    out.push({ label, city, state })
+  }
+  architectureSpots.forEach(s => add(s.city, s.state))
+  allFloridaSpots.forEach(s => add(s.city, 'FL'))
+  engagementSpotData.forEach(s => add(s.city, s.state))
+  carSpotData.forEach(s => add(s.city, s.state))
+  return out.sort((a, b) => a.label.localeCompare(b.label))
+})()
+
 export default function Explore() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [activeState, setActiveState] = useState('All')
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
@@ -37,6 +56,15 @@ export default function Explore() {
   const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(50)
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
   const locQuery = useLocationSearch(query)
+
+  // Live location suggestions as the user types
+  const locationSuggestions = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (q.length < 2) return []
+    return LOCATION_INDEX
+      .filter(l => l.label.toLowerCase().includes(q) || l.city.toLowerCase().includes(q))
+      .slice(0, 7)
+  }, [query])
 
   const filteredLiveSpots = useMemo(() =>
     liveSpots.filter(s => {
@@ -135,17 +163,39 @@ export default function Explore() {
 
         {/* Search */}
         <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 z-10" />
           <input
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); setShowSuggestions(true) }}
+            onFocus={() => setShowSuggestions(true)}
             placeholder="Search 'Miami FL', 'New York', 'Chicago IL'..."
             className="w-full bg-lenz-card border border-lenz-border rounded-full pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2">
+            <button onClick={() => { setQuery(''); setShowSuggestions(false) }} className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
               <X size={14} className="text-white/30 hover:text-white/60" />
             </button>
+          )}
+
+          {/* Clickable location suggestions */}
+          {showSuggestions && locationSuggestions.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 mt-1.5 bg-lenz-card border border-lenz-border rounded-2xl overflow-hidden shadow-xl shadow-black/50 max-h-72 overflow-y-auto">
+              {locationSuggestions.map(s => (
+                <button
+                  key={s.label}
+                  onClick={() => { setQuery(s.label); setShowSuggestions(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors border-b border-lenz-border/40 last:border-0"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gold/15 flex items-center justify-center shrink-0">
+                    <MapPin size={13} className="text-gold" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-white">{s.city}</p>
+                    <p className="text-[10px] text-white/40">{s.state}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
         {/* Location detection pill */}

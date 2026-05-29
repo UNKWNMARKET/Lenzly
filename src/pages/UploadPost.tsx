@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { Camera, MapPin, X, Image, ChevronDown } from 'lucide-react'
+import { MapPin, X, Image, ChevronDown, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Geolocation } from '@capacitor/geolocation'
+import LocationAutocomplete from '@/components/LocationAutocomplete'
 
 const CATEGORIES = ['Portrait', 'Landscape', 'Street', 'Wedding', 'Concert', 'Commercial', 'Travel', 'Nature', 'Fashion', 'Other']
 
@@ -137,7 +138,7 @@ export default function UploadPost() {
         const cityState = locParts[locParts.length - 1] ?? ''
         const cityStateParts = cityState.split(' ').filter(Boolean)
         const state = cityStateParts[cityStateParts.length - 1] ?? ''
-        const city = cityStateParts.slice(0, -1).join(' ') || locParts[0] ?? ''
+        const city = cityStateParts.slice(0, -1).join(' ') || (locParts[0] ?? '')
 
         // Check if spot already exists nearby (within ~0.01 degrees ≈ 1km)
         const { data: existing } = await supabase
@@ -237,15 +238,16 @@ export default function UploadPost() {
 
         {/* Location */}
         <div className="space-y-2">
-          <div className="relative">
-            <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-            <input
-              type="text"
-              placeholder="Location name (e.g. Brooklyn Bridge, NYC)"
-              value={locationName}
-              onChange={e => setLocationName(e.target.value)}
-              className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
-            />
+          <LocationAutocomplete
+            value={locationName}
+            onChange={setLocationName}
+          />
+          {/* Format hint */}
+          <div className="flex items-start gap-1.5 px-1">
+            <Info size={11} className="text-gold/50 mt-0.5 shrink-0" />
+            <p className="text-[10px] text-white/30 leading-relaxed">
+              Add the <span className="text-white/50">city &amp; state</span> (e.g. "Wynwood Walls, Miami FL") so others can find this spot when they search that area.
+            </p>
           </div>
           <button
             onClick={getLocation}
