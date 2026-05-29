@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'wouter'
 import {
   ChevronLeft, Star, MapPin, CheckCircle, Camera,
-  MessageCircle, Share2, X, Globe, AtSign
+  MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck
 } from 'lucide-react'
 import { photographers } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
 import { formatCount } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 const allPhotographers = [...photographers, ...floridaPhotographers]
 
@@ -27,6 +28,43 @@ export default function PhotographerProfile() {
     details: '',
   })
   const [sending, setSending] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+
+  // Check if the current user already follows this photographer
+  useEffect(() => {
+    if (!user || !id) return
+    supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', id)
+      .maybeSingle()
+      .then(({ data }) => setIsFollowing(!!data))
+  }, [user, id])
+
+  const toggleFollow = async () => {
+    if (!user) { navigate('/auth/login'); return }
+    if (!id) return
+    setFollowLoading(true)
+    if (isFollowing) {
+      await supabase.from('follows').delete()
+        .eq('follower_id', user.id).eq('following_id', id)
+      setIsFollowing(false)
+    } else {
+      const { error } = await supabase.from('follows').insert({
+        follower_id: user.id,
+        following_id: id,
+      })
+      if (!error) {
+        setIsFollowing(true)
+        toast.success(`Following ${p?.name.split(' ')[0] ?? ''}`)
+      } else {
+        toast.error('Could not follow. Try again.')
+      }
+    }
+    setFollowLoading(false)
+  }
 
   const p = allPhotographers.find(ph => ph.id === id)
 
@@ -110,6 +148,18 @@ export default function PhotographerProfile() {
 
           {/* CTA buttons */}
           <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={toggleFollow}
+              disabled={followLoading}
+              className={`text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 ${
+                isFollowing
+                  ? 'bg-lenz-card border border-gold/40 text-gold'
+                  : 'bg-gold text-lenz-bg'
+              }`}
+            >
+              {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
             <button
               onClick={handleMessageStart}
               className="btn-ghost text-xs py-2 px-4 flex items-center gap-1.5"

@@ -18,6 +18,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
+  const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
+  const [followingIds, setFollowingIds] = useState<string[]>([])
 
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
@@ -28,6 +30,18 @@ export default function Home() {
     if (data && data.length > 0) setRealPosts(data)
     setLoading(false)
   }, [])
+
+  // Load who the current user follows
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', user.id)
+      .then(({ data }) => {
+        if (data) setFollowingIds(data.map(f => f.following_id))
+      })
+  }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
 
@@ -85,7 +99,10 @@ export default function Home() {
   }, [user])
 
   // Use real posts if available, otherwise fall back to mock data
-  const hasPosts = realPosts.length > 0
+  const visiblePosts = feedTab === 'following'
+    ? realPosts.filter(p => followingIds.includes(p.user_id))
+    : realPosts
+  const hasPosts = visiblePosts.length > 0
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
@@ -127,6 +144,24 @@ export default function Home() {
         <StoriesBar />
       </div>
 
+      {/* Feed tabs: For You / Following */}
+      <div className="flex border-b border-lenz-border">
+        {(['foryou', 'following'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setFeedTab(tab)}
+            className={`flex-1 py-3 text-xs font-semibold tracking-wider uppercase transition-colors relative ${
+              feedTab === tab ? 'text-gold' : 'text-white/40'
+            }`}
+          >
+            {tab === 'foryou' ? 'For You' : 'Following'}
+            {feedTab === tab && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gold rounded-full" />
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Business Banner */}
       <BusinessBanner />
 
@@ -148,11 +183,23 @@ export default function Home() {
           ))
         ) : hasPosts ? (
           // Real posts from Supabase — render as simple cards
-          realPosts.map(post => (
+          visiblePosts.map(post => (
             <RealPostCard key={post.id} post={post} />
           ))
+        ) : feedTab === 'following' ? (
+          // Following tab with no followed posts yet
+          <div className="text-center py-16 px-8">
+            <p className="text-white/40 text-sm font-medium">No posts from people you follow yet</p>
+            <p className="text-white/25 text-xs mt-2">Follow photographers to see their photos and locations here.</p>
+            <button
+              onClick={() => navigate('/find')}
+              className="mt-4 text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+            >
+              Find photographers
+            </button>
+          </div>
         ) : (
-          // Mock posts fallback
+          // Mock posts fallback (For You with no real posts)
           mockPosts.map(post => (
             <PostCard key={post.id} post={post} />
           ))
