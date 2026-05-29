@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { MapPin, Loader } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { searchUSCities } from '@/data/usCities'
 
 export type LocationSuggestion = {
   name: string
@@ -9,25 +10,6 @@ export type LocationSuggestion = {
   display: string
   source: 'spot' | 'city'
 }
-
-// Common US cities for quick suggestions (city, state)
-const POPULAR_CITIES: { city: string; state: string }[] = [
-  { city: 'Miami', state: 'FL' }, { city: 'Miami Beach', state: 'FL' },
-  { city: 'Orlando', state: 'FL' }, { city: 'Tampa', state: 'FL' },
-  { city: 'Jacksonville', state: 'FL' }, { city: 'Key West', state: 'FL' },
-  { city: 'Fort Lauderdale', state: 'FL' }, { city: 'St. Augustine', state: 'FL' },
-  { city: 'New York', state: 'NY' }, { city: 'Brooklyn', state: 'NY' },
-  { city: 'Los Angeles', state: 'CA' }, { city: 'San Francisco', state: 'CA' },
-  { city: 'San Diego', state: 'CA' }, { city: 'Chicago', state: 'IL' },
-  { city: 'Houston', state: 'TX' }, { city: 'Austin', state: 'TX' },
-  { city: 'Dallas', state: 'TX' }, { city: 'Seattle', state: 'WA' },
-  { city: 'Portland', state: 'OR' }, { city: 'Denver', state: 'CO' },
-  { city: 'Las Vegas', state: 'NV' }, { city: 'Phoenix', state: 'AZ' },
-  { city: 'Nashville', state: 'TN' }, { city: 'New Orleans', state: 'LA' },
-  { city: 'Atlanta', state: 'GA' }, { city: 'Boston', state: 'MA' },
-  { city: 'Washington', state: 'DC' }, { city: 'Philadelphia', state: 'PA' },
-  { city: 'Charleston', state: 'SC' }, { city: 'Savannah', state: 'GA' },
-]
 
 type Props = {
   value: string
@@ -57,8 +39,6 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
 
     setLoading(true)
     const timer = setTimeout(async () => {
-      const lower = q.toLowerCase()
-
       // 1. Match existing community spots from DB
       const { data: spots } = await supabase
         .from('photo_spots')
@@ -74,21 +54,14 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
         source: 'spot' as const,
       }))
 
-      // 2. Match popular cities
-      const citySuggestions: LocationSuggestion[] = POPULAR_CITIES
-        .filter(c =>
-          c.city.toLowerCase().includes(lower) ||
-          `${c.city} ${c.state}`.toLowerCase().includes(lower) ||
-          c.state.toLowerCase() === lower
-        )
-        .slice(0, 6)
-        .map(c => ({
-          name: c.city,
-          city: c.city,
-          state: c.state,
-          display: `${c.city}, ${c.state}`,
-          source: 'city' as const,
-        }))
+      // 2. Match against the full US cities database (all 50 states + DC)
+      const citySuggestions: LocationSuggestion[] = searchUSCities(q, 8).map(c => ({
+        name: c.city,
+        city: c.city,
+        state: c.state,
+        display: `${c.city}, ${c.state}`,
+        source: 'city' as const,
+      }))
 
       // Merge, dedupe by display
       const seen = new Set<string>()

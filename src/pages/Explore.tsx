@@ -13,6 +13,7 @@ const allFloridaSpots = [...floridaSpots, ...floridaSpots200]
 import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
 import { useLiveSpots } from '@/hooks/useLiveSpots'
 import { useLocationSearch, spotMatchesLocation } from '@/hooks/useLocationSearch'
+import { searchUSCities } from '@/data/usCities'
 import { cn } from '@/lib/utils'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
@@ -57,13 +58,25 @@ export default function Explore() {
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
   const locQuery = useLocationSearch(query)
 
-  // Live location suggestions as the user types
+  // Live location suggestions as the user types — every US city + spot locations
   const locationSuggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (q.length < 2) return []
-    return LOCATION_INDEX
-      .filter(l => l.label.toLowerCase().includes(q) || l.city.toLowerCase().includes(q))
-      .slice(0, 7)
+    const seen = new Set<string>()
+    const out: { label: string; city: string; state: string }[] = []
+
+    // Spot-data locations first (these have actual content)
+    for (const l of LOCATION_INDEX) {
+      if (l.label.toLowerCase().includes(q) || l.city.toLowerCase().includes(q)) {
+        if (!seen.has(l.label)) { seen.add(l.label); out.push(l) }
+      }
+    }
+    // Then the full US cities database
+    for (const c of searchUSCities(query, 10)) {
+      const label = `${c.city}, ${c.state}`
+      if (!seen.has(label)) { seen.add(label); out.push({ label, city: c.city, state: c.state }) }
+    }
+    return out.slice(0, 8)
   }, [query])
 
   const filteredLiveSpots = useMemo(() =>
