@@ -89,13 +89,13 @@ export default function Settings() {
             icon={Star}
             label="Upgrade to Pro"
             sublabel="Get verified, appear in brand searches"
-            onPress={() => navigate('/brands')}
+            onPress={() => navigate('/pro')}
           />
           <Row
             icon={CreditCard}
             label="Subscription"
-            sublabel="Free plan · Upgrade for more features"
-            onPress={() => navigate('/brands')}
+            sublabel="$5/month · Manage your Pro plan"
+            onPress={() => navigate('/pro')}
           />
         </div>
 
