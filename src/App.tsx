@@ -47,15 +47,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const [, navigate] = useLocation()
   if (loading) return (
     <div className="min-h-screen bg-lenz-bg flex items-center justify-center">
-      <img src="/logo.png" alt="LENZLY" className="h-12 w-auto animate-pulse"
-        onError={e => {
-          e.currentTarget.style.display = 'none'
-          const span = document.createElement('span')
-          span.className = 'text-[#C9A84C] font-bold tracking-widest text-sm animate-pulse'
-          span.textContent = 'LENZLY'
-          e.currentTarget.parentNode?.appendChild(span)
-        }}
-      />
+      <img src="/lenzly-wordmark.svg" alt="LENZLY" className="h-10 w-auto animate-pulse" />
     </div>
   )
   if (!user) {

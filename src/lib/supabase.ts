@@ -3,7 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'https://zdmtiyyfljzwveaowjxq.supabase.co'
 const supabaseAnonKey = 'sb_publishable_1QS2OxeITYGN0E8d1QNeQw_DHRuVByw'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,       // keep session in localStorage across restarts
+    autoRefreshToken: true,     // silently renew token before it expires
+    detectSessionInUrl: false,  // required for Capacitor / WKWebView
+    storageKey: 'lenzly_auth',  // consistent storage key
+  },
+})
 
 export type Profile = {
   id: string
