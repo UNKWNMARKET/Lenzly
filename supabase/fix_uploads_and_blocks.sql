@@ -90,7 +90,38 @@ on public.photo_spots for update to authenticated
 using ( true );
 
 -- ----------------------------------------------------------------------------
--- 4. FOLLOWS: make sure follow / unfollow works under RLS
+-- 4. BLOCKS: block unwanted users/followers
+--    (created BEFORE follows because the follows policy references it)
+-- ----------------------------------------------------------------------------
+create table if not exists public.blocks (
+  id          uuid primary key default gen_random_uuid(),
+  blocker_id  uuid not null references auth.users(id) on delete cascade,
+  blocked_id  uuid not null references auth.users(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  unique (blocker_id, blocked_id)
+);
+
+alter table public.blocks enable row level security;
+
+drop policy if exists "blocks_owner_read"   on public.blocks;
+drop policy if exists "blocks_owner_insert"  on public.blocks;
+drop policy if exists "blocks_owner_delete"  on public.blocks;
+
+-- You can only see, create, and remove your own blocks
+create policy "blocks_owner_read"
+on public.blocks for select to authenticated
+using ( auth.uid() = blocker_id );
+
+create policy "blocks_owner_insert"
+on public.blocks for insert to authenticated
+with check ( auth.uid() = blocker_id );
+
+create policy "blocks_owner_delete"
+on public.blocks for delete to authenticated
+using ( auth.uid() = blocker_id );
+
+-- ----------------------------------------------------------------------------
+-- 5. FOLLOWS: make sure follow / unfollow works under RLS
 -- ----------------------------------------------------------------------------
 create table if not exists public.follows (
   id           uuid primary key default gen_random_uuid(),
@@ -125,36 +156,6 @@ with check (
 create policy "follows_self_delete"
 on public.follows for delete to authenticated
 using ( auth.uid() = follower_id or auth.uid() = following_id );
-
--- ----------------------------------------------------------------------------
--- 5. BLOCKS: block unwanted users/followers
--- ----------------------------------------------------------------------------
-create table if not exists public.blocks (
-  id          uuid primary key default gen_random_uuid(),
-  blocker_id  uuid not null references auth.users(id) on delete cascade,
-  blocked_id  uuid not null references auth.users(id) on delete cascade,
-  created_at  timestamptz not null default now(),
-  unique (blocker_id, blocked_id)
-);
-
-alter table public.blocks enable row level security;
-
-drop policy if exists "blocks_owner_read"   on public.blocks;
-drop policy if exists "blocks_owner_insert"  on public.blocks;
-drop policy if exists "blocks_owner_delete"  on public.blocks;
-
--- You can only see, create, and remove your own blocks
-create policy "blocks_owner_read"
-on public.blocks for select to authenticated
-using ( auth.uid() = blocker_id );
-
-create policy "blocks_owner_insert"
-on public.blocks for insert to authenticated
-with check ( auth.uid() = blocker_id );
-
-create policy "blocks_owner_delete"
-on public.blocks for delete to authenticated
-using ( auth.uid() = blocker_id );
 
 -- ----------------------------------------------------------------------------
 -- 6. When you block someone, drop any follow relationship in BOTH directions
