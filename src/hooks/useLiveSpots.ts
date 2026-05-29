@@ -6,6 +6,9 @@ export type LiveSpot = {
   name: string
   lat: number
   lng: number
+  city: string | null
+  state: string | null
+  location_name: string | null
   category: string
   cover_image_url: string | null
   photo_count: number

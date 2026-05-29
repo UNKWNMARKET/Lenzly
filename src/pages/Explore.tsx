@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
@@ -12,6 +12,7 @@ import { floridaSpots200 } from '@/data/floridaSpots200'
 const allFloridaSpots = [...floridaSpots, ...floridaSpots200]
 import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
 import { useLiveSpots } from '@/hooks/useLiveSpots'
+import { useLocationSearch, spotMatchesLocation } from '@/hooks/useLocationSearch'
 import { cn } from '@/lib/utils'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
@@ -33,50 +34,91 @@ export default function Explore() {
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
-  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(12)
+  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(50)
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
+  const locQuery = useLocationSearch(query)
 
-  const filteredPosts = posts.filter(p => {
+  const filteredLiveSpots = useMemo(() =>
+    liveSpots.filter(s => {
+      if (!locQuery.isLocationSearch) {
+        return !query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+          s.category.toLowerCase().includes(query.toLowerCase())
+      }
+      return spotMatchesLocation(
+        { name: s.name, city: (s as any).city, state: (s as any).state, location: (s as any).location_name },
+        locQuery
+      )
+    }), [liveSpots, locQuery, query])
+
+  const filteredPosts = useMemo(() => posts.filter(p => {
     const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
       ? activeFilter !== 'Architecture'
       : p.category === activeFilter
-    const matchesQuery = !query ||
+    if (!query) return matchesFilter
+    if (locQuery.isLocationSearch) {
+      return matchesFilter && spotMatchesLocation({ location: p.location }, locQuery)
+    }
+    const matchesQuery =
       p.caption.toLowerCase().includes(query.toLowerCase()) ||
       p.location.toLowerCase().includes(query.toLowerCase()) ||
       p.photographer.name.toLowerCase().includes(query.toLowerCase())
     return matchesFilter && matchesQuery
-  })
+  }), [activeFilter, query, locQuery])
 
   const filteredArchSpots = useMemo(() => {
-    return architectureSpots.filter(s =>
-      (activeState === 'All' || s.state === activeState) &&
-      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+    return architectureSpots.filter(s => {
+      const stateOk = activeState === 'All' || s.state === activeState
+      if (!query) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
         (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()) ||
-        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase()))
-    )
-  }, [activeState, query])
+        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase())
+      )
+    })
+  }, [activeState, query, locQuery])
 
   const filteredFlSpots = useMemo(() =>
-    allFloridaSpots.filter(s =>
-      (activeFlCity === 'All' || s.city === activeFlCity) &&
-      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
+    allFloridaSpots.filter(s => {
+      const cityOk = activeFlCity === 'All' || s.city === activeFlCity
+      if (!query) return cityOk
+      if (locQuery.isLocationSearch) {
+        return cityOk && spotMatchesLocation({ city: s.city, state: 'FL', name: s.name }, locQuery)
+      }
+      return cityOk && (
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
         s.city.toLowerCase().includes(query.toLowerCase()) ||
-        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase()))
-    ), [activeFlCity, query])
+        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase())
+      )
+    }), [activeFlCity, query, locQuery])
 
   const filteredEngSpots = useMemo(() =>
-    engagementSpotData.filter(s =>
-      (activeEngState === 'All' || s.state === activeEngState) &&
-      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()))
-    ), [activeEngState, query])
+    engagementSpotData.filter(s => {
+      const stateOk = activeEngState === 'All' || s.state === activeEngState
+      if (!query) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase())
+      )
+    }), [activeEngState, query, locQuery])
 
   const filteredCarSpots = useMemo(() =>
-    carSpotData.filter(s =>
-      (activeCarState === 'All' || s.state === activeCarState) &&
-      (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()))
-    ), [activeCarState, query])
+    carSpotData.filter(s => {
+      const stateOk = activeCarState === 'All' || s.state === activeCarState
+      if (!query) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase())
+      )
+    }), [activeCarState, query, locQuery])
 
   const showArchitecture = activeFilter === 'All' || activeFilter === 'Architecture'
   const showFeed = activeFilter === 'All' || !['Architecture', 'Florida', 'Engagement', 'Car'].includes(activeFilter)
@@ -97,10 +139,26 @@ export default function Explore() {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search locations, architecture, photographers..."
-            className="w-full bg-lenz-card border border-lenz-border rounded-full pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
+            placeholder="Search 'Miami FL', 'New York', 'Chicago IL'..."
+            className="w-full bg-lenz-card border border-lenz-border rounded-full pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
           />
+          {query && (
+            <button onClick={() => setQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2">
+              <X size={14} className="text-white/30 hover:text-white/60" />
+            </button>
+          )}
         </div>
+        {/* Location detection pill */}
+        {locQuery.isLocationSearch && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/30 rounded-full px-3 py-1">
+              <MapPin size={11} className="text-gold" />
+              <span className="text-[11px] text-gold font-medium">
+                Showing results for: {locQuery.city ? `${locQuery.city}${locQuery.state ? `, ${locQuery.state}` : ''}` : locQuery.state}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Category filter chips */}
         <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
@@ -136,7 +194,7 @@ export default function Explore() {
                 <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
                 {!liveSpotsLoading && (
                   <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
-                    {liveSpots.length} spots
+                    {filteredLiveSpots.length} spots
                   </span>
                 )}
               </div>
@@ -152,9 +210,13 @@ export default function Explore() {
                   <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
                 ))}
               </div>
+            ) : filteredLiveSpots.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-white/20 text-sm">No community spots found for this location.</p>
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {liveSpots.map(spot => (
+                {filteredLiveSpots.map(spot => (
                   <div
                     key={spot.id}
                     className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer group"

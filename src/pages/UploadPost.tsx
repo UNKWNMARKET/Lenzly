@@ -117,7 +117,7 @@ export default function UploadPost() {
         .map(t => t.toLowerCase())
 
       // 4. Insert post record
-      const { error: insertError } = await supabase.from('posts').insert({
+      const { data: postData, error: insertError } = await supabase.from('posts').insert({
         user_id: user.id,
         image_url: publicUrl,
         caption: caption.trim(),
@@ -126,9 +126,51 @@ export default function UploadPost() {
         lng,
         tags: parsedTags,
         category,
-      })
+      }).select().single()
 
       if (insertError) throw insertError
+
+      // 5. Auto-save location to photo_spots so everyone can discover it
+      if (locationName.trim() && lat && lng) {
+        // Parse city/state from location name (e.g. "Wynwood, Miami FL")
+        const locParts = locationName.trim().split(',').map(p => p.trim())
+        const cityState = locParts[locParts.length - 1] ?? ''
+        const cityStateParts = cityState.split(' ').filter(Boolean)
+        const state = cityStateParts[cityStateParts.length - 1] ?? ''
+        const city = cityStateParts.slice(0, -1).join(' ') || locParts[0] ?? ''
+
+        // Check if spot already exists nearby (within ~0.01 degrees ≈ 1km)
+        const { data: existing } = await supabase
+          .from('photo_spots')
+          .select('id, photo_count, cover_image_url')
+          .ilike('name', `%${locationName.trim().split(',')[0]}%`)
+          .limit(1)
+
+        if (existing && existing.length > 0) {
+          // Update existing spot — increment count, update cover if none
+          await supabase.from('photo_spots').update({
+            photo_count: (existing[0].photo_count ?? 0) + 1,
+            cover_image_url: existing[0].cover_image_url || publicUrl,
+            updated_at: new Date().toISOString(),
+          }).eq('id', existing[0].id)
+        } else {
+          // Create new spot from this post
+          await supabase.from('photo_spots').insert({
+            name: locationName.trim().split(',')[0],
+            lat,
+            lng,
+            city: city || null,
+            state: state || null,
+            location_name: locationName.trim(),
+            category,
+            cover_image_url: publicUrl,
+            photo_count: 1,
+            contributor_count: 1,
+            ai_score: 50,
+            tags: parsedTags,
+          })
+        }
+      }
 
       toast.success('Photo posted!')
       navigate('/')
