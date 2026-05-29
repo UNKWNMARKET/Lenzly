@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Bell, MessageCircle } from 'lucide-react'
+import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
 import PostCard from '@/components/PostCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import { posts as mockPosts } from '@/data/mockData'
 import { supabase, Post } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Home() {
+  const [, navigate] = useLocation()
+  const { user } = useAuth()
   const [realPosts, setRealPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [unreadNotifs, setUnreadNotifs] = useState(0)
+  const [unreadMsgs, setUnreadMsgs] = useState(0)
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -33,6 +39,45 @@ export default function Home() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Unread counts
+  useEffect(() => {
+    if (!user) return
+    const fetchCounts = async () => {
+      const { count: nc } = await supabase.from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id).eq('read', false)
+      setUnreadNotifs(nc ?? 0)
+
+      // Count conversations with messages newer than last_read_at
+      const { data: parts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id)
+      if (parts) {
+        let unread = 0
+        for (const p of parts) {
+          const query = supabase.from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', p.conversation_id)
+            .neq('sender_id', user.id)
+          if (p.last_read_at) query.gt('sent_at', p.last_read_at)
+          const { count } = await query
+          if ((count ?? 0) > 0) unread++
+        }
+        setUnreadMsgs(unread)
+      }
+    }
+    fetchCounts()
+
+    const ch = supabase.channel('home_badges')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => setUnreadNotifs(n => n + 1))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => fetchCounts())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user])
+
   // Use real posts if available, otherwise fall back to mock data
   const hasPosts = realPosts.length > 0
 
@@ -45,12 +90,21 @@ export default function Home() {
           <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase mt-0.5">Photography Platform</p>
         </div>
         <div className="flex items-center gap-1">
-          <button className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
+          <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <Bell size={20} className="text-white/60" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gold border border-lenz-bg" />
+            {unreadNotifs > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5">
+                {unreadNotifs > 9 ? '9+' : unreadNotifs}
+              </span>
+            )}
           </button>
-          <button className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
+          <button onClick={() => navigate('/messages')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <MessageCircle size={20} className="text-white/60" />
+            {unreadMsgs > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5">
+                {unreadMsgs > 9 ? '9+' : unreadMsgs}
+              </span>
+            )}
           </button>
         </div>
       </header>

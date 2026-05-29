@@ -18,6 +18,9 @@ import SignUp from './pages/auth/SignUp'
 import UploadPost from './pages/UploadPost'
 import EditProfile from './pages/EditProfile'
 import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
+import Messages from './pages/Messages'
+import Chat from './pages/Chat'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -68,6 +71,9 @@ function Router() {
       <Route path="/upload">{() => <ProtectedRoute component={UploadPost} />}</Route>
       <Route path="/profile/edit">{() => <ProtectedRoute component={EditProfile} />}</Route>
       <Route path="/settings">{() => <ProtectedRoute component={Settings} />}</Route>
+      <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
+      <Route path="/messages">{() => <ProtectedRoute component={Messages} />}</Route>
+      <Route path="/chat/:id">{() => <ProtectedRoute component={Chat} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
@@ -119,7 +125,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup']
-  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings') {
+  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/')) {
     return null
   }
   return <BottomNav />
