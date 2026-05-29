@@ -3,6 +3,7 @@ import { MapPin, Star, Camera, Clock, Zap, Navigation } from 'lucide-react'
 import { formatCount } from '@/lib/utils'
 import type { PhotoSpot } from '@/data/mockData'
 import SpotDetailModal from './SpotDetailModal'
+import SmartSpotImage from './SmartSpotImage'
 
 interface Props {
   spot: PhotoSpot
@@ -18,11 +19,11 @@ export default function LocationSpotCard({ spot }: Props) {
         style={{ aspectRatio: '3/4' }}
         onClick={() => setOpen(true)}
       >
-        <img
-          src={spot.image}
+        <SmartSpotImage
+          name={`${spot.name} ${spot.city ?? ''} ${spot.state ?? ''}`.trim()}
+          fallback={spot.image}
           alt={spot.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
         />
 
         {/* Gradient overlay */}
