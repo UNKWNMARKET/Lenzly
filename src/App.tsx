@@ -21,6 +21,7 @@ import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import Messages from './pages/Messages'
 import Chat from './pages/Chat'
+import PhotographerProfile from './pages/PhotographerProfile'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
       <Route path="/messages">{() => <ProtectedRoute component={Messages} />}</Route>
       <Route path="/chat/:id">{() => <ProtectedRoute component={Chat} />}</Route>
+      <Route path="/photographer/:id">{() => <ProtectedRoute component={PhotographerProfile} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
@@ -133,7 +135,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup']
-  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/')) {
+  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/')) {
     return null
   }
   return <BottomNav />

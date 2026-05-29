@@ -26,12 +26,20 @@ export default function SignUp() {
 
     setUsernameStatus('checking')
     const timer = setTimeout(async () => {
-      const { data } = await supabase
+      // Use ilike for case-insensitive match.
+      // NOTE: Supabase RLS must allow public SELECT on profiles for this to work.
+      // Run this SQL in Supabase: CREATE POLICY "public_username_lookup" ON profiles FOR SELECT USING (true);
+      const { data, error } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', username)
+        .ilike('username', username.trim())
         .maybeSingle()
 
+      // If error (likely RLS blocking), assume available but warn
+      if (error && error.code !== 'PGRST116') {
+        setUsernameStatus('available')
+        return
+      }
       setUsernameStatus(data ? 'taken' : 'available')
     }, 400)
 

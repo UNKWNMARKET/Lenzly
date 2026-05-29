@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, 
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
+import { useLocation } from 'wouter'
 
 const allPhotographers = [...photographers, ...floridaPhotographers]
 import { cn, formatCount } from '@/lib/utils'
@@ -22,6 +23,7 @@ async function loadLeaflet() {
 }
 
 function PhotographerMapPin({ photographer: p }: { photographer: (typeof photographers)[0] }) {
+  const [, navigate] = useLocation()
   const icon = L?.divIcon({
     html: `
       <div style="
@@ -57,7 +59,12 @@ function PhotographerMapPin({ photographer: p }: { photographer: (typeof photogr
             <span className="text-xs text-white">{p.rating}</span>
             <span className="text-xs text-white/30 ml-1">{p.priceRange.split('–')[0]}</span>
           </div>
-          <button className="w-full btn-primary text-xs py-1.5">Hire</button>
+          <button
+            className="w-full btn-primary text-xs py-1.5"
+            onClick={() => navigate(`/photographer/${p.id}`)}
+          >
+            View Profile
+          </button>
         </div>
       </Popup>
     </Marker>
@@ -72,9 +79,20 @@ interface Filters {
 }
 
 export default function FindPhotographer() {
+  const [location] = useLocation()
   const [view, setView] = useState<'list' | 'map'>('list')
+
+  // Read specialty from URL query param (e.g. /find?specialty=Portrait)
+  const urlSpecialty = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const s = params.get('specialty')
+      return s && specialtyFilters.includes(s) ? s : 'All'
+    } catch { return 'All' }
+  })()
+
   const [filters, setFilters] = useState<Filters>({
-    specialty: 'All',
+    specialty: urlSpecialty,
     secondShooter: false,
     availableOnly: false,
     verifiedOnly: false,
