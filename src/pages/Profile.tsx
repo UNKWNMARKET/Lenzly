@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from 'wouter'
@@ -27,8 +29,44 @@ export default function Profile() {
   const [modal, setModal] = useState<ModalType>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [, navigate] = useLocation()
-  const { profile, refreshProfile } = useAuth()
-  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile() } })
+  const { user, profile, refreshProfile } = useAuth()
+
+  // The current user's own uploaded posts (id + image so we can show & delete them)
+  const [myPosts, setMyPosts] = useState<{ id: string; image_url: string }[]>([])
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const loadMyPosts = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('posts')
+      .select('id, image_url')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) setMyPosts(data.filter(p => p.image_url))
+  }, [user])
+
+  useEffect(() => { loadMyPosts() }, [loadMyPosts])
+
+  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile(); await loadMyPosts() } })
+
+  const handleDeletePost = async () => {
+    if (!selectedPostId || !user) return
+    setDeleting(true)
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', selectedPostId)
+      .eq('user_id', user.id) // RLS also enforces this, belt-and-suspenders
+    setDeleting(false)
+    if (error) {
+      toast.error('Could not delete post')
+      return
+    }
+    setMyPosts(prev => prev.filter(p => p.id !== selectedPostId))
+    toast.success('Post deleted')
+    closeModal()
+  }
 
   // Merge real Supabase profile data over mock for the fields that users can edit.
   // Everything else (photos grid, cover, rating, etc.) falls back to mock data
@@ -52,7 +90,7 @@ export default function Profile() {
     // Real counts or zero — never mock numbers
     followers:   profile?.followers_count ?? 0,
     following:   profile?.following_count ?? 0,
-    posts:       profile?.posts_count     ?? 0,
+    posts:       hasRealProfile ? myPosts.length : currentUser.posts,
     pro:         profile?.is_pro          ?? false,
     // These only come from real data — new profiles show nothing
     photos:      hasRealProfile ? [] : currentUser.photos,
@@ -97,6 +135,7 @@ export default function Profile() {
   const closeModal = () => {
     setModal(null)
     setSelectedPhoto(null)
+    setSelectedPostId(null)
   }
 
   return (
@@ -299,7 +338,33 @@ export default function Profile() {
       </div>
 
       {/* Photo Grid */}
-      {tabPhotos[activeTab].length > 0 ? (
+      {activeTab === 'posts' && hasRealProfile ? (
+        myPosts.length > 0 ? (
+          <div className="grid grid-cols-3 gap-0.5 mt-0.5">
+            {myPosts.map(post => (
+              <button
+                key={post.id}
+                onClick={() => { setSelectedPhoto(post.image_url); setSelectedPostId(post.id); setModal('photo') }}
+                className="photo-grid-item relative group overflow-hidden"
+              >
+                <img src={post.image_url} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Camera size={32} className="text-white/10 mb-3" />
+            <p className="text-sm text-white/25">No posts yet</p>
+            <button
+              onClick={() => navigate('/upload')}
+              className="mt-4 text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+            >
+              Share your first photo
+            </button>
+          </div>
+        )
+      ) : tabPhotos[activeTab].length > 0 ? (
         <div className="grid grid-cols-3 gap-0.5 mt-0.5">
           {tabPhotos[activeTab].map((photo, i) => (
             <button
@@ -353,6 +418,17 @@ export default function Profile() {
             className="max-w-full max-h-full object-contain"
             onClick={e => e.stopPropagation()}
           />
+          {/* Delete — only for the user's own real posts */}
+          {selectedPostId && (
+            <button
+              onClick={e => { e.stopPropagation(); handleDeletePost() }}
+              disabled={deleting}
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold px-5 py-3 rounded-full disabled:opacity-50 transition-colors"
+            >
+              <X size={16} />
+              {deleting ? 'Deleting…' : 'Delete post'}
+            </button>
+          )}
         </div>
       )}
 
