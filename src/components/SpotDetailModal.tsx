@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckCircle } from 'lucide-react'
 import { useWeather } from '@/hooks/useWeather'
 import type { PhotoSpot } from '@/data/mockData'
@@ -11,20 +11,29 @@ interface Props {
 
 export default function SpotDetailModal({ spot, onClose }: Props) {
   const { forecast, loading, error } = useWeather(spot.lat, spot.lng)
-  const [showMapPicker, setShowMapPicker] = useState(false)
 
-  const openMaps = (app: 'apple' | 'google') => {
-    const url = app === 'apple'
-      ? `https://maps.apple.com/?daddr=${spot.lat},${spot.lng}&dirflg=d`
-      : `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`
-    window.open(url, '_blank')
-    setShowMapPicker(false)
+  // Lock body scroll while modal is open (fixes iOS WKWebView bounce)
+  useEffect(() => {
+    const prev = document.body.style.cssText
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.width = '100%'
+    document.body.style.top = `-${window.scrollY}px`
+    return () => {
+      const scrollY = parseInt(document.body.style.top || '0') * -1
+      document.body.style.cssText = prev
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
+
+  const navigate = () => {
+    window.open(`https://maps.apple.com/?daddr=${spot.lat},${spot.lng}&dirflg=d`, '_blank')
   }
 
   return (
     <div
       className="fixed inset-0 z-50"
-      style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0 }}
+      style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0, overflow: 'hidden' }}
     >
       {/* Scrim */}
       <div
@@ -32,14 +41,15 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
         onClick={onClose}
       />
 
-      {/* Bottom sheet — absolute-positioned so flex-justify-end doesn't fight iOS scroll */}
+      {/* Bottom sheet */}
       <div
         className="absolute bottom-0 left-0 right-0 bg-lenz-bg rounded-t-3xl animate-slide-up"
         style={{
-          height: '92vh',
+          height: '92dvh',
           overflowY: 'scroll',
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
+          overscrollBehaviorY: 'contain',
+          touchAction: 'pan-y',
         }}
       >
 
@@ -69,7 +79,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div className="px-4 pb-10">
+        <div className="px-4 pb-16" style={{ paddingBottom: 'max(4rem, env(safe-area-inset-bottom, 1rem))' }}>
           {/* Title */}
           <div className="mt-4 mb-1">
             <h2 className="text-xl font-bold text-white leading-tight">{spot.name}</h2>
@@ -216,39 +226,13 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
           </div>
 
           {/* Directions CTA */}
-          {!showMapPicker ? (
-            <button
-              onClick={() => setShowMapPicker(true)}
-              className="mt-5 w-full btn-primary py-4 flex items-center justify-center gap-2 text-sm"
-            >
-              <Navigation size={15} />
-              Navigate to This Spot
-            </button>
-          ) : (
-            <div className="mt-5 space-y-2">
-              <p className="text-[10px] font-semibold text-white/30 tracking-widest uppercase text-center mb-3">Open directions in</p>
-              <button
-                onClick={() => openMaps('apple')}
-                className="w-full py-4 flex items-center justify-center gap-2.5 text-sm font-semibold bg-lenz-card border border-lenz-border rounded-2xl text-white active:scale-[0.98] transition-transform"
-              >
-                <span className="text-base">🍎</span>
-                Apple Maps
-              </button>
-              <button
-                onClick={() => openMaps('google')}
-                className="w-full py-4 flex items-center justify-center gap-2.5 text-sm font-semibold bg-lenz-card border border-lenz-border rounded-2xl text-white active:scale-[0.98] transition-transform"
-              >
-                <span className="text-base">🗺️</span>
-                Google Maps
-              </button>
-              <button
-                onClick={() => setShowMapPicker(false)}
-                className="w-full py-3 text-xs text-white/25 hover:text-white/50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+          <button
+            onClick={navigate}
+            className="mt-5 mb-6 w-full btn-primary py-4 flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-transform"
+          >
+            <Navigation size={15} />
+            Navigate to This Spot
+          </button>
         </div>
       </div>
     </div>
