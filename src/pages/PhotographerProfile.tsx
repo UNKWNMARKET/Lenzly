@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'wouter'
 import {
   ChevronLeft, Star, MapPin, Camera,
-  MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck
+  MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck,
+  MoreVertical, Ban, ShieldOff
 } from 'lucide-react'
 import { photographers } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
@@ -33,6 +34,12 @@ export default function PhotographerProfile() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
   const [realPosts, setRealPosts] = useState<string[]>([])
+  const [isBlocked, setIsBlocked] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const isUuidId = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  const isSelf = !!user && user.id === id
 
   // Load this user's actual uploaded photos (real profiles only)
   useEffect(() => {
@@ -60,6 +67,44 @@ export default function PhotographerProfile() {
       .maybeSingle()
       .then(({ data }) => setIsFollowing(!!data))
   }, [user, id])
+
+  // Check if the current user has blocked this person
+  useEffect(() => {
+    if (!user || !id || !isUuidId) return
+    supabase
+      .from('blocks')
+      .select('id')
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', id)
+      .maybeSingle()
+      .then(({ data }) => setIsBlocked(!!data))
+  }, [user, id, isUuidId])
+
+  const toggleBlock = async () => {
+    if (!user) { navigate('/auth/login'); return }
+    if (!id) return
+    setMenuOpen(false)
+    setBlockLoading(true)
+    if (isBlocked) {
+      await supabase.from('blocks').delete()
+        .eq('blocker_id', user.id).eq('blocked_id', id)
+      setIsBlocked(false)
+      toast.success('Unblocked')
+    } else {
+      const { error } = await supabase.from('blocks').insert({
+        blocker_id: user.id,
+        blocked_id: id,
+      })
+      if (!error) {
+        setIsBlocked(true)
+        setIsFollowing(false) // block removes the follow relationship server-side
+        toast.success('Blocked. They can no longer follow you.')
+      } else {
+        toast.error('Could not block. Try again.')
+      }
+    }
+    setBlockLoading(false)
+  }
 
   const toggleFollow = async () => {
     if (!user) { navigate('/auth/login'); return }
@@ -151,13 +196,40 @@ export default function PhotographerProfile() {
             <ChevronLeft size={20} />
           </button>
         </div>
-        <div className="absolute top-4 right-4 safe-top">
+        <div className="absolute top-4 right-4 safe-top flex items-center gap-2">
           <button
             onClick={handleShare}
             className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80"
           >
             <Share2 size={17} />
           </button>
+          {isUuidId && !isSelf && (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80"
+              >
+                <MoreVertical size={17} />
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-44 bg-lenz-card border border-lenz-border rounded-xl shadow-xl z-50 overflow-hidden">
+                    <button
+                      onClick={toggleBlock}
+                      disabled={blockLoading}
+                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5 disabled:opacity-50"
+                    >
+                      {isBlocked
+                        ? <><ShieldOff size={15} className="text-white/60" /><span className="text-white/80">Unblock user</span></>
+                        : <><Ban size={15} className="text-red-400" /><span className="text-red-400">Block user</span></>
+                      }
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -177,18 +249,29 @@ export default function PhotographerProfile() {
 
           {/* CTA buttons */}
           <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={toggleFollow}
-              disabled={followLoading}
-              className={`text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 ${
-                isFollowing
-                  ? 'bg-lenz-card border border-gold/40 text-gold'
-                  : 'bg-gold text-lenz-bg'
-              }`}
-            >
-              {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
-              {isFollowing ? 'Following' : 'Follow'}
-            </button>
+            {isBlocked ? (
+              <button
+                onClick={toggleBlock}
+                disabled={blockLoading}
+                className="text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50"
+              >
+                <Ban size={13} />
+                Blocked
+              </button>
+            ) : (
+              <button
+                onClick={toggleFollow}
+                disabled={followLoading}
+                className={`text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 ${
+                  isFollowing
+                    ? 'bg-lenz-card border border-gold/40 text-gold'
+                    : 'bg-gold text-lenz-bg'
+                }`}
+              >
+                {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+            )}
             <button
               onClick={handleMessageStart}
               className="btn-ghost text-xs py-2 px-4 flex items-center gap-1.5"
