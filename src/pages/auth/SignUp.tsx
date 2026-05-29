@@ -104,16 +104,18 @@ export default function SignUp() {
         <p className="text-[10px] text-white/20 tracking-[0.4em] uppercase">Join the Photography Community</p>
       </div>
 
-      <form onSubmit={handleSignUp} className="w-full max-w-sm space-y-3.5">
+      <form onSubmit={handleSignUp} className="w-full max-w-sm space-y-3.5" autoComplete="on">
         {/* Full name */}
         <div className="relative">
           <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type="text"
+            name="name"
             placeholder="Full Name"
             value={name}
             onChange={e => setName(e.target.value)}
             required
+            autoComplete="name"
             className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
           />
         </div>
@@ -151,10 +153,14 @@ export default function SignUp() {
           <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type="email"
+            name="email"
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
             className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
           />
         </div>
@@ -164,10 +170,12 @@ export default function SignUp() {
           <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type={showPassword ? 'text' : 'password'}
+            name="password"
             placeholder="Password (min 6 chars)"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
+            autoComplete="new-password"
             className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-11 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
           />
           <button

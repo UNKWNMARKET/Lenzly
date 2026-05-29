@@ -127,7 +127,7 @@ export default function Profile() {
 
         {/* LENZLY logo top-left */}
         <div className="absolute top-4 left-4 safe-top">
-          <AppLogo className="h-7" />
+          <h1 className="text-lg font-bold tracking-[0.15em] gold-text">LENZLY</h1>
         </div>
       </div>
 

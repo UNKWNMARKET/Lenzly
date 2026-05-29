@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'wouter'
 import { Mail, Lock, Eye, EyeOff, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import AppLogo from '@/components/AppLogo'
 
@@ -10,6 +11,8 @@ const REMEMBER_KEY    = 'lenzly_remember_me'
 
 export default function Login() {
   const [, navigate] = useLocation()
+  const { user } = useAuth()
+
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -21,18 +24,21 @@ export default function Login() {
     const savedRemember = localStorage.getItem(REMEMBER_KEY)
     if (savedRemember === 'false') {
       setRememberMe(false)
-      return
+    } else {
+      const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY)
+      if (savedEmail) setEmail(savedEmail)
     }
-    // Default is true — restore the email if they had it saved
-    const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY)
-    if (savedEmail) setEmail(savedEmail)
   }, [])
+
+  // When auth state changes to logged-in, navigate once — no double-prompt
+  useEffect(() => {
+    if (user) navigate('/')
+  }, [user])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    // Save or clear remembered email
     if (rememberMe) {
       localStorage.setItem(SAVED_EMAIL_KEY, email)
       localStorage.setItem(REMEMBER_KEY, 'true')
@@ -44,31 +50,35 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast.error(error.message)
-    } else {
-      navigate('/')
+      setLoading(false)
+      // On success we do NOT navigate here — the useEffect above handles it
+      // once AuthContext confirms the session, preventing double-login
     }
-    setLoading(false)
   }
 
   return (
     <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center px-6 safe-top safe-bottom">
-      {/* Logo */}
+      {/* Logo — full wordmark on login/signup screens */}
       <div className="mb-10 text-center flex flex-col items-center gap-3">
         <AppLogo className="h-12" />
         <p className="text-[10px] text-white/20 tracking-[0.4em] uppercase">Photography Platform</p>
       </div>
 
-      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
+      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4" autoComplete="on">
         {/* Email */}
         <div className="relative">
           <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type="email"
+            name="email"
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
             autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
           />
         </div>
@@ -78,6 +88,7 @@ export default function Login() {
           <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type={showPassword ? 'text' : 'password'}
+            name="password"
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase, Profile } from '@/lib/supabase'
 
@@ -21,10 +21,11 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession]   = useState<Session | null>(null)
+  const [user, setUser]         = useState<User | null>(null)
+  const [profile, setProfile]   = useState<Profile | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const settled = useRef(false)
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -40,21 +41,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      setLoading(false)
+    // onAuthStateChange is the primary source of truth.
+    // It fires immediately with the current session (if any),
+    // which prevents the ProtectedRoute from ever seeing user=null
+    // right after a successful signIn.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      setSession(sess)
+      setUser(sess?.user ?? null)
+      if (sess?.user) {
+        fetchProfile(sess.user.id)
+      } else {
+        setProfile(null)
+      }
+      // Only set loading=false once — on the very first auth state resolution
+      if (!settled.current) {
+        settled.current = true
+        setLoading(false)
+      }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setProfile(null)
-    })
+    // Fallback: if onAuthStateChange somehow doesn't fire within 3s, unblock loading
+    const fallback = setTimeout(() => {
+      if (!settled.current) {
+        settled.current = true
+        setLoading(false)
+      }
+    }, 3000)
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(fallback)
+    }
   }, [])
 
   const signOut = async () => {
