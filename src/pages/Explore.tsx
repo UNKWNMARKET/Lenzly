@@ -5,6 +5,9 @@ import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
 import { floridaSpots } from '@/data/floridaData'
+import { floridaSpots200 } from '@/data/floridaSpots200'
+
+const allFloridaSpots = [...floridaSpots, ...floridaSpots200]
 import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
 import { useLiveSpots } from '@/hooks/useLiveSpots'
 import { cn } from '@/lib/utils'
@@ -51,7 +54,7 @@ export default function Explore() {
   }, [activeState, query])
 
   const filteredFlSpots = useMemo(() =>
-    floridaSpots.filter(s =>
+    allFloridaSpots.filter(s =>
       (activeFlCity === 'All' || s.city === activeFlCity) &&
       (!query || s.name.toLowerCase().includes(query.toLowerCase()) ||
         s.city.toLowerCase().includes(query.toLowerCase()) ||
