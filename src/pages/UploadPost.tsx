@@ -174,7 +174,7 @@ export default function UploadPost() {
       }
 
       toast.success('Photo posted!')
-      navigate('/')
+      navigate('/profile')
     } catch (err: any) {
       toast.error(err.message || 'Upload failed')
     }
