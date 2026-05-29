@@ -20,6 +20,7 @@ import UploadPost from './pages/UploadPost'
 import EditProfile from './pages/EditProfile'
 import Settings from './pages/Settings'
 import GoPro from './pages/GoPro'
+import ProCheckout from './pages/ProCheckout'
 import Notifications from './pages/Notifications'
 import Messages from './pages/Messages'
 import Chat from './pages/Chat'
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/profile/edit">{() => <ProtectedRoute component={EditProfile} />}</Route>
       <Route path="/settings">{() => <ProtectedRoute component={Settings} />}</Route>
       <Route path="/pro">{() => <ProtectedRoute component={GoPro} />}</Route>
+      <Route path="/pro/checkout">{() => <ProtectedRoute component={ProCheckout} />}</Route>
       <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
       <Route path="/messages">{() => <ProtectedRoute component={Messages} />}</Route>
       <Route path="/chat/:id">{() => <ProtectedRoute component={Chat} />}</Route>
@@ -132,7 +134,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup']
-  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/')) {
+  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/')) {
     return null
   }
   return <BottomNav />
