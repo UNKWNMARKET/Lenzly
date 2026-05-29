@@ -8,13 +8,17 @@ import AppLogo from '@/components/AppLogo'
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error'
 
 async function checkUsernameAvailable(username: string): Promise<boolean> {
-  const { data, error } = await supabase
+  // Case-insensitive exact match against ALL existing usernames.
+  // Use a count query (head:true) so multiple matches never throw and
+  // an empty result genuinely means the name is free.
+  const uname = username.trim().toLowerCase()
+  const { count, error } = await supabase
     .from('profiles')
-    .select('id')
-    .ilike('username', username.trim())
-    .maybeSingle()
-  if (error && error.code !== 'PGRST116') throw error
-  return !data
+    .select('id', { count: 'exact', head: true })
+    .ilike('username', uname)
+  // If the query errors (e.g. RLS), do NOT assume available — surface it.
+  if (error) throw error
+  return (count ?? 0) === 0
 }
 
 export default function SignUp() {

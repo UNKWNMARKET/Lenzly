@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'wouter'
 import {
-  ChevronLeft, Star, MapPin, CheckCircle, Camera,
+  ChevronLeft, Star, MapPin, Camera,
   MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck
 } from 'lucide-react'
 import { photographers } from '@/data/mockData'
@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
+import VerifiedBadge from '@/components/VerifiedBadge'
 
 const allPhotographers = [...photographers, ...floridaPhotographers]
 
@@ -208,12 +209,15 @@ export default function PhotographerProfile() {
         <div className="mt-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-bold text-white">{p.name}</h1>
-            {p.verified && <CheckCircle size={16} className="text-gold fill-gold/20" />}
+            {p.verified && <VerifiedBadge size={15} />}
             {p.pro && (
               <span className="text-[10px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-0.5 rounded-full">PRO</span>
             )}
             {p.secondShooter && (
               <span className="text-[10px] font-bold tracking-widest text-gold border border-gold/40 bg-gold/10 px-2 py-0.5 rounded-full">2nd Shooter</span>
+            )}
+            {!realP && (
+              <span className="text-[10px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full">SAMPLE</span>
             )}
           </div>
           <p className="text-sm text-white/40 mt-0.5">@{p.username}</p>

@@ -2,9 +2,10 @@ import { useState } from 'react'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import {
   Settings, Grid3X3, Heart, Bookmark,
-  ExternalLink, MapPin, CheckCircle, Edit3, Camera,
+  ExternalLink, MapPin, Edit3, Camera,
   ChevronRight, Star, Building2, Share2, X,
   ChevronLeft, MessageSquare
 } from 'lucide-react'
@@ -174,7 +175,7 @@ export default function Profile() {
         <div className="mt-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-white">{u.name}</h2>
-            {u.verified && <CheckCircle size={16} className="text-gold fill-gold/20" />}
+            {u.verified && <VerifiedBadge size={15} />}
             {u.pro && (
               <span className="text-[10px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-0.5 rounded-full">PRO</span>
             )}

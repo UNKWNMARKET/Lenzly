@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle, MapPin, Star, Camera, X } from 'lucide-react'
+import { MapPin, Star, Camera, X } from 'lucide-react'
+import VerifiedBadge from './VerifiedBadge'
 import { formatCount } from '@/lib/utils'
 import { useLocation } from 'wouter'
 import { toast } from 'sonner'
@@ -52,9 +53,12 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                 onClick={() => navigate(`/photographer/${p.id}`)}
               >
                 <span className="font-semibold text-white text-sm truncate">{p.name}</span>
-                {p.verified && <CheckCircle size={13} className="text-gold fill-gold/20 shrink-0" />}
+                {p.verified && <VerifiedBadge size={12} />}
                 {p.pro && (
                   <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
+                )}
+                {!(p as any).isReal && (
+                  <span className="text-[8px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-1.5 py-0.5 rounded-full shrink-0">SAMPLE</span>
                 )}
               </button>
               <div className="flex items-center gap-0.5 shrink-0">

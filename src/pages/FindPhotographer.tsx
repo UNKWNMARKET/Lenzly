@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, MapPin } from 'lucide-react'
+import { Search, SlidersHorizontal, List, Map as MapIcon, X, Star, MapPin } from 'lucide-react'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
@@ -119,16 +120,23 @@ export default function FindPhotographer() {
   }, [])
   const ptr = usePullToRefresh({ onRefresh: handleRefresh })
 
-  const filtered = allPhotographers.filter(p => {
-    if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
-    if (filters.secondShooter && !p.secondShooter) return false
-    if (filters.availableOnly && !p.available) return false
-    if (filters.verifiedOnly && !p.verified) return false
-    if (query && !p.name.toLowerCase().includes(query.toLowerCase()) &&
-        !p.city.toLowerCase().includes(query.toLowerCase()) &&
-        !p.specialty.join(' ').toLowerCase().includes(query.toLowerCase())) return false
-    return true
-  })
+  const filtered = allPhotographers
+    .filter(p => {
+      if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
+      if (filters.secondShooter && !p.secondShooter) return false
+      if (filters.availableOnly && !p.available) return false
+      if (filters.verifiedOnly && !p.verified) return false
+      if (query && !p.name.toLowerCase().includes(query.toLowerCase()) &&
+          !p.city.toLowerCase().includes(query.toLowerCase()) &&
+          !p.specialty.join(' ').toLowerCase().includes(query.toLowerCase())) return false
+      return true
+    })
+    // Pro members surface first when brands/companies are searching
+    .sort((a, b) => {
+      if (a.pro !== b.pro) return a.pro ? -1 : 1
+      if (a.verified !== b.verified) return a.verified ? -1 : 1
+      return (b.rating ?? 0) - (a.rating ?? 0)
+    })
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
@@ -314,7 +322,13 @@ export default function FindPhotographer() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-semibold text-white truncate">{p.name}</span>
-                    {p.verified && <CheckCircle size={12} className="text-gold shrink-0" />}
+                    {p.verified && <VerifiedBadge size={11} />}
+                    {p.pro && (
+                      <span className="text-[8px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
+                    )}
+                    {!(p as any).isReal && (
+                      <span className="text-[8px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-1.5 py-0.5 rounded-full shrink-0">SAMPLE</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <div className="flex items-center gap-0.5">
