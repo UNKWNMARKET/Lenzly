@@ -1,14 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Loader } from 'lucide-react'
+import { MapPin, Loader, Utensils, Building2, Landmark } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { searchUSCities } from '@/data/usCities'
+import { searchPlaces } from '@/lib/placesSearch'
 
 export type LocationSuggestion = {
   name: string
   city: string | null
   state: string | null
   display: string
-  source: 'spot' | 'city'
+  source: 'spot' | 'city' | 'place'
+  category?: string | null
+}
+
+// Pick an icon based on what kind of place it is
+function placeIcon(category?: string | null) {
+  const c = (category ?? '').toLowerCase()
+  if (/(restaurant|food|cafe|bar|pub|fast)/.test(c)) return Utensils
+  if (/(hotel|motel|hostel|guest|lodging)/.test(c)) return Building2
+  if (/(monument|attraction|museum|landmark|memorial|park|viewpoint)/.test(c)) return Landmark
+  return MapPin
 }
 
 type Props = {
@@ -38,13 +49,14 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
     }
 
     setLoading(true)
+    const controller = new AbortController()
     const timer = setTimeout(async () => {
       // 1. Match existing community spots from DB
       const { data: spots } = await supabase
         .from('photo_spots')
         .select('name, city, state')
         .or(`name.ilike.%${q}%,city.ilike.%${q}%`)
-        .limit(5)
+        .limit(4)
 
       const spotSuggestions: LocationSuggestion[] = (spots ?? []).map(s => ({
         name: s.name,
@@ -54,8 +66,19 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
         source: 'spot' as const,
       }))
 
-      // 2. Match against the full US cities database (all 50 states + DC)
-      const citySuggestions: LocationSuggestion[] = searchUSCities(q, 8).map(c => ({
+      // 2. Real places — restaurants, hotels, landmarks, businesses (Photon/OSM)
+      const places = await searchPlaces(q, controller.signal)
+      const placeSuggestions: LocationSuggestion[] = places.map(p => ({
+        name: p.name,
+        city: p.city,
+        state: p.state,
+        display: p.display,
+        source: 'place' as const,
+        category: p.category,
+      }))
+
+      // 3. Match against the full US cities database (all 50 states + DC)
+      const citySuggestions: LocationSuggestion[] = searchUSCities(q, 5).map(c => ({
         name: c.city,
         city: c.city,
         state: c.state,
@@ -63,20 +86,20 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
         source: 'city' as const,
       }))
 
-      // Merge, dedupe by display
+      // Merge (spots → places → cities), dedupe by display
       const seen = new Set<string>()
-      const merged = [...spotSuggestions, ...citySuggestions].filter(s => {
+      const merged = [...spotSuggestions, ...placeSuggestions, ...citySuggestions].filter(s => {
         if (seen.has(s.display)) return false
         seen.add(s.display)
         return true
-      })
+      }).slice(0, 12)
 
       setSuggestions(merged)
       setOpen(merged.length > 0)
       setLoading(false)
-    }, 250)
+    }, 280)
 
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); controller.abort() }
   }, [value])
 
   // Close on outside click
@@ -92,8 +115,9 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
 
   const handlePick = (s: LocationSuggestion) => {
     skipNextSearch.current = true
-    // For spots, keep the full name + city/state; for cities, use "City, State"
-    const newValue = s.source === 'spot' && s.city
+    // For named places & spots, store "Name, City ST" so it's searchable;
+    // for plain cities use "City, State"
+    const newValue = (s.source === 'spot' || s.source === 'place') && s.city
       ? `${s.name}, ${s.city}${s.state ? ` ${s.state}` : ''}`
       : s.display
     onChange(newValue)
@@ -119,24 +143,29 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
 
       {open && suggestions.length > 0 && (
         <div className="absolute z-50 left-0 right-0 mt-1.5 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/40 max-h-64 overflow-y-auto">
-          {suggestions.map((s, i) => (
-            <button
-              key={`${s.display}-${i}`}
-              type="button"
-              onClick={() => handlePick(s)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-lenz-border/50 last:border-0"
-            >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${s.source === 'spot' ? 'bg-gold/15' : 'bg-white/5'}`}>
-                <MapPin size={13} className={s.source === 'spot' ? 'text-gold' : 'text-white/40'} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-white truncate">{s.display}</p>
-                <p className="text-[10px] text-white/30">
-                  {s.source === 'spot' ? 'Community spot' : 'City'}
-                </p>
-              </div>
-            </button>
-          ))}
+          {suggestions.map((s, i) => {
+            const Icon = s.source === 'place' ? placeIcon(s.category) : MapPin
+            const accent = s.source === 'spot' || s.source === 'place'
+            const label = s.source === 'spot' ? 'Community spot'
+              : s.source === 'place' ? (s.category || 'Place')
+              : 'City'
+            return (
+              <button
+                key={`${s.display}-${i}`}
+                type="button"
+                onClick={() => handlePick(s)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-lenz-border/50 last:border-0"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${accent ? 'bg-gold/15' : 'bg-white/5'}`}>
+                  <Icon size={13} className={accent ? 'text-gold' : 'text-white/40'} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white truncate">{s.display}</p>
+                  <p className="text-[10px] text-white/30 capitalize">{label}</p>
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
