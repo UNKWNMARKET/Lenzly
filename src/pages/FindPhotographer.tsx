@@ -5,9 +5,10 @@ import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, 
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
+import { useRealPhotographers } from '@/hooks/useRealPhotographers'
 import { useLocation } from 'wouter'
 
-const allPhotographers = [...photographers, ...floridaPhotographers]
+const mockPhotographers = [...photographers, ...floridaPhotographers]
 import { cn, formatCount } from '@/lib/utils'
 
 // Lazy-load the map to avoid SSR issues
@@ -109,8 +110,11 @@ export default function FindPhotographer() {
     }
   }, [view])
 
+  // Real Supabase users shown as photographers, merged ahead of sample data
+  const { photographers: realPhotographers } = useRealPhotographers()
+  const allPhotographers = [...realPhotographers, ...mockPhotographers]
+
   const handleRefresh = useCallback(async () => {
-    // Photographer data is static mock data — just a brief visual refresh
     await new Promise(r => setTimeout(r, 500))
   }, [])
   const ptr = usePullToRefresh({ onRefresh: handleRefresh })

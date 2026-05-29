@@ -10,6 +10,7 @@ import { formatCount } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 
 const allPhotographers = [...photographers, ...floridaPhotographers]
 
@@ -30,6 +31,22 @@ export default function PhotographerProfile() {
   const [sending, setSending] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
+  const [realPosts, setRealPosts] = useState<string[]>([])
+
+  // Load this user's actual uploaded photos (real profiles only)
+  useEffect(() => {
+    if (!id) return
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (!isUuid) return
+    supabase
+      .from('posts')
+      .select('image_url')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setRealPosts(data.map(p => p.image_url).filter(Boolean))
+      })
+  }, [id])
 
   // Check if the current user already follows this photographer
   useEffect(() => {
@@ -66,9 +83,20 @@ export default function PhotographerProfile() {
     setFollowLoading(false)
   }
 
-  const p = allPhotographers.find(ph => ph.id === id)
+  // Prefer a real Supabase profile; fall back to sample data by id
+  const { photographer: realP, loading: realLoading } = useRealPhotographer(id)
+  const mockP = allPhotographers.find(ph => ph.id === id)
+  const p = realP ?? mockP
 
   if (!p) {
+    // Still loading a real profile lookup
+    if (realLoading) {
+      return (
+        <div className="min-h-screen bg-lenz-bg flex items-center justify-center">
+          <Camera size={32} className="text-white/10 animate-pulse" />
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center gap-4">
         <Camera size={40} className="text-white/10" />
@@ -259,14 +287,14 @@ export default function PhotographerProfile() {
         </div>
       </div>
 
-      {/* Photo grid */}
-      {p.photos.length > 0 && (
+      {/* Photo grid — real uploads take priority, fall back to portfolio */}
+      {(() => { const gridPhotos = realPosts.length > 0 ? realPosts : p.photos; return gridPhotos.length > 0 && (
         <div className="mt-1">
           <div className="px-4 py-3">
             <p className="text-xs font-semibold text-white/30 tracking-wider uppercase">Portfolio</p>
           </div>
           <div className="grid grid-cols-3 gap-0.5">
-            {p.photos.map((photo, i) => (
+            {gridPhotos.map((photo, i) => (
               <button
                 key={i}
                 onClick={() => setSelectedPhoto(photo)}
@@ -283,7 +311,7 @@ export default function PhotographerProfile() {
             ))}
           </div>
         </div>
-      )}
+      ) })()}
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
 
