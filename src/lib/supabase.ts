@@ -14,6 +14,7 @@ export type Profile = {
   bio: string | null
   specialty: string[]
   location: string | null
+  website: string | null
   lat: number | null
   lng: number | null
   is_pro: boolean

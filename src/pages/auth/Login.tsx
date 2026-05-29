@@ -3,6 +3,7 @@ import { Link, useLocation } from 'wouter'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import AppLogo from '@/components/AppLogo'
 
 export default function Login() {
   const [, navigate] = useLocation()
@@ -26,8 +27,8 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center px-6 safe-top safe-bottom">
       {/* Logo */}
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold tracking-[0.2em] gold-text mb-1">LENZLY</h1>
+      <div className="mb-10 text-center flex flex-col items-center gap-2">
+        <AppLogo className="h-14" />
         <p className="text-[10px] text-white/20 tracking-[0.4em] uppercase">Photography Platform</p>
       </div>
 

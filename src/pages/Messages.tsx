@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Edit2, Search, MessageCircle, Trash2, X, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 type Participant = { username: string; avatar_url: string | null }
 
@@ -39,7 +41,7 @@ export default function Messages() {
   const [searching, setSearching] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) return
     // Get all conversation IDs the user is in
     const { data: participations } = await supabase
@@ -98,7 +100,9 @@ export default function Messages() {
 
     setConversations(enriched)
     setLoading(false)
-  }
+  }, [user])
+
+  const ptr = usePullToRefresh({ onRefresh: fetchConversations })
 
   useEffect(() => {
     fetchConversations()
@@ -175,7 +179,8 @@ export default function Messages() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-6">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-6">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
@@ -338,5 +343,6 @@ export default function Messages() {
         </div>
       )}
     </div>
+    </PullToRefreshWrapper>
   )
 }

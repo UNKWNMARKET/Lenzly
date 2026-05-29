@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, MapPin } from 'lucide-react'
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
@@ -89,6 +91,12 @@ export default function FindPhotographer() {
     }
   }, [view])
 
+  const handleRefresh = useCallback(async () => {
+    // Photographer data is static mock data — just a brief visual refresh
+    await new Promise(r => setTimeout(r, 500))
+  }, [])
+  const ptr = usePullToRefresh({ onRefresh: handleRefresh })
+
   const filtered = allPhotographers.filter(p => {
     if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
     if (filters.secondShooter && !p.secondShooter) return false
@@ -101,7 +109,8 @@ export default function FindPhotographer() {
   })
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <div className="flex items-center justify-between mb-3">
@@ -310,5 +319,6 @@ export default function FindPhotographer() {
         </div>
       )}
     </div>
+    </PullToRefreshWrapper>
   )
 }

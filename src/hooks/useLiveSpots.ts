@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type LiveSpot = {
@@ -20,18 +20,18 @@ export function useLiveSpots(limit = 20) {
   const [spots, setSpots] = useState<LiveSpot[]>([])
   const [loading, setLoading] = useState(true)
 
+  const fetchSpots = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('photo_spots')
+      .select('*')
+      .order('ai_score', { ascending: false })
+      .limit(limit)
+
+    if (!error && data) setSpots(data as LiveSpot[])
+    setLoading(false)
+  }, [limit])
+
   useEffect(() => {
-    const fetchSpots = async () => {
-      const { data, error } = await supabase
-        .from('photo_spots')
-        .select('*')
-        .order('ai_score', { ascending: false })
-        .limit(limit)
-
-      if (!error && data) setSpots(data as LiveSpot[])
-      setLoading(false)
-    }
-
     fetchSpots()
 
     // Real-time: re-fetch whenever any spot row changes (new post uploaded anywhere)
@@ -45,7 +45,7 @@ export function useLiveSpots(limit = 20) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [limit])
+  }, [fetchSpots])
 
-  return { spots, loading }
+  return { spots, loading, refresh: fetchSpots }
 }

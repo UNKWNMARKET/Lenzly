@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import AppLogo from '@/components/AppLogo'
 import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, CheckCircle, Edit3, Camera,
@@ -23,24 +26,41 @@ export default function Profile() {
   const [modal, setModal] = useState<ModalType>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [, navigate] = useLocation()
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
+  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile() } })
 
   // Merge real Supabase profile data over mock for the fields that users can edit.
   // Everything else (photos grid, cover, rating, etc.) falls back to mock data
   // until those columns are added to the database.
+  // If the user has a real Supabase profile, use ONLY real data (blank for new users).
+  // Only fall back to mock currentUser when there is NO profile at all (logged out / loading).
+  const hasRealProfile = !!profile
+
   const u = {
+    // Static mock fields used only as shape — real values override everything below
     ...currentUser,
-    name:       profile?.name       ?? currentUser.name,
-    username:   profile?.username   ?? currentUser.username,
-    bio:        profile?.bio        ?? currentUser.bio,
-    location:   profile?.location   ?? currentUser.location,
-    specialty:  (profile?.specialty?.length ? profile.specialty : currentUser.specialty),
-    avatar:     profile?.avatar_url  ?? currentUser.avatar,
-    coverPhoto: profile?.cover_url   ?? currentUser.coverPhoto,
-    pro:        profile?.is_pro      ?? currentUser.pro,
-    followers:  profile?.followers_count ?? currentUser.followers,
-    following:  profile?.following_count ?? currentUser.following,
-    posts:      profile?.posts_count     ?? currentUser.posts,
+    name:        profile?.name       ?? currentUser.name,
+    username:    profile?.username   ?? currentUser.username,
+    bio:         profile?.bio        ?? (hasRealProfile ? '' : currentUser.bio),
+    location:    profile?.location   ?? (hasRealProfile ? null : currentUser.location),
+    website:     profile?.website    ?? null,
+    specialty:   profile?.specialty?.length ? profile.specialty : (hasRealProfile ? [] : currentUser.specialty),
+    // Only real uploaded photos — never mock grid
+    avatar:      profile?.avatar_url  ?? null,
+    coverPhoto:  profile?.cover_url   ?? (hasRealProfile ? null : currentUser.coverPhoto),
+    // Real counts or zero — never mock numbers
+    followers:   profile?.followers_count ?? 0,
+    following:   profile?.following_count ?? 0,
+    posts:       profile?.posts_count     ?? 0,
+    pro:         profile?.is_pro          ?? false,
+    // These only come from real data — new profiles show nothing
+    photos:      hasRealProfile ? [] : currentUser.photos,
+    hired:       hasRealProfile ? 0  : currentUser.hired,
+    rating:      hasRealProfile ? 0  : currentUser.rating,
+    verified:    hasRealProfile ? false : currentUser.verified,
+    secondShooter: hasRealProfile ? false : currentUser.secondShooter,
+    available:   hasRealProfile ? false : currentUser.available,
+    priceRange:  hasRealProfile ? ''  : currentUser.priceRange,
   }
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [
@@ -50,9 +70,9 @@ export default function Profile() {
   ]
 
   const tabPhotos = {
-    posts: u.photos,
-    liked: likedPhotos,
-    saved: savedPhotos,
+    posts:  u.photos,                              // real uploads (empty for new users)
+    liked:  hasRealProfile ? [] : likedPhotos,     // blank until real likes are tracked
+    saved:  hasRealProfile ? [] : savedPhotos,     // blank until real saves are tracked
   }
 
   const handleShare = async () => {
@@ -79,10 +99,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-24">
       {/* Cover photo */}
-      <div className="relative h-48 overflow-hidden">
-        <img src={u.coverPhoto} alt="cover" className="w-full h-full object-cover" />
+      <div className="relative h-48 overflow-hidden bg-lenz-card">
+        {u.coverPhoto
+          ? <img src={u.coverPhoto} alt="cover" className="w-full h-full object-cover" />
+          : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#0a0804]" />
+        }
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-lenz-bg" />
 
         {/* Top actions */}
@@ -103,7 +127,7 @@ export default function Profile() {
 
         {/* LENZLY logo top-left */}
         <div className="absolute top-4 left-4 safe-top">
-          <h1 className="text-lg font-bold tracking-[0.15em] gold-text">LENZLY</h1>
+          <AppLogo className="h-7" />
         </div>
       </div>
 
@@ -111,8 +135,13 @@ export default function Profile() {
       <div className="px-4 -mt-14 relative z-10">
         <div className="flex items-end justify-between">
           <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
-            <div className="w-24 h-24 rounded-full overflow-hidden border-3 border-lenz-bg">
-              <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+            <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+              {u.avatar
+                ? <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
+                    {u.name.charAt(0).toUpperCase()}
+                  </div>
+              }
             </div>
           </div>
 
@@ -170,13 +199,18 @@ export default function Profile() {
               <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">{u.location}</span>
             </button>
           )}
-          {u.portfolio && (
+          {u.website && (
             <button
-              onClick={() => window.open(`https://${u.portfolio}`, '_blank')}
+              onClick={() => {
+                const url = u.website!.startsWith('http') ? u.website! : `https://${u.website}`
+                window.open(url, '_blank')
+              }}
               className="flex items-center gap-1.5 group"
             >
               <ExternalLink size={13} className="text-white/30 group-hover:text-gold transition-colors" />
-              <span className="text-sm text-white/50 group-hover:text-gold transition-colors">{u.portfolio}</span>
+              <span className="text-sm text-white/50 group-hover:text-gold transition-colors">
+                {u.website.replace(/^https?:\/\//, '')}
+              </span>
             </button>
           )}
         </div>
@@ -196,12 +230,11 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mt-4 py-4 border-t border-b border-lenz-border">
+        <div className="grid grid-cols-3 gap-2 mt-4 py-4 border-t border-b border-lenz-border">
           {[
-            { label: 'Posts', value: u.posts, action: () => setActiveTab('posts') },
-            { label: 'Followers', value: formatCount(u.followers), action: () => setModal('followers') },
-            { label: 'Following', value: u.following, action: () => setModal('following') },
-            { label: 'Hired', value: u.hired, action: () => setModal('reviews') },
+            { label: 'Posts',     value: u.posts,                    action: () => setActiveTab('posts') },
+            { label: 'Followers', value: formatCount(u.followers),   action: () => setModal('followers') },
+            { label: 'Following', value: u.following,                action: () => setModal('following') },
           ].map(({ label, value, action }) => (
             <button key={label} onClick={action} className="text-center group">
               <p className="text-base font-bold text-white group-hover:text-gold transition-colors">{value}</p>
@@ -210,21 +243,23 @@ export default function Profile() {
           ))}
         </div>
 
-        {/* Rating */}
-        <button
-          onClick={() => setModal('reviews')}
-          className="flex items-center justify-between py-3 border-b border-lenz-border w-full group"
-        >
-          <div className="flex items-center gap-2">
-            <Star size={16} className="text-gold fill-gold" />
-            <span className="text-sm font-semibold text-white group-hover:text-gold transition-colors">{u.rating} Rating</span>
-            <span className="text-xs text-white/30">from {u.hired} clients</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-gold font-medium">{u.priceRange}</span>
-            <ChevronRight size={13} className="text-white/30 group-hover:text-gold transition-colors" />
-          </div>
-        </button>
+        {/* Rating — only show once user has real reviews */}
+        {u.rating > 0 && (
+          <button
+            onClick={() => setModal('reviews')}
+            className="flex items-center justify-between py-3 border-b border-lenz-border w-full group"
+          >
+            <div className="flex items-center gap-2">
+              <Star size={16} className="text-gold fill-gold" />
+              <span className="text-sm font-semibold text-white group-hover:text-gold transition-colors">{u.rating} Rating</span>
+              <span className="text-xs text-white/30">from {u.hired} clients</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {u.priceRange && <span className="text-xs text-gold font-medium">{u.priceRange}</span>}
+              <ChevronRight size={13} className="text-white/30 group-hover:text-gold transition-colors" />
+            </div>
+          </button>
+        )}
 
         {/* For Brands Banner */}
         <Link href="/brands">
@@ -343,6 +378,7 @@ export default function Profile() {
         <ReviewsModal hired={u.hired} rating={u.rating} priceRange={u.priceRange} onClose={closeModal} />
       )}
     </div>
+    </PullToRefreshWrapper>
   )
 }
 

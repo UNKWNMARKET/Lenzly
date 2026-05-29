@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 type Notif = {
   id: string
@@ -52,7 +54,7 @@ export default function Notifications() {
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchNotifs = async () => {
+  const fetchNotifs = useCallback(async () => {
     if (!user) return
     const { data } = await supabase
       .from('notifications')
@@ -62,7 +64,9 @@ export default function Notifications() {
       .limit(60)
     if (data) setNotifs(data as Notif[])
     setLoading(false)
-  }
+  }, [user])
+
+  const ptr = usePullToRefresh({ onRefresh: fetchNotifs })
 
   useEffect(() => {
     fetchNotifs()
@@ -90,7 +94,8 @@ export default function Notifications() {
   const unread = notifs.filter(n => !n.read).length
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-6">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-6">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
@@ -174,5 +179,6 @@ export default function Notifications() {
         </div>
       )}
     </div>
+    </PullToRefreshWrapper>
   )
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ChevronLeft, Camera, Check, MapPin, Globe, AtSign, Loader } from 'lucide-react'
+import { ChevronLeft, Camera, Check, MapPin, Globe, Loader } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -20,18 +20,11 @@ export default function EditProfile() {
   const [username, setUsername] = useState(profile?.username ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [location, setLocation] = useState(profile?.location ?? '')
-  const [social, setSocial] = useState('')
-  const [portfolio, setPortfolio] = useState('')
-  const [priceMin, setPriceMin] = useState('200')
-  const [priceMax, setPriceMax] = useState('800')
+  const [website, setWebsite] = useState(profile?.website ?? '')
   const [specialties, setSpecialties] = useState<string[]>(profile?.specialty ?? [])
-  const [available, setAvailable] = useState(false)
-  const [secondShooter, setSecondShooter] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // ── Photo upload ─────────────────────────────────────────────────────────────
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-  const coverInputRef  = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview]   = useState<string | null>(null)
   const [coverPreview,  setCoverPreview]    = useState<string | null>(null)
   const [newAvatarUrl,  setNewAvatarUrl]    = useState<string | null>(null)
@@ -40,12 +33,11 @@ export default function EditProfile() {
   const [uploadingCover,  setUploadingCover]  = useState(false)
 
   // ── Username restriction ─────────────────────────────────────────────────────
-  // Only counts as "changed" when a row already exists — initial profile creation is free
   const usernameChanged = !!profile && username.toLowerCase() !== (profile.username ?? '').toLowerCase()
 
   const canChangeUsername = (): boolean => {
     const lastChanged = profile?.username_changed_at
-    if (!lastChanged) return true                         // never changed → allow
+    if (!lastChanged) return true
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
     return new Date(lastChanged) < sixMonthsAgo
@@ -68,6 +60,7 @@ export default function EditProfile() {
       setUsername(profile.username ?? '')
       setBio(profile.bio ?? '')
       setLocation(profile.location ?? '')
+      setWebsite(profile.website ?? '')
       setSpecialties(profile.specialty ?? [])
     }
   }, [profile?.id])
@@ -76,7 +69,6 @@ export default function EditProfile() {
   const handleImageFile = async (file: File, type: 'avatar' | 'cover') => {
     if (!user) return
 
-    // Show local preview immediately
     const localUrl = URL.createObjectURL(file)
     if (type === 'avatar') { setAvatarPreview(localUrl); setUploadingAvatar(true) }
     else                   { setCoverPreview(localUrl);  setUploadingCover(true) }
@@ -107,9 +99,9 @@ export default function EditProfile() {
 
   // ── Save ─────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!name.trim())     { toast.error('Name is required');  return }
+    if (!name.trim())     { toast.error('Name is required');     return }
     if (!username.trim()) { toast.error('Username is required'); return }
-    if (!user)            { toast.error('Not signed in');     return }
+    if (!user)            { toast.error('Not signed in');        return }
 
     if (usernameBlocked) {
       toast.error(`You can change your username again on ${nextChangeDate()}`)
@@ -118,21 +110,22 @@ export default function EditProfile() {
 
     setSaving(true)
 
-    const isFirstSave = !profile  // no DB row exists yet — upsert will INSERT
+    const isFirstSave = !profile
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, any> = {
-      id:        user.id,          // required for upsert conflict resolution
+      id:        user.id,
       name:      name.trim(),
       username:  username.trim().toLowerCase(),
       bio:       bio.trim() || null,
       location:  location.trim() || null,
+      website:   website.trim() || null,
       specialty: specialties,
     }
 
     if (newAvatarUrl) updateData.avatar_url = newAvatarUrl
     if (newCoverUrl)  updateData.cover_url  = newCoverUrl
-    // Stamp timestamp only on a real change (not initial profile creation)
+
     if (!isFirstSave && usernameChanged && canChangeUsername()) {
       updateData.username_changed_at = new Date().toISOString()
     }
@@ -174,37 +167,17 @@ export default function EditProfile() {
         </button>
       </header>
 
-      {/* Hidden file inputs */}
-      <input
-        ref={avatarInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f, 'avatar') }}
-      />
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f, 'cover') }}
-      />
-
       <div className="px-4 pt-6 space-y-6">
 
-        {/* Avatar / Cover */}
+        {/* Avatar / Cover — uses <label> overlay so iOS WKWebView file picker triggers reliably */}
         <div className="relative">
-          {/* Cover */}
-          <button
-            type="button"
-            onClick={() => coverInputRef.current?.click()}
-            className="w-full h-28 rounded-2xl overflow-hidden bg-lenz-card border border-lenz-border relative group"
-          >
+          {/* Cover photo */}
+          <label className="block w-full h-28 rounded-2xl overflow-hidden bg-lenz-card border border-lenz-border relative cursor-pointer">
             {displayCover
               ? <img src={displayCover} alt="cover" className="w-full h-full object-cover" />
               : <div className="w-full h-full bg-gradient-to-br from-lenz-card to-black" />
             }
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {uploadingCover
                 ? <Loader size={18} className="text-white animate-spin" />
                 : <div className="flex items-center gap-2 text-white text-xs font-medium">
@@ -213,16 +186,18 @@ export default function EditProfile() {
                   </div>
               }
             </div>
-          </button>
+            <input
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f, 'cover') }}
+            />
+          </label>
 
           {/* Avatar */}
           <div className="absolute -bottom-5 left-4">
-            <button
-              type="button"
-              onClick={() => avatarInputRef.current?.click()}
-              className="relative group"
-            >
-              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-lenz-bg bg-lenz-card">
+            <label className="relative block cursor-pointer">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
                 {displayAvatar
                   ? <img src={displayAvatar} alt={name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-white/20 text-2xl font-bold">
@@ -230,20 +205,26 @@ export default function EditProfile() {
                     </div>
                 }
               </div>
-              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
                 {uploadingAvatar
                   ? <Loader size={13} className="text-white animate-spin" />
                   : <Camera size={13} className="text-white" />
                 }
               </div>
-            </button>
+              <input
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f, 'avatar') }}
+              />
+            </label>
           </div>
         </div>
 
         {/* Spacer for avatar overflow */}
         <div className="h-6" />
 
-        {/* Name */}
+        {/* Display Name */}
         <div>
           <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Display Name</label>
           <input
@@ -270,7 +251,6 @@ export default function EditProfile() {
               value={username}
               onChange={e => setUsername(e.target.value.replace(/[^a-z0-9_.]/gi, ''))}
               placeholder="yourname.lens"
-              disabled={!canChangeUsername() && !usernameChanged === false && usernameBlocked}
               className={`w-full bg-lenz-card border rounded-xl pl-8 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none transition-colors ${
                 usernameBlocked
                   ? 'border-red-500/40 focus:border-red-400/60'
@@ -304,61 +284,33 @@ export default function EditProfile() {
           <p className="text-[10px] text-white/20 text-right mt-1">{bio.length}/200</p>
         </div>
 
-        {/* Location */}
+        {/* Location / City */}
         <div>
-          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Location</label>
+          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">City / Location</label>
           <div className="relative">
             <MapPin size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              placeholder="City, State"
+              placeholder="Miami, FL"
               className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
             />
           </div>
         </div>
 
-        {/* Portfolio */}
+        {/* Website */}
         <div>
-          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Portfolio URL</label>
+          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Website</label>
           <div className="relative">
             <Globe size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
             <input
-              type="text"
-              value={portfolio}
-              onChange={e => setPortfolio(e.target.value)}
-              placeholder="yourportfolio.com"
+              type="url"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              placeholder="https://yoursite.com"
               className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
             />
-          </div>
-        </div>
-
-        {/* Price Range */}
-        <div>
-          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Day Rate (USD)</label>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">$</span>
-              <input
-                type="number"
-                value={priceMin}
-                onChange={e => setPriceMin(e.target.value)}
-                placeholder="Min"
-                className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-8 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
-              />
-            </div>
-            <span className="text-white/30 text-sm">to</span>
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">$</span>
-              <input
-                type="number"
-                value={priceMax}
-                onChange={e => setPriceMax(e.target.value)}
-                placeholder="Max"
-                className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-8 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
-              />
-            </div>
           </div>
         </div>
 
@@ -388,38 +340,7 @@ export default function EditProfile() {
           </div>
         </div>
 
-        {/* Toggles */}
-        <div className="space-y-3">
-          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Availability</label>
-
-          <div className="flex items-center justify-between p-4 rounded-xl bg-lenz-card border border-lenz-border">
-            <div>
-              <p className="text-sm font-medium text-white">Available for Hire</p>
-              <p className="text-xs text-white/40 mt-0.5">Show "Available" badge on your profile</p>
-            </div>
-            <button
-              onClick={() => setAvailable(!available)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${available ? 'bg-gold' : 'bg-white/10'}`}
-            >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${available ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-xl bg-lenz-card border border-lenz-border">
-            <div>
-              <p className="text-sm font-medium text-white">2nd Shooter</p>
-              <p className="text-xs text-white/40 mt-0.5">Open to second-shooting with other photographers</p>
-            </div>
-            <button
-              onClick={() => setSecondShooter(!secondShooter)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${secondShooter ? 'bg-gold' : 'bg-white/10'}`}
-            >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${secondShooter ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Save button (bottom) */}
+        {/* Save button */}
         <button
           onClick={handleSave}
           disabled={saving || usernameBlocked}

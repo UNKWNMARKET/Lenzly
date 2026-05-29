@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import BusinessBanner from '@/components/BusinessBanner'
@@ -31,7 +33,8 @@ export default function Explore() {
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
-  const { spots: liveSpots, loading: liveSpotsLoading } = useLiveSpots(12)
+  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(12)
+  const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
 
   const filteredPosts = posts.filter(p => {
     const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
@@ -82,7 +85,8 @@ export default function Explore() {
   const showCar = activeFilter === 'All' || activeFilter === 'Car'
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <h1 className="text-xl font-bold tracking-[0.12em] gold-text mb-3">EXPLORE</h1>
@@ -461,5 +465,6 @@ export default function Explore() {
         )}
       </div>
     </div>
+    </PullToRefreshWrapper>
   )
 }

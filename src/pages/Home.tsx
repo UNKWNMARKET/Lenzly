@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Bell, MessageCircle } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
 import PostCard from '@/components/PostCard'
 import BusinessBanner from '@/components/BusinessBanner'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import AppLogo from '@/components/AppLogo'
 import { posts as mockPosts } from '@/data/mockData'
 import { supabase, Post } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 export default function Home() {
   const [, navigate] = useLocation()
@@ -16,16 +19,19 @@ export default function Home() {
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
 
+  const fetchPosts = useCallback(async () => {
+    const { data } = await supabase
+      .from('posts')
+      .select('*, profiles(*)')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (data && data.length > 0) setRealPosts(data)
+    setLoading(false)
+  }, [])
+
+  const ptr = usePullToRefresh({ onRefresh: fetchPosts })
+
   useEffect(() => {
-    const fetchPosts = async () => {
-      const { data } = await supabase
-        .from('posts')
-        .select('*, profiles(*)')
-        .order('created_at', { ascending: false })
-        .limit(50)
-      if (data && data.length > 0) setRealPosts(data)
-      setLoading(false)
-    }
     fetchPosts()
 
     // Real-time subscription for new posts
@@ -82,12 +88,12 @@ export default function Home() {
   const hasPosts = realPosts.length > 0
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <div className="min-h-full pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div>
-          <h1 className="text-2xl font-bold tracking-[0.15em] gold-text">LENZLY</h1>
-          <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase mt-0.5">Photography Platform</p>
+          <AppLogo className="h-8" />
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
@@ -152,6 +158,7 @@ export default function Home() {
         )}
       </div>
     </div>
+    </PullToRefreshWrapper>
   )
 }
 
