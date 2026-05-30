@@ -46,16 +46,16 @@ export default function Settings() {
   }) => (
     <button
       onClick={onPress}
-      className="flex items-center gap-3 w-full px-4 py-4 border-b border-lenz-border/50 hover:bg-white/5 transition-colors"
+      className="flex items-center gap-3 w-full px-4 py-4 border-b border-lenz-border/50 hover:bg-white/5 transition-colors active:bg-white/5"
     >
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-500/10' : 'bg-white/5'}`}>
         <Icon size={17} className={danger ? 'text-red-400' : 'text-white/50'} />
       </div>
-      <div className="flex-1 text-left min-w-0">
-        <p className={`text-sm font-medium ${danger ? 'text-red-400' : 'text-white'}`}>{label}</p>
-        {sublabel && <p className="text-xs text-white/30 mt-0.5">{sublabel}</p>}
+      <div className="flex-1 text-left min-w-0 overflow-hidden">
+        <p className={`text-sm font-medium truncate ${danger ? 'text-red-400' : 'text-white'}`}>{label}</p>
+        {sublabel && <p className="text-xs text-white/30 mt-0.5 truncate">{sublabel}</p>}
       </div>
-      <div className="shrink-0 flex items-center">
+      <div className="shrink-0 flex items-center gap-1 pl-2">
         {right ?? <ChevronRight size={15} className="text-white/20" />}
       </div>
     </button>
@@ -64,9 +64,9 @@ export default function Settings() {
   const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
     <button
       onClick={e => { e.stopPropagation(); onChange() }}
-      className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${value ? 'bg-gold' : 'bg-white/10'}`}
+      className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${value ? 'bg-gold' : 'bg-white/15'}`}
     >
-      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${value ? 'translate-x-6' : 'translate-x-1'}`} />
     </button>
   )
 
@@ -124,8 +124,8 @@ export default function Settings() {
                 { label: 'New Followers', value: followNotif, set: () => setFollowNotif(!followNotif) },
                 { label: 'Hire Requests', value: hireNotif, set: () => setHireNotif(!hireNotif) },
               ].map(({ label, value, set }) => (
-                <div key={label} className="flex items-center justify-between px-6 py-3 border-b border-lenz-border/20">
-                  <p className="text-sm text-white/60">{label}</p>
+                <div key={label} className="flex items-center justify-between px-6 py-3 border-b border-lenz-border/20 pr-4">
+                  <p className="text-sm text-white/60 flex-1 min-w-0 mr-4">{label}</p>
                   <Toggle value={value} onChange={set} />
                 </div>
               ))}
