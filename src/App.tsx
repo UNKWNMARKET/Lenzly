@@ -53,8 +53,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const { user, loading } = useAuth()
   const [, navigate] = useLocation()
   if (loading) return (
-    <div className="min-h-screen bg-lenz-bg flex items-center justify-center">
-      <img src="/lenzly-wordmark.svg" alt="LENZLY" className="h-10 w-auto animate-pulse" />
+    <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center gap-4">
+      <h1 className="text-4xl font-bold tracking-[0.2em] gold-text">LENZLY</h1>
+      <p className="text-[10px] text-white/20 tracking-[0.4em] uppercase">Photography Platform</p>
+      <div className="mt-6 w-6 h-6 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />
     </div>
   )
   if (!user) {

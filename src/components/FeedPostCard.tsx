@@ -104,13 +104,28 @@ export default function FeedPostCard({
 
   const openComments = async () => {
     setShowComments(true)
-    const { data } = await supabase
+    // Fetch comments then profiles separately — avoids FK embed errors
+    const { data: rows } = await supabase
       .from('comments')
-      .select('id, text, created_at, user_id, profiles(username, name, avatar_url)')
+      .select('id, text, created_at, user_id')
       .eq('post_id', post.id)
       .order('created_at', { ascending: true })
       .limit(100)
-    setComments((data ?? []) as unknown as Comment[])
+
+    if (!rows || rows.length === 0) {
+      setComments([])
+      setTimeout(() => inputRef.current?.focus(), 100)
+      return
+    }
+
+    const userIds = [...new Set(rows.map(r => r.user_id))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, name, avatar_url')
+      .in('id', userIds)
+
+    const profMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+    setComments(rows.map(r => ({ ...r, profiles: profMap[r.user_id] ?? null })) as unknown as Comment[])
     setTimeout(() => inputRef.current?.focus(), 100)
   }
 
@@ -118,18 +133,33 @@ export default function FeedPostCard({
     if (!currentUserId) { toast.error('Sign in to comment'); return }
     if (!commentText.trim()) return
     setSubmitting(true)
+    const text = commentText.trim()
+    setCommentText('')
+
+    // Insert comment (no join — avoids embed errors)
     const { data, error } = await supabase
       .from('comments')
-      .insert({ post_id: post.id, user_id: currentUserId, text: commentText.trim() })
-      .select('id, text, created_at, user_id, profiles(username, name, avatar_url)')
+      .insert({ post_id: post.id, user_id: currentUserId, text })
+      .select('id, text, created_at, user_id')
       .single()
-    if (error) { toast.error('Could not post comment'); setSubmitting(false); return }
-    if (data) {
-      setComments(prev => [...prev, data as unknown as Comment])
-      setCommentsCount(c => c + 1)
-      await supabase.from('posts').update({ comments_count: commentsCount + 1 }).eq('id', post.id)
-      setCommentText('')
+
+    if (error) {
+      toast.error('Could not post comment')
+      setCommentText(text) // restore on failure
+      setSubmitting(false)
+      return
     }
+
+    // Fetch the commenter's profile separately so we can show name/avatar
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('username, name, avatar_url')
+      .eq('id', currentUserId)
+      .maybeSingle()
+
+    setComments(prev => [...prev, { ...data, profiles: prof ?? null } as unknown as Comment])
+    setCommentsCount(c => c + 1)
+    await supabase.from('posts').update({ comments_count: commentsCount + 1 }).eq('id', post.id)
     setSubmitting(false)
   }
 

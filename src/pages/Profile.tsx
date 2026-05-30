@@ -41,6 +41,7 @@ export default function Profile() {
 
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
+  const [savedPosts, setSavedPosts] = useState<MyPost[]>([])
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return
@@ -52,9 +53,22 @@ export default function Profile() {
     if (data) setMyPosts(data.filter(p => p.image_url) as MyPost[])
   }, [user])
 
-  useEffect(() => { loadMyPosts() }, [loadMyPosts])
+  const loadSavedPosts = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('saved_posts')
+      .select('post_id, posts(id, image_url, likes_count, comments_count, caption, archived)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) {
+      const posts = data.map((r: any) => r.posts).filter(Boolean) as MyPost[]
+      setSavedPosts(posts.filter(p => p.image_url))
+    }
+  }, [user])
 
-  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile(); await loadMyPosts() } })
+  useEffect(() => { loadMyPosts(); loadSavedPosts() }, [loadMyPosts, loadSavedPosts])
+
+  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile(); await loadMyPosts(); await loadSavedPosts() } })
 
   // Merge real Supabase profile data over mock for the fields that users can edit.
   // Everything else (photos grid, cover, rating, etc.) falls back to mock data
@@ -347,18 +361,30 @@ export default function Profile() {
             </button>
           </div>
         )
-      ) : tabPhotos[activeTab].length > 0 ? (
-        <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
-          {tabPhotos[activeTab].map((photo, i) => (
-            <button
-              key={i}
-              className="relative overflow-hidden aspect-square group bg-lenz-card"
-            >
-              <img src={photo} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-            </button>
-          ))}
-        </div>
+      ) : activeTab === 'saved' ? (
+        savedPosts.length > 0 ? (
+          <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
+            {savedPosts.map(post => (
+              <button
+                key={post.id}
+                onClick={() => navigate(`/post/${post.id}`)}
+                className="relative overflow-hidden aspect-square group bg-lenz-card"
+              >
+                <img src={post.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Bookmark size={11} className="text-gold fill-gold" />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Bookmark size={32} className="text-white/10 mb-3" />
+            <p className="text-sm text-white/25">No saved posts yet</p>
+            <p className="text-xs text-white/15 mt-1">Tap the bookmark on any post to save it here</p>
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Camera size={32} className="text-white/10 mb-3" />
