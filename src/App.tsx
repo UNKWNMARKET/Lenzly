@@ -1,4 +1,7 @@
 import { Route, Switch, useLocation } from 'wouter'
+import { useEffect } from 'react'
+import { App as CapApp } from '@capacitor/app'
+import { supabase } from '@/lib/supabase'
 import { Toaster } from 'sonner'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -120,6 +123,7 @@ export default function App() {
           <AdminAuthProvider>
           <SpotModalProvider>
             <SwipeWrapper>
+              <DeepLinkHandler />
               <Router />
               <BottomNavWrapper />
             </SwipeWrapper>
@@ -143,6 +147,27 @@ export default function App() {
       </ThemeProvider>
     </ErrorBoundary>
   )
+}
+
+function DeepLinkHandler() {
+  const [, navigate] = useLocation()
+  useEffect(() => {
+    const handler = CapApp.addListener('appUrlOpen', async ({ url }) => {
+      if (!url.startsWith('lenzly://')) return
+      // Parse tokens from the URL hash: lenzly://auth/reset-password#access_token=...&type=recovery
+      const hash = url.split('#')[1] ?? ''
+      const params = new URLSearchParams(hash)
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      const type = params.get('type')
+      if (type === 'recovery' && accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        navigate('/auth/reset-password')
+      }
+    })
+    return () => { handler.then(h => h.remove()) }
+  }, [])
+  return null
 }
 
 function SwipeWrapper({ children }: { children: React.ReactNode }) {

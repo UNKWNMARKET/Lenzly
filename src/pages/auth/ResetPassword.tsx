@@ -14,9 +14,14 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase puts the recovery token in the URL hash — listen for the session event
+    // Check if we already have a recovery session (set by DeepLinkHandler)
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true)
+    })
+
+    // Also listen in case the event fires (web fallback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setReady(true)
       }
     })
@@ -48,15 +53,15 @@ export default function ResetPassword() {
         <div className="flex flex-col items-center gap-4 text-center max-w-xs">
           <AppLogo className="h-12" />
           <p className="text-white/40 text-sm mt-4 leading-relaxed">
-            Waiting for your reset link to be verified…
+            Waiting for reset link verification…
           </p>
           <p className="text-white/25 text-xs leading-relaxed">
-            If you arrived here without clicking a reset link, please{' '}
+            Open the reset link from your email to continue. If you don't have one,{' '}
             <span
               className="text-gold cursor-pointer"
               onClick={() => navigate('/auth/forgot-password')}
             >
-              request one here
+              request a new one here
             </span>.
           </p>
         </div>

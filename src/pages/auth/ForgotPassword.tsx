@@ -16,7 +16,7 @@ export default function ForgotPassword() {
     setLoading(true)
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: 'https://lenzly.app/auth/reset-password',
+      redirectTo: 'lenzly://auth/reset-password',
     })
 
     setLoading(false)
