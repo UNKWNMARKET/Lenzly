@@ -81,9 +81,9 @@ export default function SignUp() {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: authData.user.id,
         username: username.toLowerCase().trim(),
-        full_name: name,
+        name: name,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'username' })
+      }, { onConflict: 'id' })
       if (profileError?.code === '23505') {
         setUsernameStatus('taken')
         toast.error('That username was just taken — please choose another')
