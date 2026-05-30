@@ -180,10 +180,10 @@ export default function FeedPostCard({
   }
 
   return (
-    <article className="border-b border-lenz-border" onClick={() => menuOpen && setMenuOpen(false)}>
+    <article className="mx-3 my-3 bg-lenz-card rounded-3xl overflow-hidden border border-lenz-border/60 shadow-xl shadow-black/30" onClick={() => menuOpen && setMenuOpen(false)}>
       {/* Author row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-9 h-9 rounded-full overflow-hidden bg-lenz-card border border-lenz-border shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-lenz-bg border-2 border-lenz-border shrink-0">
           {profile?.avatar_url
             ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
@@ -203,11 +203,11 @@ export default function FeedPostCard({
         </div>
         {isOwner && (
           <div className="relative">
-            <button onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }} className="p-1.5 -mr-1.5">
-              <MoreVertical size={18} className="text-white/60" />
+            <button onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+              <MoreVertical size={17} className="text-white/50" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-9 w-44 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl z-30">
+              <div className="absolute right-0 top-10 w-44 bg-[#161616] border border-lenz-border rounded-2xl overflow-hidden shadow-2xl shadow-black/60 z-30">
                 <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleArchive() }}
                   className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-white/80 hover:bg-white/5 border-b border-lenz-border/50">
                   <Archive size={15} className="text-white/50" /> Archive
@@ -222,28 +222,28 @@ export default function FeedPostCard({
         )}
       </div>
 
-      {/* Image */}
-      <div className="w-full aspect-square bg-lenz-card overflow-hidden">
+      {/* Image — rounded inside card */}
+      <div className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg">
         <img src={post.image_url} alt={post.caption ?? ''} className="w-full h-full object-cover" loading="lazy" />
       </div>
 
       {/* Action bar */}
       <div className="flex items-center justify-between px-4 pt-3">
         <div className="flex items-center gap-5">
-          <button onClick={toggleLike} className="flex items-center gap-1.5 group">
-            <Heart size={24} className={`transition-all duration-200 ${liked ? 'text-red-500 fill-red-500 scale-110' : 'text-white/75 group-hover:text-white'}`} />
-            {likesCount > 0 && <span className="text-sm font-semibold text-white/85">{likesCount}</span>}
+          <button onClick={toggleLike} className="flex items-center gap-1.5 group active:scale-90 transition-transform">
+            <Heart size={24} className={`transition-all duration-200 ${liked ? 'text-red-500 fill-red-500 scale-110' : 'text-white/70 group-hover:text-white'}`} />
+            {likesCount > 0 && <span className="text-sm font-semibold text-white/80">{likesCount}</span>}
           </button>
-          <button onClick={openComments} className="flex items-center gap-1.5 group">
-            <MessageCircle size={23} className="text-white/75 group-hover:text-white transition-colors" />
-            {commentsCount > 0 && <span className="text-sm font-semibold text-white/85">{commentsCount}</span>}
+          <button onClick={openComments} className="flex items-center gap-1.5 group active:scale-90 transition-transform">
+            <MessageCircle size={23} className="text-white/70 group-hover:text-white transition-colors" />
+            {commentsCount > 0 && <span className="text-sm font-semibold text-white/80">{commentsCount}</span>}
           </button>
-          <button onClick={() => setShareOpen(true)} className="group">
-            <Send size={22} className="text-white/75 group-hover:text-white transition-colors -rotate-12" />
+          <button onClick={() => setShareOpen(true)} className="group active:scale-90 transition-transform">
+            <Send size={22} className="text-white/70 group-hover:text-white transition-colors -rotate-12" />
           </button>
         </div>
-        <button onClick={toggleSave} className="group">
-          <Bookmark size={23} className={`transition-all duration-200 ${saved ? 'text-gold fill-gold' : 'text-white/75 group-hover:text-white'}`} />
+        <button onClick={toggleSave} className="group active:scale-90 transition-transform">
+          <Bookmark size={23} className={`transition-all duration-200 ${saved ? 'text-gold fill-gold' : 'text-white/70 group-hover:text-white'}`} />
         </button>
       </div>
 
@@ -254,9 +254,9 @@ export default function FeedPostCard({
 
       {/* Caption */}
       {post.caption && (
-        <p className="px-4 pt-1 text-sm text-white leading-relaxed">
+        <p className="px-4 pt-1.5 text-sm text-white leading-relaxed">
           <span className="font-bold">{profile?.username || profile?.name}</span>{' '}
-          <span className="text-white/80">{post.caption}</span>
+          <span className="text-white/75">{post.caption}</span>
         </p>
       )}
 
@@ -267,27 +267,27 @@ export default function FeedPostCard({
 
       {/* View comments toggle */}
       {commentsCount > 0 && !showComments && (
-        <button onClick={openComments} className="px-4 pt-1.5 text-sm text-white/35">
+        <button onClick={openComments} className="px-4 pt-1.5 text-sm text-white/30 active:text-white/60 transition-colors">
           View {commentsCount === 1 ? '1 comment' : `all ${commentsCount} comments`}
         </button>
       )}
 
-      <p className="px-4 pt-1.5 pb-3 text-[10px] text-white/25 uppercase tracking-wider">{timeAgo(post.created_at)}</p>
+      <p className="px-4 pt-1.5 pb-4 text-[10px] text-white/20 uppercase tracking-wider">{timeAgo(post.created_at)}</p>
 
       {/* Inline comments */}
       {showComments && (
-        <div className="px-4 pb-4 -mt-1 space-y-3">
+        <div className="px-4 pb-4 -mt-1 space-y-3 border-t border-lenz-border/30 pt-3">
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-lenz-card border border-lenz-border overflow-hidden shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5">
                 {c.profiles?.avatar_url
                   ? <img src={c.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/40 font-bold">{(c.profiles?.name || '?')[0].toUpperCase()}</div>}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 bg-white/4 rounded-2xl px-3 py-2">
                 <p className="text-sm text-white leading-relaxed">
                   <span className="font-bold">{c.profiles?.username || c.profiles?.name || 'User'}</span>{' '}
-                  <span className="text-white/80">{c.text}</span>
+                  <span className="text-white/75">{c.text}</span>
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5">{timeAgo(c.created_at)}</p>
               </div>

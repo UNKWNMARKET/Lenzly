@@ -76,7 +76,7 @@
   .card {
     background: #111111;
     border: 1px solid #1e1e1e;
-    border-radius: 12px;
+    border-radius: 20px;
   }
 
   .shimmer {
@@ -103,11 +103,11 @@
   }
 
   .btn-primary {
-    @apply bg-gold text-lenz-bg font-semibold px-5 py-2.5 rounded-full text-sm tracking-wide transition-all duration-200 active:scale-95 hover:bg-gold-light;
+    @apply bg-gold text-lenz-bg font-semibold px-6 py-3 rounded-2xl text-sm tracking-wide transition-all duration-200 active:scale-95 hover:opacity-90 shadow-lg shadow-gold/20;
   }
 
   .btn-ghost {
-    @apply border border-lenz-border text-white/80 font-medium px-5 py-2.5 rounded-full text-sm tracking-wide transition-all duration-200 active:scale-95 hover:border-white/20 hover:text-white;
+    @apply border border-lenz-border text-white/80 font-medium px-6 py-3 rounded-2xl text-sm tracking-wide transition-all duration-200 active:scale-95 hover:border-white/20 hover:text-white;
   }
 
   .tab-active {
@@ -119,8 +119,9 @@
   }
 
   .photo-grid-item {
-    @apply relative overflow-hidden rounded-sm cursor-pointer;
+    @apply relative overflow-hidden cursor-pointer;
     aspect-ratio: 1;
+    border-radius: 6px;
   }
 
   .photo-grid-item img {
