@@ -3,6 +3,9 @@ import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
+import type { PhotoSpot } from '@/data/mockData'
+import type { LiveSpot } from '@/hooks/useLiveSpots'
+import { useSpotModal } from '@/contexts/SpotModalContext'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
@@ -27,6 +30,27 @@ const US_STATES = [
 ]
 
 const allFilters = [...specialtyFilters, 'Architecture', 'Florida', 'Engagement', 'Car']
+
+// Map a live DB spot to the PhotoSpot shape the detail modal expects so
+// community-discovered spots open the same full-screen detail sheet.
+function liveSpotToPhotoSpot(s: LiveSpot): PhotoSpot {
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.location_name ?? `${s.city ?? ''}${s.state ? `, ${s.state}` : ''}`.trim(),
+    image: s.cover_image_url ?? '',
+    lat: s.lat,
+    lng: s.lng,
+    category: s.category,
+    rating: Math.min(5, Math.max(3.5, (s.ai_score ?? 50) / 20)),
+    photoCount: s.photo_count ?? 0,
+    bestTime: 'Golden hour · Check forecast',
+    city: s.city ?? '',
+    state: s.state ?? undefined,
+    aiDiscovered: true,
+    tags: s.tags,
+  } as PhotoSpot
+}
 
 // Build a deduped list of all searchable "City, ST" locations from every data source
 const LOCATION_INDEX: { label: string; city: string; state: string }[] = (() => {
@@ -146,6 +170,7 @@ export default function Explore() {
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
+  const { openSpot } = useSpotModal()
   const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(50)
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
   const locQuery = useLocationSearch(query)
@@ -384,6 +409,7 @@ export default function Explore() {
                     {filteredLiveSpots.slice(0, 6).map(spot => (
                       <div
                         key={spot.id}
+                        onClick={() => openSpot(liveSpotToPhotoSpot(spot))}
                         className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer group"
                       >
                         {spot.cover_image_url ? (

@@ -5,6 +5,8 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProProvider } from './contexts/ProContext'
+import { SpotModalProvider, useSpotModal } from './contexts/SpotModalContext'
+import SpotDetailModal from './components/SpotDetailModal'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
@@ -106,10 +108,12 @@ export default function App() {
         <AuthProvider>
           <ProProvider>
           <AdminAuthProvider>
+          <SpotModalProvider>
             <div className="relative">
               <Router />
               <BottomNavWrapper />
             </div>
+            <GlobalSpotModal />
             <Toaster
               theme="dark"
               position="top-center"
@@ -122,12 +126,19 @@ export default function App() {
                 },
               }}
             />
+          </SpotModalProvider>
           </AdminAuthProvider>
           </ProProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   )
+}
+
+function GlobalSpotModal() {
+  const { currentSpot, closeSpot } = useSpotModal()
+  if (!currentSpot) return null
+  return <SpotDetailModal spot={currentSpot} onClose={closeSpot} />
 }
 
 function BottomNavWrapper() {
