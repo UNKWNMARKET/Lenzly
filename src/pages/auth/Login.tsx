@@ -105,7 +105,7 @@ export default function Login() {
           </button>
         </div>
 
-        {/* Remember me */}
+        {/* Remember me + Forgot password */}
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -123,6 +123,11 @@ export default function Login() {
               Remember me
             </span>
           </button>
+          <Link href="/auth/forgot-password">
+            <span className="text-sm text-gold/70 hover:text-gold transition-colors cursor-pointer">
+              Forgot password?
+            </span>
+          </Link>
         </div>
 
         <button
