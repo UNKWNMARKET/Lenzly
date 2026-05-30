@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckCircle } from 'lucide-react'
 import { useWeather } from '@/hooks/useWeather'
 import type { PhotoSpot } from '@/data/mockData'
@@ -30,7 +31,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
     window.open(`https://maps.apple.com/?daddr=${spot.lat},${spot.lng}&dirflg=d`, '_blank')
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50"
       style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0, overflow: 'hidden' }}
@@ -235,6 +236,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
