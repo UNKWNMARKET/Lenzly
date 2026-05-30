@@ -46,7 +46,7 @@ export default function Settings() {
   }) => (
     <button
       onClick={onPress}
-      className="flex items-center gap-3 w-full px-4 py-4 border-b border-lenz-border/50 hover:bg-white/3 transition-colors"
+      className="flex items-center gap-3 w-full px-4 py-4 border-b border-lenz-border/50 hover:bg-white/5 transition-colors"
     >
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-500/10' : 'bg-white/5'}`}>
         <Icon size={17} className={danger ? 'text-red-400' : 'text-white/50'} />
@@ -55,7 +55,9 @@ export default function Settings() {
         <p className={`text-sm font-medium ${danger ? 'text-red-400' : 'text-white'}`}>{label}</p>
         {sublabel && <p className="text-xs text-white/30 mt-0.5">{sublabel}</p>}
       </div>
-      {right ?? <ChevronRight size={15} className="text-white/20 shrink-0" />}
+      <div className="shrink-0 flex items-center">
+        {right ?? <ChevronRight size={15} className="text-white/20" />}
+      </div>
     </button>
   )
 

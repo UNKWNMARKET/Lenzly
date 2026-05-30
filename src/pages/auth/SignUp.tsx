@@ -29,6 +29,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle')
   const latestUsername = useRef('')
 
@@ -91,8 +92,8 @@ export default function SignUp() {
         return
       }
     }
-    toast.success('Account created! Welcome to LENZLY.')
-    navigate('/')
+    toast.success('Welcome to LENZLY! Set up your profile to get started.')
+    navigate('/profile/edit')
     setLoading(false)
   }
 
@@ -105,7 +106,7 @@ export default function SignUp() {
     return null
   }
 
-  const submitDisabled = loading || usernameStatus === 'taken' || usernameStatus === 'checking' || usernameStatus === 'error'
+  const submitDisabled = loading || usernameStatus === 'taken' || usernameStatus === 'checking' || usernameStatus === 'error' || !agreedToTerms
 
   return (
     <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center px-6 safe-top safe-bottom">
@@ -139,9 +140,22 @@ export default function SignUp() {
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
-        <p className="text-[10px] text-white/20 leading-relaxed">
-          By joining you agree to our <Link href="/terms"><span className="text-gold/60 cursor-pointer">Terms</span></Link> and <Link href="/privacy"><span className="text-gold/60 cursor-pointer">Privacy Policy</span></Link>. Free to join. Pro features available for $5/month.
-        </p>
+        <div className="flex items-start gap-3 py-1">
+          <button
+            type="button"
+            onClick={() => setAgreedToTerms(!agreedToTerms)}
+            className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${agreedToTerms ? 'bg-gold border-gold' : 'border-lenz-border bg-transparent'}`}
+          >
+            {agreedToTerms && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#080808" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+          </button>
+          <p className="text-[11px] text-white/40 leading-relaxed">
+            I am 18+ years of age and I agree to LENZLY's{' '}
+            <Link href="/terms"><span className="text-gold cursor-pointer">Terms of Service</span></Link>
+            {' '}and{' '}
+            <Link href="/privacy"><span className="text-gold cursor-pointer">Privacy Policy</span></Link>.
+            I understand that I am solely responsible for all content I post.
+          </p>
+        </div>
         <button type="submit" disabled={submitDisabled} className="btn-primary w-full py-3.5 text-sm font-semibold tracking-wider disabled:opacity-50">
           {loading ? 'Creating account...' : 'Join LENZLY Free'}
         </button>

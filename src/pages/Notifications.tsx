@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { toast } from 'sonner'
 
 type Notif = {
   id: string
@@ -15,6 +16,7 @@ type Notif = {
   message: string | null
   read: boolean
   created_at: string
+  follow_status?: string | null
   actor?: { username: string; avatar_url: string | null } | null
 }
 
@@ -53,12 +55,14 @@ export default function Notifications() {
   const { user } = useAuth()
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loading, setLoading] = useState(true)
+  const [followBackDone, setFollowBackDone] = useState<Set<string>>(new Set())
+  const [requestDone, setRequestDone] = useState<Set<string>>(new Set())
 
   const fetchNotifs = useCallback(async () => {
     if (!user) return
     const { data } = await supabase
       .from('notifications')
-      .select('*, actor:actor_id(username, avatar_url)')
+      .select('*, actor:actor_id(username, avatar_url), follow_status')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(60)
@@ -84,6 +88,36 @@ export default function Notifications() {
     await supabase.from('notifications').update({ read: true })
       .eq('user_id', user.id).eq('read', false)
     setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const handleConfirmFollow = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').upsert(
+      { follower_id: n.actor_id, following_id: user.id, status: 'accepted' },
+      { onConflict: 'follower_id,following_id' }
+    )
+    setRequestDone(prev => new Set(prev).add(n.id))
+    toast.success(`${n.actor?.username ?? 'User'} can now follow you`)
+    markRead(n.id)
+  }
+
+  const handleDenyFollow = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').delete().eq('follower_id', n.actor_id).eq('following_id', user.id)
+    setRequestDone(prev => new Set(prev).add(n.id))
+    toast.success('Request declined')
+    markRead(n.id)
+  }
+
+  const handleFollowBack = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').upsert(
+      { follower_id: user.id, following_id: n.actor_id },
+      { onConflict: 'follower_id,following_id' }
+    )
+    setFollowBackDone(prev => new Set(prev).add(n.id))
+    toast.success(`Following @${n.actor?.username ?? 'user'}`)
+    markRead(n.id)
   }
 
   const markRead = async (id: string) => {
@@ -139,14 +173,16 @@ export default function Notifications() {
       ) : (
         <div className="flex flex-col gap-1 p-4 mt-1">
           {notifs.map(n => (
-            <button
+            <div
               key={n.id}
+              role="button"
               onClick={() => markRead(n.id)}
               className={cn(
-                'flex items-center gap-3 p-3 rounded-2xl transition-all text-left w-full',
-                n.read ? 'bg-transparent hover:bg-white/3' : 'bg-white/5 hover:bg-white/7'
+                'flex flex-col p-3 rounded-2xl transition-all cursor-pointer',
+                n.read ? 'bg-transparent hover:bg-white/5' : 'bg-white/5 hover:bg-white/7'
               )}
             >
+            <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 <div className="w-11 h-11 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
@@ -174,7 +210,32 @@ export default function Notifications() {
               {!n.read && (
                 <span className="w-2 h-2 rounded-full bg-gold flex-shrink-0" />
               )}
-            </button>
+            </div>
+
+            {n.type === 'follow' && !requestDone.has(n.id) && (
+              <div className="flex gap-2 mt-2 ml-14">
+                {n.follow_status === 'pending' ? (
+                  <>
+                    <button onClick={e => { e.stopPropagation(); handleConfirmFollow(n) }}
+                      className="px-3 py-1 rounded-xl bg-gold text-lenz-bg text-xs font-bold active:scale-95 transition-transform">
+                      Confirm
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); handleDenyFollow(n) }}
+                      className="px-3 py-1 rounded-xl bg-white/10 text-white/60 text-xs font-semibold active:scale-95 transition-transform">
+                      Delete
+                    </button>
+                  </>
+                ) : !followBackDone.has(n.id) ? (
+                  <button onClick={e => { e.stopPropagation(); handleFollowBack(n) }}
+                    className="px-3 py-1 rounded-xl border border-lenz-border text-white/70 text-xs font-semibold active:scale-95 transition-transform hover:border-gold/40 hover:text-gold/80">
+                    Follow Back
+                  </button>
+                ) : (
+                  <span className="text-xs text-white/30 ml-1">Following ✓</span>
+                )}
+              </div>
+            )}
+            </div>
           ))}
         </div>
       )}

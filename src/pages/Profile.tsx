@@ -39,6 +39,10 @@ export default function Profile() {
     archived: boolean
   }
 
+  const [liveFollowers, setLiveFollowers] = useState<number | null>(null)
+  const [liveFollowing, setLiveFollowing] = useState<number | null>(null)
+  const [livePostCount, setLivePostCount] = useState<number | null>(null)
+
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
   const [savedPosts, setSavedPosts] = useState<MyPost[]>([])
@@ -68,6 +72,29 @@ export default function Profile() {
 
   useEffect(() => { loadMyPosts(); loadSavedPosts() }, [loadMyPosts, loadSavedPosts])
 
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase.channel('profile_counts')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'profiles',
+        filter: `id=eq.${user.id}`
+      }, (payload) => {
+        const row = payload.new as any
+        if (row.followers_count !== undefined) setLiveFollowers(row.followers_count)
+        if (row.following_count !== undefined) setLiveFollowing(row.following_count)
+      })
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'posts',
+        filter: `user_id=eq.${user.id}`
+      }, () => { setLivePostCount(prev => (prev ?? myPosts.length) + 1) })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'posts',
+        filter: `user_id=eq.${user.id}`
+      }, () => { setLivePostCount(prev => Math.max(0, (prev ?? myPosts.length) - 1)) })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user])
+
   const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile(); await loadMyPosts(); await loadSavedPosts() } })
 
   // Merge real Supabase profile data over mock for the fields that users can edit.
@@ -90,9 +117,9 @@ export default function Profile() {
     avatar:      profile?.avatar_url  ?? null,
     coverPhoto:  profile?.cover_url   ?? (hasRealProfile ? null : currentUser.coverPhoto),
     // Real counts or zero — never mock numbers
-    followers:   profile?.followers_count ?? 0,
-    following:   profile?.following_count ?? 0,
-    posts:       hasRealProfile ? myPosts.length : currentUser.posts,
+    followers:   liveFollowers ?? profile?.followers_count ?? 0,
+    following:   liveFollowing ?? profile?.following_count ?? 0,
+    posts:       livePostCount ?? (hasRealProfile ? myPosts.length : currentUser.posts),
     pro:         profile?.is_pro          ?? false,
     // These only come from real data — new profiles show nothing
     photos:      hasRealProfile ? [] : currentUser.photos,
