@@ -153,12 +153,25 @@ export default function PhotographerProfile() {
   }
 
   const handleShare = async () => {
-    const url = window.location.href
-    if (navigator.share) {
-      await navigator.share({ title: `${p.name} on LENZLY`, text: p.bio, url })
-    } else {
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied!')
+    const profileUrl = `https://lenzly.app/@${p.username}`
+    const shareText = p.bio
+      ? `Check out ${p.name}'s photography on LENZLY`
+      : `Check out @${p.username} on LENZLY`
+    try {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({
+        title: `${p.name} on LENZLY`,
+        text: shareText,
+        url: profileUrl,
+        dialogTitle: 'Share Profile',
+      })
+    } catch {
+      try {
+        await navigator.clipboard.writeText(profileUrl)
+        toast.success('Profile link copied!')
+      } catch {
+        toast.success(`lenzly.app/@${p.username}`)
+      }
     }
   }
 
