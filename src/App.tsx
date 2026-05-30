@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProProvider } from './contexts/ProContext'
 import { SpotModalProvider, useSpotModal } from './contexts/SpotModalContext'
 import SpotDetailModal from './components/SpotDetailModal'
+import { useSwipeNav } from './hooks/useSwipeNav'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
@@ -111,10 +112,10 @@ export default function App() {
           <ProProvider>
           <AdminAuthProvider>
           <SpotModalProvider>
-            <div className="relative">
+            <SwipeWrapper>
               <Router />
               <BottomNavWrapper />
-            </div>
+            </SwipeWrapper>
             <GlobalSpotModal />
             <Toaster
               theme="dark"
@@ -134,6 +135,15 @@ export default function App() {
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
+  )
+}
+
+function SwipeWrapper({ children }: { children: React.ReactNode }) {
+  const { onTouchStart, onTouchEnd } = useSwipeNav()
+  return (
+    <div className="relative" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {children}
+    </div>
   )
 }
 
