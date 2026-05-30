@@ -144,15 +144,24 @@ export default function Profile() {
   }
 
   const handleShare = async () => {
+    const profileUrl = `https://lenzly.app/@${u.username}`
+    const shareText = u.bio
+      ? `Check out ${u.name}'s photography on LENZLY — ${profileUrl}`
+      : `Check out @${u.username} on LENZLY — ${profileUrl}`
+
     if (navigator.share) {
-      await navigator.share({
-        title: `${u.name} on LENZLY`,
-        text: u.bio,
-        url: window.location.href,
-      })
+      try {
+        await navigator.share({
+          title: `${u.name} on LENZLY`,
+          text: shareText,
+          url: profileUrl,
+        })
+      } catch {
+        // user cancelled — do nothing
+      }
     } else {
-      await navigator.clipboard.writeText(window.location.href)
-      alert('Profile link copied!')
+      await navigator.clipboard.writeText(profileUrl)
+      toast.success('Profile link copied!')
     }
   }
 
