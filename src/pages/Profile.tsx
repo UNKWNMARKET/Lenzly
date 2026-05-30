@@ -146,22 +146,25 @@ export default function Profile() {
   const handleShare = async () => {
     const profileUrl = `https://lenzly.app/@${u.username}`
     const shareText = u.bio
-      ? `Check out ${u.name}'s photography on LENZLY — ${profileUrl}`
-      : `Check out @${u.username} on LENZLY — ${profileUrl}`
+      ? `Check out ${u.name}'s photography on LENZLY`
+      : `Check out @${u.username} on LENZLY`
 
-    if (navigator.share) {
+    try {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({
+        title: `${u.name} on LENZLY`,
+        text: shareText,
+        url: profileUrl,
+        dialogTitle: 'Share Profile',
+      })
+    } catch {
+      // fallback to clipboard
       try {
-        await navigator.share({
-          title: `${u.name} on LENZLY`,
-          text: shareText,
-          url: profileUrl,
-        })
+        await navigator.clipboard.writeText(profileUrl)
+        toast.success('Profile link copied!')
       } catch {
-        // user cancelled — do nothing
+        toast.success(`lenzly.app/@${u.username}`)
       }
-    } else {
-      await navigator.clipboard.writeText(profileUrl)
-      toast.success('Profile link copied!')
     }
   }
 
