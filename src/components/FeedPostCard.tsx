@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, X } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import SharePostSheet from './SharePostSheet'
 
 export type FeedPost = {
   id: string
@@ -50,6 +51,7 @@ export default function FeedPostCard({
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isOwner = currentUserId === post.user_id
@@ -72,12 +74,13 @@ export default function FeedPostCard({
   }, [post.id, currentUserId])
 
   const toggleLike = async () => {
-    if (!currentUserId) return
+    if (!currentUserId) { toast.error('Sign in to like posts'); return }
     const next = !liked
     setLiked(next)
     setLikesCount(c => next ? c + 1 : Math.max(0, c - 1))
     if (next) {
-      await supabase.from('post_likes').insert({ post_id: post.id, user_id: currentUserId })
+      const { error } = await supabase.from('post_likes').insert({ post_id: post.id, user_id: currentUserId })
+      if (error) { setLiked(!next); setLikesCount(c => next ? c - 1 : c + 1); toast.error('Could not like post'); return }
       await supabase.from('posts').update({ likes_count: likesCount + 1 }).eq('id', post.id)
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
@@ -86,24 +89,17 @@ export default function FeedPostCard({
   }
 
   const toggleSave = async () => {
-    if (!currentUserId) return
+    if (!currentUserId) { toast.error('Sign in to save posts'); return }
     const next = !saved
     setSaved(next)
     if (next) {
-      await supabase.from('saved_posts').insert({ post_id: post.id, user_id: currentUserId })
+      const { error } = await supabase.from('saved_posts').insert({ post_id: post.id, user_id: currentUserId })
+      if (error) { setSaved(!next); toast.error('Could not save post'); return }
       toast.success('Saved')
     } else {
       await supabase.from('saved_posts').delete().eq('post_id', post.id).eq('user_id', currentUserId)
       toast.success('Removed from saved')
     }
-  }
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/post/${post.id}`
-    try {
-      if (navigator.share) await navigator.share({ title: 'Check this out on LENZLY', url })
-      else { await navigator.clipboard.writeText(url); toast.success('Link copied!') }
-    } catch { /* user cancelled share sheet */ }
   }
 
   const openComments = async () => {
@@ -119,14 +115,16 @@ export default function FeedPostCard({
   }
 
   const submitComment = async () => {
-    if (!currentUserId || !commentText.trim()) return
+    if (!currentUserId) { toast.error('Sign in to comment'); return }
+    if (!commentText.trim()) return
     setSubmitting(true)
     const { data, error } = await supabase
       .from('comments')
       .insert({ post_id: post.id, user_id: currentUserId, text: commentText.trim() })
       .select('id, text, created_at, user_id, profiles(username, name, avatar_url)')
       .single()
-    if (!error && data) {
+    if (error) { toast.error('Could not post comment'); setSubmitting(false); return }
+    if (data) {
       setComments(prev => [...prev, data as unknown as Comment])
       setCommentsCount(c => c + 1)
       await supabase.from('posts').update({ comments_count: commentsCount + 1 }).eq('id', post.id)
@@ -210,7 +208,7 @@ export default function FeedPostCard({
             <MessageCircle size={23} className="text-white/75 group-hover:text-white transition-colors" />
             {commentsCount > 0 && <span className="text-sm font-semibold text-white/85">{commentsCount}</span>}
           </button>
-          <button onClick={handleShare} className="group">
+          <button onClick={() => setShareOpen(true)} className="group">
             <Send size={22} className="text-white/75 group-hover:text-white transition-colors -rotate-12" />
           </button>
         </div>
@@ -284,6 +282,14 @@ export default function FeedPostCard({
             )}
           </div>
         </div>
+      )}
+      {shareOpen && (
+        <SharePostSheet
+          postId={post.id}
+          imageUrl={post.image_url}
+          caption={post.caption}
+          onClose={() => setShareOpen(false)}
+        />
       )}
     </article>
   )
