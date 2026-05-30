@@ -3,9 +3,9 @@ import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
-import SpotDetailModal from '@/components/SpotDetailModal'
 import type { PhotoSpot } from '@/data/mockData'
 import type { LiveSpot } from '@/hooks/useLiveSpots'
+import { useSpotModal } from '@/contexts/SpotModalContext'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
 import { architectureSpots } from '@/data/architectureData'
@@ -170,7 +170,7 @@ export default function Explore() {
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
-  const [selectedLiveSpot, setSelectedLiveSpot] = useState<PhotoSpot | null>(null)
+  const { openSpot } = useSpotModal()
   const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(50)
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
   const locQuery = useLocationSearch(query)
@@ -409,7 +409,7 @@ export default function Explore() {
                     {filteredLiveSpots.slice(0, 6).map(spot => (
                       <div
                         key={spot.id}
-                        onClick={() => setSelectedLiveSpot(liveSpotToPhotoSpot(spot))}
+                        onClick={() => openSpot(liveSpotToPhotoSpot(spot))}
                         className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer group"
                       >
                         {spot.cover_image_url ? (
@@ -573,11 +573,6 @@ export default function Explore() {
           </>
         )}
       </div>
-
-      {/* Community-discovered spot detail */}
-      {selectedLiveSpot && (
-        <SpotDetailModal spot={selectedLiveSpot} onClose={() => setSelectedLiveSpot(null)} />
-      )}
     </div>
     </PullToRefreshWrapper>
   )

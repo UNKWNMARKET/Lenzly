@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import { MapPin, Star, Camera, Clock, Zap, Navigation } from 'lucide-react'
 import { formatCount } from '@/lib/utils'
 import type { PhotoSpot } from '@/data/mockData'
-import SpotDetailModal from './SpotDetailModal'
+import { useSpotModal } from '@/contexts/SpotModalContext'
 import SmartSpotImage from './SmartSpotImage'
 
 interface Props {
@@ -10,14 +9,14 @@ interface Props {
 }
 
 export default function LocationSpotCard({ spot }: Props) {
-  const [open, setOpen] = useState(false)
+  const { openSpot } = useSpotModal()
 
   return (
     <>
       <div
         className="relative rounded-2xl overflow-hidden cursor-pointer group animate-slide-up"
         style={{ aspectRatio: '3/4' }}
-        onClick={() => setOpen(true)}
+        onClick={() => openSpot(spot)}
       >
         <SmartSpotImage
           name={`${spot.name} ${spot.city ?? ''} ${spot.state ?? ''}`.trim()}
@@ -73,8 +72,6 @@ export default function LocationSpotCard({ spot }: Props) {
           </div>
         </div>
       </div>
-
-      {open && <SpotDetailModal spot={spot} onClose={() => setOpen(false)} />}
     </>
   )
 }
