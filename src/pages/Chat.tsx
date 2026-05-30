@@ -318,7 +318,7 @@ export default function Chat() {
           className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-sm"
           onClick={e => e.target === e.currentTarget && setShowBgPicker(false)}
         >
-          <div className="w-full max-w-[430px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-white/15" />

@@ -133,7 +133,7 @@ export default function Profile() {
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
-    <div className="min-h-full pb-24">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Cover photo */}
       <div className="relative h-48 overflow-hidden bg-lenz-card">
         {u.coverPhoto
@@ -447,7 +447,7 @@ function PeopleModal({ title, people, onClose }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
       <div
-        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -500,7 +500,7 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
       <div
-        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

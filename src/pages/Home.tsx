@@ -106,12 +106,15 @@ export default function Home() {
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
-    <div className="min-h-full pb-24">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
-        <div>
+        <div className="md:hidden">
           <h1 className="text-2xl font-bold tracking-[0.15em] gold-text">LENZLY</h1>
           <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase mt-0.5">Photography Platform</p>
+        </div>
+        <div className="hidden md:block">
+          <h1 className="text-lg font-bold tracking-wider text-white/70">Feed</h1>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
@@ -166,7 +169,7 @@ export default function Home() {
       <BusinessBanner />
 
       {/* Feed */}
-      <div className="mt-1">
+      <div className="mt-1 md:grid md:grid-cols-2 md:gap-0">
         {loading ? (
           // Skeleton loading
           [1, 2, 3].map(i => (

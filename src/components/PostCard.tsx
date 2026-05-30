@@ -230,7 +230,7 @@ export default function PostCard({ post }: Props) {
           onClick={() => setShowMore(false)}
         >
           <div
-            className="w-full max-w-[430px] mx-auto bg-lenz-card rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom"
+            className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-card rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom"
             onClick={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mt-3 mb-4" />

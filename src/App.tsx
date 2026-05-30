@@ -9,6 +9,7 @@ import { SpotModalProvider, useSpotModal } from './contexts/SpotModalContext'
 import SpotDetailModal from './components/SpotDetailModal'
 import { useSwipeNav } from './hooks/useSwipeNav'
 import BottomNav from './components/BottomNav'
+import SideNav from './components/SideNav'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
 import FindPhotographer from './pages/FindPhotographer'
@@ -159,8 +160,12 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup']
-  if (!user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')) {
-    return null
-  }
-  return <BottomNav />
+  const hideNav = !user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
+  if (hideNav) return null
+  return (
+    <>
+      <BottomNav />
+      <SideNav />
+    </>
+  )
 }

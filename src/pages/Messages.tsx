@@ -280,7 +280,7 @@ export default function Messages() {
           className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setShowNewModal(false)}
         >
-          <div className="w-full max-w-[430px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">New Message</h2>
               <button onClick={() => setShowNewModal(false)} className="p-1 rounded-full hover:bg-white/5">

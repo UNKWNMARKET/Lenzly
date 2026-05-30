@@ -297,7 +297,7 @@ export default function Explore() {
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
-    <div className="min-h-full pb-24">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <h1 className="text-xl font-bold tracking-[0.12em] gold-text mb-3">EXPLORE</h1>

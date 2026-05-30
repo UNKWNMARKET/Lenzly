@@ -139,7 +139,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
           className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-sm"
           onClick={e => e.target === e.currentTarget && setShowHire(false)}
         >
-          <div className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">
                 {sent ? '✓ Request Sent!' : `Hire ${p.name.split(' ')[0]}`}
