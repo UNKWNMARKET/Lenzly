@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     backgroundColor: '#080808',
-    preferredContentMode: 'mobile',
+    preferredContentMode: 'recommended',
   },
   server: {
     // In production build, use the bundled web assets (not a remote URL)
