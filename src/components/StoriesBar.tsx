@@ -301,10 +301,15 @@ export default function StoriesBar() {
       .from('profiles').select('id, username, avatar_url, private_account').in('id', posterIds)
     const profileMap = Object.fromEntries((profileRows ?? []).map((p: any) => [p.id, p]))
 
+    // Hide stories from anyone in a block relationship with the viewer
+    const { data: hiddenRows } = await supabase.rpc('hidden_user_ids')
+    const hidden = new Set<string>((hiddenRows ?? []).map((r: any) => (typeof r === 'string' ? r : r.hidden_user_ids)))
+
     const visible = data
       .map((s: any) => ({ ...s, profiles: profileMap[s.user_id] ?? null }))
       .filter((s: any) => {
         if (s.user_id === user.id) return true
+        if (hidden.has(s.user_id)) return false
         if (!s.profiles?.private_account) return true
         return followingIds.has(s.user_id)
       })

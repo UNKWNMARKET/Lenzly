@@ -11,6 +11,7 @@ import { posts as mockPosts } from '@/data/mockData'
 import { supabase, Post } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { useBlockedUsers } from '@/hooks/useBlockedUsers'
 
 export default function Home() {
   const [, navigate] = useLocation()
@@ -21,6 +22,7 @@ export default function Home() {
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
   const [followingIds, setFollowingIds] = useState<string[]>([])
+  const { blockedIds } = useBlockedUsers()
 
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
@@ -99,10 +101,12 @@ export default function Home() {
     return () => { supabase.removeChannel(ch) }
   }, [user])
 
-  // Use real posts if available, otherwise fall back to mock data
+  // Use real posts if available, otherwise fall back to mock data.
+  // Always hide posts from users involved in a block relationship.
+  const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
   const visiblePosts = feedTab === 'following'
-    ? realPosts.filter(p => followingIds.includes(p.user_id))
-    : realPosts
+    ? notBlocked.filter(p => followingIds.includes(p.user_id))
+    : notBlocked
   const hasPosts = visiblePosts.length > 0
 
   return (

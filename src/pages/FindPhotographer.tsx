@@ -7,6 +7,7 @@ import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
 import { useRealPhotographers } from '@/hooks/useRealPhotographers'
+import { useBlockedUsers } from '@/hooks/useBlockedUsers'
 import { useLocation } from 'wouter'
 
 const mockPhotographers = [...photographers, ...floridaPhotographers]
@@ -113,7 +114,9 @@ export default function FindPhotographer() {
 
   // Real Supabase users shown as photographers, merged ahead of sample data
   const { photographers: realPhotographers } = useRealPhotographers()
+  const { blockedIds } = useBlockedUsers()
   const allPhotographers = [...realPhotographers, ...mockPhotographers]
+    .filter(p => !blockedIds.has(String(p.id)))
 
   const handleRefresh = useCallback(async () => {
     await new Promise(r => setTimeout(r, 500))
