@@ -8,6 +8,7 @@ type AuthContextType = {
   profile: Profile | null
   loading: boolean
   signOut: () => Promise<void>
+  deleteAccount: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  deleteAccount: async () => {},
   refreshProfile: async () => {},
 })
 
@@ -78,8 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  // Permanently erase the account. The RPC deletes the auth.users row, which
+  // cascades to all the user's data, then we sign out the now-orphaned session.
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) throw error
+    await supabase.auth.signOut()
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signOut, deleteAccount, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

@@ -11,6 +11,74 @@ import { toast } from 'sonner'
 
 type SectionKey = 'notifications' | 'privacy' | null
 
+function DeleteAccountModal({ onClose }: { onClose: () => void }) {
+  const { deleteAccount } = useAuth()
+  const [, navigate] = useLocation()
+  const [confirmText, setConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  const canDelete = confirmText.trim().toUpperCase() === 'DELETE'
+
+  const handleDelete = async () => {
+    if (!canDelete) return
+    setDeleting(true)
+    try {
+      await deleteAccount()
+      toast.success('Your account has been deleted')
+      navigate('/auth/login')
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not delete account. Please try again.')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-lg bg-lenz-card rounded-t-3xl border-t border-lenz-border p-6 pb-10 space-y-4"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-red-400 font-bold text-base tracking-wide">Delete Account</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+            <X size={16} className="text-white/60" />
+          </button>
+        </div>
+
+        <p className="text-sm text-white/60 leading-relaxed">
+          This is permanent. Your profile, photos, spots, stories, messages, followers,
+          and all other data will be erased immediately and cannot be recovered.
+        </p>
+
+        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+          <p className="text-xs text-red-300/90 leading-relaxed">
+            If you have an active LENZLY Pro subscription, cancel it in your Apple ID
+            settings — deleting your account here does not cancel App Store billing.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-white/40 mb-2">Type <span className="font-bold text-white/70">DELETE</span> to confirm</p>
+          <input
+            value={confirmText}
+            onChange={e => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+            autoCapitalize="characters"
+            className="w-full bg-lenz-bg border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-red-500/50 transition-colors"
+          />
+        </div>
+
+        <button onClick={handleDelete} disabled={!canDelete || deleting}
+          className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-sm tracking-wide disabled:opacity-40 active:bg-red-600 transition-colors">
+          {deleting ? 'Deleting…' : 'Permanently Delete My Account'}
+        </button>
+        <button onClick={onClose}
+          className="w-full py-3.5 rounded-2xl bg-white/5 text-white/60 font-semibold text-sm active:bg-white/10 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function FeedbackModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth()
   const [type, setType] = useState<'bug' | 'suggestion' | 'other'>('bug')
@@ -81,6 +149,7 @@ export default function Settings() {
   const [showLocation, setShowLocation] = useState(true)
   const [expanded, setExpanded] = useState<SectionKey>(null)
   const [showFeedback, setShowFeedback] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
 
   const toggle = (key: SectionKey) => setExpanded(prev => prev === key ? null : key)
 
@@ -268,13 +337,14 @@ export default function Settings() {
             label="Delete Account"
             sublabel="Permanently delete your account and data"
             danger
-            onPress={() => toast.error('Please contact support to delete your account')}
+            onPress={() => setShowDelete(true)}
           />
         </div>
 
         {/* Version */}
         <p className="text-center text-[10px] text-white/15 mt-8 mb-4 tracking-widest">LENZLY v1.0 · Made for photographers</p>
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+      {showDelete && <DeleteAccountModal onClose={() => setShowDelete(false)} />}
 
       </div>
     </div>
