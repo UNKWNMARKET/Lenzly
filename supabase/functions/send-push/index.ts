@@ -28,7 +28,8 @@ async function sendPush(externalIds: string[], title: string, message: string, d
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+      // Modern OneSignal REST API keys use the "Key" scheme (legacy used "Basic")
+      Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
     },
     body: JSON.stringify({
       app_id: ONESIGNAL_APP_ID,
