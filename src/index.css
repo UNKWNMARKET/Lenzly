@@ -111,6 +111,29 @@
     border-radius: 50%;
   }
 
+  /* Story viewer progress bar — CSS animation, no JS interval lag */
+  @keyframes story-fill {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+
+  .story-bar-fill {
+    transform-origin: left center;
+    will-change: transform;
+    animation: story-fill linear forwards;
+  }
+
+  .story-bar-fill.paused {
+    animation-play-state: paused;
+  }
+
+  /* Story image crossfade */
+  .story-image {
+    will-change: opacity, transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
   .btn-primary {
     @apply bg-gold text-lenz-bg font-semibold px-6 py-3 rounded-2xl text-sm tracking-wide transition-all duration-200 active:scale-95 hover:opacity-90 shadow-lg shadow-gold/20;
   }
