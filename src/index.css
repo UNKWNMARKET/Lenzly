@@ -134,6 +134,11 @@
     backface-visibility: hidden;
   }
 
+  /* Hide the bottom nav while a story viewer is open */
+  body.story-open .app-bottom-nav {
+    display: none;
+  }
+
   .btn-primary {
     @apply bg-gold text-lenz-bg font-semibold px-6 py-3 rounded-2xl text-sm tracking-wide transition-all duration-200 active:scale-95 hover:opacity-90 shadow-lg shadow-gold/20;
   }

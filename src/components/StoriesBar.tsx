@@ -59,6 +59,12 @@ function StoryViewer({
   const story = stories[index]
   const isOwn = story?.user_id === userId
 
+  // Hide the bottom nav while the story viewer is open
+  useEffect(() => {
+    document.body.classList.add('story-open')
+    return () => { document.body.classList.remove('story-open') }
+  }, [])
+
   // Mark viewed + reset state whenever story changes
   useEffect(() => {
     if (!story) return
@@ -122,7 +128,7 @@ function StoryViewer({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black select-none"
+      className="fixed inset-0 z-[60] bg-black select-none"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); setPaused(false) }}
@@ -133,7 +139,7 @@ function StoryViewer({
         src={story.image_url}
         alt=""
         onLoad={() => setImgLoaded(true)}
-        className={`story-image absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`story-image absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
 
       {/* Gradient overlays */}
