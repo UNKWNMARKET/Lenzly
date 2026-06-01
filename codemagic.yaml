@@ -16,7 +16,7 @@ workflows:
         BUNDLE_ID: "com.unkwnmarket.lenzly"
         DEVELOPMENT_TEAM: "S9HC8WQ7YH"
       node: 22
-      xcode: 16.3
+      xcode: 26
 
     scripts:
       - name: Install npm dependencies
