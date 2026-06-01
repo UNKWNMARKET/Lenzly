@@ -40,7 +40,7 @@ function SpotStoryViewer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black flex flex-col">
       {/* Progress bar */}
       <div className="absolute top-0 left-0 right-0 z-20 px-3 pt-3">
         <div className="h-0.5 bg-white/20 rounded-full overflow-hidden">
@@ -70,30 +70,32 @@ function SpotStoryViewer({
         <div className="flex items-center gap-2">
           {isOwn && (
             <button
-              onClick={e => { e.stopPropagation(); handleDelete() }}
-              className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center"
+              onClick={handleDelete}
+              className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center active:bg-red-500/50"
             >
-              <Trash2 size={14} className="text-red-400" />
+              <Trash2 size={16} className="text-red-400" />
             </button>
           )}
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center"
           >
-            <X size={16} className="text-white" />
+            <X size={18} className="text-white" />
           </button>
         </div>
       </div>
+
+      {/* Tap left half to close */}
+      <div className="absolute inset-0 z-0" onClick={onClose} />
 
       <img
         src={story.image_url}
         alt={story.location_name}
         className="w-full h-full object-cover"
-        onClick={e => e.stopPropagation()}
       />
 
       {story.caption && (
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-10 pt-20 bg-gradient-to-t from-black/80 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-10 pt-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
           <p className="text-white text-sm leading-relaxed">{story.caption}</p>
         </div>
       )}
