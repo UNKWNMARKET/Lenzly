@@ -129,7 +129,8 @@ export default function StoriesBar() {
       .order('created_at', { ascending: false })
       .limit(30)
 
-    if (error || !data) return
+    if (error) { console.error('spot_stories fetch error:', error); return }
+    if (!data || data.length === 0) { console.log('No stories found'); return }
 
     // Fetch private_account status for all unique poster IDs
     const posterIds = [...new Set((data as SpotStory[]).map(s => s.user_id))]
