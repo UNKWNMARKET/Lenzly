@@ -1,9 +1,10 @@
 import { Capacitor } from '@capacitor/core'
 
 // OneSignal App ID — safe to ship in the app (it is NOT a secret).
-// Set VITE_ONESIGNAL_APP_ID in Codemagic / .env. Get it from
-// OneSignal dashboard → Settings → Keys & IDs → OneSignal App ID.
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined
+// Defaults to the LENZLY app id; can be overridden with VITE_ONESIGNAL_APP_ID.
+const ONESIGNAL_APP_ID =
+  (import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined) ||
+  '78a7fec1-ab51-4a8c-80f2-6235dbbf3f22'
 
 let initialized = false
 
