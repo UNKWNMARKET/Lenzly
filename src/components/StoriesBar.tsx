@@ -112,16 +112,12 @@ export default function StoriesBar() {
   const loadStories = useCallback(async () => {
     if (!user) return
 
-    // Get IDs of people the current user follows
     const { data: followData } = await supabase
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id)
+    const followingIds = new Set((followData ?? []).map((f: any) => f.following_id))
 
-    const followingIds = (followData ?? []).map((f: any) => f.following_id)
-
-    // Fetch non-expired stories — don't include private_account in join
-    // to avoid schema cache issues; fetch profiles separately
     const { data, error } = await supabase
       .from('spot_stories')
       .select('*, profiles:user_id(username, avatar_url)')
@@ -129,28 +125,27 @@ export default function StoriesBar() {
       .order('created_at', { ascending: false })
       .limit(30)
 
-    if (error) { console.error('spot_stories fetch error:', error); return }
-    if (!data || data.length === 0) { console.log('No stories found'); return }
+    if (error) { console.error('spot_stories error:', JSON.stringify(error)); return }
+    if (!data) return
 
-    // Fetch private_account status for all unique poster IDs
-    const posterIds = [...new Set((data as SpotStory[]).map(s => s.user_id))]
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, private_account')
-      .in('id', posterIds)
+    // Fetch private accounts separately
+    const posterIds = [...new Set(data.map((s: any) => s.user_id))]
+    let privateSet = new Set<string>()
+    if (posterIds.length > 0) {
+      const { data: pd } = await supabase
+        .from('profiles')
+        .select('id, private_account')
+        .in('id', posterIds)
+      privateSet = new Set((pd ?? []).filter((p: any) => p.private_account).map((p: any) => p.id))
+    }
 
-    const privateSet = new Set(
-      (profileData ?? []).filter((p: any) => p.private_account).map((p: any) => p.id)
-    )
-
-    // Filter: own stories always visible; private accounts only to followers; public to all
-    const visible = (data as SpotStory[]).filter(s => {
+    const visible = data.filter((s: any) => {
       if (s.user_id === user.id) return true
       if (!privateSet.has(s.user_id)) return true
-      return followingIds.includes(s.user_id)
+      return followingIds.has(s.user_id)
     })
 
-    setSpotStories(visible)
+    setSpotStories(visible as SpotStory[])
   }, [user])
 
   useEffect(() => {
