@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Bell, MessageCircle } from 'lucide-react'
+import { Bell, MessageCircle, Search } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
 import PostCard from '@/components/PostCard'
@@ -122,6 +122,9 @@ export default function Home() {
           <h1 className="text-lg font-bold tracking-wider text-white/70">Feed</h1>
         </div>
         <div className="flex items-center gap-1">
+          <button onClick={() => navigate('/search')} className="p-2 rounded-full hover:bg-white/5 transition-colors">
+            <Search size={20} className="text-white/60" />
+          </button>
           <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <Bell size={20} className="text-white/60" />
             {unreadNotifs > 0 && (

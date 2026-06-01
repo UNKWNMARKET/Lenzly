@@ -15,6 +15,7 @@ import BottomNav from './components/BottomNav'
 import SideNav from './components/SideNav'
 import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
+import Search from './pages/Search'
 import Explore from './pages/Explore'
 import FindPhotographer from './pages/FindPhotographer'
 import Profile from './pages/Profile'
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
       <Route path="/spot">{() => <ProtectedRoute component={PostSpot} />}</Route>
       <Route path="/explore">{() => <ProtectedRoute component={Explore} />}</Route>
+      <Route path="/search">{() => <ProtectedRoute component={Search} />}</Route>
       <Route path="/find">{() => <ProtectedRoute component={FindPhotographer} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
       <Route path="/upload">{() => <ProtectedRoute component={UploadPost} />}</Route>
@@ -201,7 +203,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/spot']
-  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
+  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/search' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
   if (hideNav) return null
   return (
     <>
