@@ -6,7 +6,7 @@ const tabs = [
   { path: '/', icon: Home, label: 'Feed' },
   { path: '/explore', icon: Compass, label: 'Explore' },
   { path: '/upload', icon: PlusSquare, label: '', isUpload: true },
-  { path: '/weddings', icon: Heart, label: 'Weddings' },
+  { path: '/weddings', icon: Heart, label: 'Wedding Venues' },
   { path: '/profile', icon: User, label: 'Profile' },
 ]
 
@@ -38,7 +38,7 @@ export default function BottomNav() {
             return (
               <Link key={path} href={path}>
                 <button className={cn(
-                  'flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all duration-200 group active:scale-95',
+                  'flex flex-col items-center gap-1 py-2 px-2.5 rounded-2xl transition-all duration-200 group active:scale-95',
                   active ? 'bg-gold/10' : 'hover:bg-white/5'
                 )}>
                   <Icon
@@ -50,7 +50,7 @@ export default function BottomNav() {
                     )}
                   />
                   <span className={cn(
-                    'text-[9px] font-semibold tracking-widest uppercase transition-colors duration-200',
+                    'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] text-center max-w-[54px] min-h-[22px] flex items-center justify-center transition-colors duration-200',
                     active ? 'text-gold' : 'text-white/25 group-hover:text-white/40'
                   )}>
                     {label}

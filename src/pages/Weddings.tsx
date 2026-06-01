@@ -235,6 +235,48 @@ const VENUES: Venue[] = [
     imageUrl: 'https://images.pexels.com/photos/1123773/pexels-photo-1123773.jpeg?auto=compress&cs=tinysrgb&w=800',
     badge: 'Wine Country Gem',
   },
+  {
+    id: 'ravenswood-mansion',
+    name: 'Ravenswood Mansion',
+    city: 'Brentwood',
+    state: 'TN',
+    address: '1825 Wilson Pike, Brentwood, TN 37027',
+    phone: '(615) 946-0389',
+    website: 'https://www.ravenswoodmansion.com/weddings',
+    listingUrl: 'https://www.weddingwire.com/biz/ravenswood-mansion-brentwood/bce4f9e05579c1af.html',
+    priceLabel: 'From $2,500',
+    priceNote: 'Starting price for 50 guests. The 400-acre property can host up to 300 guests with tenting.',
+    rating: 4.9,
+    reviewCount: 47,
+    ratingSource: 'WeddingWire',
+    ratingUrl: 'https://www.weddingwire.com/biz/ravenswood-mansion-brentwood/bce4f9e05579c1af.html',
+    capacity: 'Up to 300 guests',
+    style: 'Antebellum Mansion',
+    description: 'A stately 1825 Antebellum mansion set on 400 acres just 20 minutes from downtown Nashville. Endless rolling views, historic Southern architecture, and a serene park-like setting make Ravenswood one of Middle Tennessee\'s most beloved wedding venues.',
+    imageUrl: 'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=800',
+    badge: 'Couples\' Choice',
+  },
+  {
+    id: 'prospect-house',
+    name: 'Prospect House',
+    city: 'Dripping Springs',
+    state: 'TX',
+    address: '1601 Crumley Ranch Rd, Dripping Springs, TX 78620',
+    phone: '(512) 987-5285',
+    website: 'https://www.prospecthousetx.com/weddings',
+    listingUrl: 'https://www.weddingwire.com/biz/prospect-house-dripping-springs/1e158e77f592852a.html',
+    priceLabel: 'Inquire for pricing',
+    priceNote: 'Over 7,000 sq ft of indoor/outdoor space. Main Hall seats up to 220 with a DJ, 180 with a band. Contact for current packages.',
+    rating: 4.9,
+    reviewCount: 37,
+    ratingSource: 'WeddingWire',
+    ratingUrl: 'https://www.weddingwire.com/reviews/prospect-house-dripping-springs/1e158e77f592852a.html',
+    capacity: 'Up to 220 guests',
+    style: 'Modern Hill Country',
+    description: 'A sleek, modern wedding venue just 20 miles from downtown Austin in the Texas Hill Country. Striking clean-lined architecture, floor-to-ceiling windows, and sweeping Hill Country views — a favorite for couples who want contemporary elegance over rustic barn.',
+    imageUrl: 'https://images.pexels.com/photos/265947/pexels-photo-265947.jpeg?auto=compress&cs=tinysrgb&w=800',
+    badge: 'Couples\' Choice',
+  },
 ]
 
 // ─── Star display ─────────────────────────────────────────────────────────────
@@ -451,15 +493,18 @@ function VenueCard({ venue, onTap }: { venue: Venue; onTap: () => void }) {
 export default function Weddings() {
   const [, navigate] = useLocation()
   const [selected, setSelected] = useState<Venue | null>(null)
-  const [filter, setFilter] = useState<'all' | 'luxury' | 'estate' | 'waterfront'>('all')
+  const [stateFilter, setStateFilter] = useState<string>('All')
 
-  const filtered = VENUES.filter(v => {
-    if (filter === 'all') return true
-    if (filter === 'luxury') return ['plaza-hotel', 'oheka-castle', 'sunstone-villa', 'rosewood-mansion'].includes(v.id)
-    if (filter === 'estate') return ['biltmore-estate', 'meadow-brook', 'park-chateau', 'oheka-castle', 'sunstone-villa'].includes(v.id)
-    if (filter === 'waterfront') return v.id === 'clarks-landing'
-    return true
-  })
+  // States that currently have at least one verified venue, sorted by venue count
+  const statesWithVenues = Array.from(new Set(VENUES.map(v => v.state)))
+    .sort((a, b) =>
+      VENUES.filter(v => v.state === b).length - VENUES.filter(v => v.state === a).length ||
+      a.localeCompare(b)
+    )
+
+  const filtered = stateFilter === 'All'
+    ? VENUES
+    : VENUES.filter(v => v.state === stateFilter)
 
   return (
     <div className="min-h-[100dvh] bg-lenz-bg safe-top">
@@ -476,19 +521,29 @@ export default function Weddings() {
           <Heart size={18} className="text-gold/60" fill="currentColor" />
         </div>
 
-        {/* Filter chips */}
+        {/* State picker */}
         <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-          {(['all', 'luxury', 'estate', 'waterfront'] as const).map(f => (
+          <button
+            onClick={() => setStateFilter('All')}
+            className={`shrink-0 px-4 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+              stateFilter === 'All'
+                ? 'bg-gold text-lenz-bg'
+                : 'bg-white/6 border border-lenz-border text-white/40'
+            }`}
+          >
+            All States
+          </button>
+          {statesWithVenues.map(st => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`shrink-0 px-4 py-1.5 rounded-full text-[11px] font-semibold capitalize transition-all ${
-                filter === f
+              key={st}
+              onClick={() => setStateFilter(st)}
+              className={`shrink-0 px-4 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+                stateFilter === st
                   ? 'bg-gold text-lenz-bg'
                   : 'bg-white/6 border border-lenz-border text-white/40'
               }`}
             >
-              {f === 'all' ? 'All Venues' : f === 'luxury' ? '✦ Luxury' : f === 'estate' ? '🏰 Estate' : '⚓ Waterfront'}
+              {st} · {VENUES.filter(v => v.state === st).length}
             </button>
           ))}
         </div>
@@ -514,9 +569,10 @@ export default function Weddings() {
       {/* Sort label */}
       <div className="px-4 mb-3 flex items-center justify-between">
         <p className="text-[10px] font-bold tracking-[0.2em] text-white/25 uppercase">
-          {filtered.length} venues · Sorted by rating
+          {filtered.length} {filtered.length === 1 ? 'venue' : 'venues'}
+          {stateFilter !== 'All' ? ` in ${stateFilter}` : ''} · By rating
         </p>
-        <p className="text-[10px] text-white/20">Tap any venue for details</p>
+        <p className="text-[10px] text-white/20">Tap for details</p>
       </div>
 
       {/* Venue list */}
@@ -527,6 +583,14 @@ export default function Weddings() {
           .map(venue => (
             <VenueCard key={venue.id} venue={venue} onTap={() => setSelected(venue)} />
           ))}
+
+        {/* More states coming */}
+        <div className="mx-4 mt-1 mb-3 p-4 rounded-2xl bg-gold/5 border border-gold/15 text-center">
+          <p className="text-[12px] font-semibold text-gold/90">More venues & states coming soon</p>
+          <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+            We're expanding to top-rated venues in all 50 states. Every venue is hand-verified — real ratings, real prices, and a phone number we've confirmed before it goes live.
+          </p>
+        </div>
 
         {/* Data sources footer */}
         <div className="mx-4 mt-2 mb-4 p-4 rounded-2xl bg-white/3 border border-lenz-border/50">
