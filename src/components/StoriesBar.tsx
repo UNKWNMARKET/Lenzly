@@ -120,20 +120,32 @@ export default function StoriesBar() {
 
     const followingIds = (followData ?? []).map((f: any) => f.following_id)
 
-    // Fetch non-expired stories with profile info
-    const { data } = await supabase
+    // Fetch non-expired stories — don't include private_account in join
+    // to avoid schema cache issues; fetch profiles separately
+    const { data, error } = await supabase
       .from('spot_stories')
-      .select('*, profiles:user_id(username, avatar_url, private_account)')
+      .select('*, profiles:user_id(username, avatar_url)')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(30)
 
-    if (!data) return
+    if (error || !data) return
 
-    // Filter: show own stories always, public accounts always, private only if following
+    // Fetch private_account status for all unique poster IDs
+    const posterIds = [...new Set((data as SpotStory[]).map(s => s.user_id))]
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id, private_account')
+      .in('id', posterIds)
+
+    const privateSet = new Set(
+      (profileData ?? []).filter((p: any) => p.private_account).map((p: any) => p.id)
+    )
+
+    // Filter: own stories always visible; private accounts only to followers; public to all
     const visible = (data as SpotStory[]).filter(s => {
       if (s.user_id === user.id) return true
-      if (!s.profiles?.private_account) return true
+      if (!privateSet.has(s.user_id)) return true
       return followingIds.includes(s.user_id)
     })
 
