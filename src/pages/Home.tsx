@@ -12,27 +12,58 @@ import { supabase, Post } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+
+const PAGE_SIZE = 20
 
 export default function Home() {
   const [, navigate] = useLocation()
   const { user } = useAuth()
   const [realPosts, setRealPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
   const [followingIds, setFollowingIds] = useState<string[]>([])
   const { blockedIds } = useBlockedUsers()
 
+  // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
       .from('posts')
       .select('*, profiles(*)')
       .order('created_at', { ascending: false })
-      .limit(50)
-    if (data && data.length > 0) setRealPosts(data)
+      .limit(PAGE_SIZE)
+    setRealPosts(data ?? [])
+    setHasMore((data?.length ?? 0) === PAGE_SIZE)
     setLoading(false)
   }, [])
+
+  // Load the next page using the oldest loaded post's created_at as the cursor
+  const loadMore = useCallback(async () => {
+    if (loadingMore || realPosts.length === 0) return
+    setLoadingMore(true)
+    const oldest = realPosts[realPosts.length - 1].created_at
+    const { data } = await supabase
+      .from('posts')
+      .select('*, profiles(*)')
+      .order('created_at', { ascending: false })
+      .lt('created_at', oldest)
+      .limit(PAGE_SIZE)
+    if (data && data.length > 0) {
+      // De-dupe in case a realtime insert overlapped the page boundary
+      setRealPosts(prev => {
+        const seen = new Set(prev.map(p => p.id))
+        return [...prev, ...data.filter(p => !seen.has(p.id))]
+      })
+    }
+    setHasMore((data?.length ?? 0) === PAGE_SIZE)
+    setLoadingMore(false)
+  }, [loadingMore, realPosts])
+
+  const sentinelRef = useInfiniteScroll(loadMore, { hasMore, loading: loadingMore })
 
   // Load who the current user follows
   useEffect(() => {
@@ -219,6 +250,18 @@ export default function Home() {
           mockPosts.map(post => (
             <PostCard key={post.id} post={post} />
           ))
+        )}
+
+        {/* Infinite-scroll sentinel + spinner (only for the real feed) */}
+        {hasPosts && (
+          <div ref={sentinelRef} className="py-6 flex items-center justify-center">
+            {loadingMore && (
+              <div className="w-5 h-5 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />
+            )}
+            {!hasMore && (
+              <p className="text-[11px] text-white/20 tracking-wider uppercase">You're all caught up</p>
+            )}
+          </div>
         )}
       </div>
     </div>

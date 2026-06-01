@@ -16,6 +16,9 @@ import { toast } from 'sonner'
 import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from 'wouter'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+
+const GRID_PAGE = 30
 
 type ProfileTab = 'posts' | 'liked' | 'saved'
 type ModalType = 'followers' | 'following' | 'photo' | 'reviews' | null
@@ -37,6 +40,7 @@ export default function Profile() {
     comments_count: number
     caption: string | null
     archived: boolean
+    created_at?: string
   }
 
   const [liveFollowers, setLiveFollowers] = useState<number | null>(null)
@@ -46,16 +50,43 @@ export default function Profile() {
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
   const [savedPosts, setSavedPosts] = useState<MyPost[]>([])
+  const [myHasMore, setMyHasMore] = useState(false)
+  const [myLoadingMore, setMyLoadingMore] = useState(false)
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return
     const { data } = await supabase
       .from('posts')
-      .select('id, image_url, likes_count, comments_count, caption, archived')
+      .select('id, image_url, likes_count, comments_count, caption, archived, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
+      .limit(GRID_PAGE)
     if (data) setMyPosts(data.filter(p => p.image_url) as MyPost[])
+    setMyHasMore((data?.length ?? 0) === GRID_PAGE)
   }, [user])
+
+  const loadMoreMyPosts = useCallback(async () => {
+    if (!user || myLoadingMore || myPosts.length === 0) return
+    setMyLoadingMore(true)
+    const oldest = (myPosts[myPosts.length - 1] as any).created_at
+    const { data } = await supabase
+      .from('posts')
+      .select('id, image_url, likes_count, comments_count, caption, archived, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .lt('created_at', oldest)
+      .limit(GRID_PAGE)
+    if (data && data.length > 0) {
+      setMyPosts(prev => {
+        const seen = new Set(prev.map(p => p.id))
+        return [...prev, ...data.filter(p => !seen.has(p.id) && p.image_url)] as MyPost[]
+      })
+    }
+    setMyHasMore((data?.length ?? 0) === GRID_PAGE)
+    setMyLoadingMore(false)
+  }, [user, myLoadingMore, myPosts])
+
+  const gridSentinelRef = useInfiniteScroll(loadMoreMyPosts, { hasMore: myHasMore, loading: myLoadingMore })
 
   const loadSavedPosts = useCallback(async () => {
     if (!user) return
@@ -372,6 +403,7 @@ export default function Profile() {
       {/* Photo Grid */}
       {activeTab === 'posts' && hasRealProfile ? (
         myPosts.length > 0 ? (
+          <>
           <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
             {myPosts.map(post => (
               <button
@@ -388,6 +420,12 @@ export default function Profile() {
               </button>
             ))}
           </div>
+          {myHasMore && (
+            <div ref={gridSentinelRef} className="py-6 flex items-center justify-center">
+              {myLoadingMore && <div className="w-5 h-5 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />}
+            </div>
+          )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Camera size={32} className="text-white/10 mb-3" />
