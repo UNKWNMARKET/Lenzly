@@ -2,13 +2,72 @@ import { useState } from 'react'
 import { useLocation } from 'wouter'
 import {
   ChevronLeft, ChevronRight, Bell, Lock, Eye, CreditCard,
-  HelpCircle, FileText, Shield, LogOut, Trash2, Moon,
-  Smartphone, Globe, Star
+  HelpCircle, FileText, Shield, LogOut, Trash2,
+  Smartphone, Globe, Star, MessageSquare, X
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 type SectionKey = 'notifications' | 'privacy' | null
+
+function FeedbackModal({ onClose }: { onClose: () => void }) {
+  const { user } = useAuth()
+  const [type, setType] = useState<'bug' | 'suggestion' | 'other'>('bug')
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const send = async () => {
+    if (!message.trim()) { toast.error('Please describe the issue'); return }
+    setSending(true)
+    const { error } = await supabase.from('feedback').insert({
+      user_id: user?.id ?? null,
+      type,
+      message: message.trim(),
+    })
+    setSending(false)
+    if (error) { toast.error('Failed to send. Try again.'); return }
+    toast.success('Feedback sent — thank you!')
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-lg bg-lenz-card rounded-t-3xl border-t border-lenz-border p-6 pb-10 space-y-4"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-white font-bold text-base tracking-wide">Send Feedback</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+            <X size={16} className="text-white/60" />
+          </button>
+        </div>
+
+        {/* Type selector */}
+        <div className="flex gap-2">
+          {(['bug', 'suggestion', 'other'] as const).map(t => (
+            <button key={t} onClick={() => setType(t)}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${type === t ? 'bg-gold text-lenz-bg' : 'bg-white/5 text-white/40 hover:text-white/70'}`}>
+              {t === 'bug' ? '🐛 Bug' : t === 'suggestion' ? '💡 Idea' : '💬 Other'}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder={type === 'bug' ? 'Describe what happened and how to reproduce it…' : type === 'suggestion' ? 'What feature or improvement would you like?' : "What's on your mind?"}
+          rows={5}
+          className="w-full bg-lenz-bg border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors resize-none"
+        />
+
+        <button onClick={send} disabled={sending || !message.trim()}
+          className="btn-primary w-full py-3.5 text-sm font-semibold tracking-wider disabled:opacity-50">
+          {sending ? 'Sending…' : 'Send Feedback'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Settings() {
   const [, navigate] = useLocation()
@@ -21,6 +80,7 @@ export default function Settings() {
   const [privateAccount, setPrivateAccount] = useState(false)
   const [showLocation, setShowLocation] = useState(true)
   const [expanded, setExpanded] = useState<SectionKey>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   const toggle = (key: SectionKey) => setExpanded(prev => prev === key ? null : key)
 
@@ -176,6 +236,12 @@ export default function Settings() {
             onPress={() => toast.info('Help Center coming soon')}
           />
           <Row
+            icon={MessageSquare}
+            label="Send Feedback"
+            sublabel="Report a bug or suggest a feature"
+            onPress={() => setShowFeedback(true)}
+          />
+          <Row
             icon={FileText}
             label="Terms of Service"
             onPress={() => navigate('/terms')}
@@ -208,6 +274,7 @@ export default function Settings() {
 
         {/* Version */}
         <p className="text-center text-[10px] text-white/15 mt-8 mb-4 tracking-widest">LENZLY v1.0 · Made for photographers</p>
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
 
       </div>
     </div>

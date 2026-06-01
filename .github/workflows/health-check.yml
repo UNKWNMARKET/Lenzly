@@ -1,0 +1,222 @@
+name: LENZLY Daily Health Check
+
+on:
+  schedule:
+    # 6am UTC = 1am Eastern Time
+    - cron: '0 6 * * *'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Run LENZLY Health Check
+        uses: actions/github-script@v7
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+        with:
+          script: |
+            const SUPABASE_URL = process.env.SUPABASE_URL
+            const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY
+            const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
+            const RESEND_KEY   = process.env.RESEND_API_KEY
+            const OWNER_EMAIL  = process.env.OWNER_EMAIL
+
+            const headers = {
+              'apikey': SERVICE_KEY,
+              'Authorization': `Bearer ${SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+            }
+
+            const issues = []
+            const fixes  = []
+            const info   = []
+
+            // ── 1. Check profiles table ──────────────────────────────────
+            const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count`, { headers })
+            const profileCount = profilesRes.ok ? (await profilesRes.json()).length : null
+            info.push(`Total profiles: ${profileCount ?? 'ERROR'}`)
+
+            // ── 2. Check follows table ───────────────────────────────────
+            const followsRes = await fetch(`${SUPABASE_URL}/rest/v1/follows?select=count`, { headers })
+            const followCount = followsRes.ok ? (await followsRes.json()).length : null
+            info.push(`Total follows: ${followCount ?? 'ERROR'}`)
+
+            // ── 3. Check posts table ─────────────────────────────────────
+            const postsRes = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=count`, { headers })
+            const postCount = postsRes.ok ? (await postsRes.json()).length : null
+            info.push(`Total posts: ${postCount ?? 'ERROR'}`)
+
+            // ── 4. Recount follower/following/post counts (auto-fix) ─────
+            const recountRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recount_all_profile_stats`, {
+              method: 'POST',
+              headers,
+              body: '{}',
+            })
+            if (recountRes.ok) {
+              fixes.push('Recalculated all follower/following/post counts')
+            } else {
+              issues.push('Could not run recount_all_profile_stats — check function exists')
+            }
+
+            // ── 5. Expire old spot stories ───────────────────────────────
+            const expireRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/spot_stories?expires_at=lt.${new Date().toISOString()}`,
+              { method: 'DELETE', headers }
+            )
+            if (expireRes.ok) fixes.push('Cleaned up expired spot stories')
+
+            // ── 6. Read recent feedback from users ───────────────────────
+            const feedbackRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/feedback?select=*&order=created_at.desc&limit=20&read=eq.false`,
+              { headers }
+            )
+            const feedback = feedbackRes.ok ? await feedbackRes.json() : []
+            info.push(`Unread feedback items: ${feedback.length}`)
+
+            // ── 7. Check recent auth errors (failed signups) ─────────────
+            const recentUsersRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=id,created_at&order=created_at.desc&limit=5`,
+              { headers }
+            )
+            const recentUsers = recentUsersRes.ok ? await recentUsersRes.json() : []
+            info.push(`Recent signups (last 5): ${recentUsers.length}`)
+
+            // ── 8. Claude AI analysis ────────────────────────────────────
+            let aiAnalysis = 'No AI analysis available.'
+            if (ANTHROPIC_KEY) {
+              const feedbackText = feedback.length > 0
+                ? feedback.map(f => `- [${f.type}] ${f.message}`).join('\n')
+                : 'No new feedback.'
+
+              const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                  'x-api-key': ANTHROPIC_KEY,
+                  'anthropic-version': '2023-06-01',
+                  'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'claude-haiku-4-5-20251001',
+                  max_tokens: 500,
+                  messages: [{
+                    role: 'user',
+                    content: `You are the AI health monitor for LENZLY, a photography platform iOS app.
+
+Daily health check results:
+${info.join('\n')}
+
+Issues detected: ${issues.length > 0 ? issues.join(', ') : 'None'}
+Auto-fixes applied: ${fixes.join(', ')}
+
+Recent user feedback:
+${feedbackText}
+
+In 3-5 bullet points, summarize the app health and any action items the developer should address. Be concise and specific.`
+                  }]
+                })
+              })
+              if (claudeRes.ok) {
+                const claudeData = await claudeRes.json()
+                aiAnalysis = claudeData.content?.[0]?.text ?? aiAnalysis
+              }
+            }
+
+            // ── 9. Mark feedback as read ─────────────────────────────────
+            if (feedback.length > 0) {
+              const ids = feedback.map(f => f.id)
+              await fetch(`${SUPABASE_URL}/rest/v1/feedback?id=in.(${ids.join(',')})`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ read: true }),
+              })
+            }
+
+            // ── 10. Send email report ────────────────────────────────────
+            const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+            const statusColor = issues.length > 0 ? '#e53e3e' : '#D4AF37'
+            const statusText  = issues.length > 0 ? '⚠️ Issues Detected' : '✅ All Systems Healthy'
+
+            const emailHtml = `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#080808;font-family:-apple-system,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#080808;min-height:100vh;">
+<tr><td align="center" style="padding:40px 24px;">
+<table width="100%" style="max-width:520px;background:#111;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
+
+  <tr><td style="padding:32px 36px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+    <p style="margin:0;font-size:20px;font-weight:800;letter-spacing:0.2em;color:#D4AF37;">LENZLY</p>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.4);">Daily Health Report · ${now}</p>
+  </td></tr>
+
+  <tr><td style="padding:24px 36px;">
+    <p style="margin:0 0 20px;font-size:16px;font-weight:700;color:${statusColor};">${statusText}</p>
+
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-transform:uppercase;">App Stats</p>
+    <table style="width:100%;margin-bottom:20px;">
+      ${info.map(i => `<tr><td style="padding:4px 0;font-size:13px;color:rgba(255,255,255,0.6);">${i}</td></tr>`).join('')}
+    </table>
+
+    ${fixes.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-transform:uppercase;">Auto-Fixes Applied</p>
+    <table style="width:100%;margin-bottom:20px;">
+      ${fixes.map(f => `<tr><td style="padding:4px 0;font-size:13px;color:#68d391;">✓ ${f}</td></tr>`).join('')}
+    </table>` : ''}
+
+    ${issues.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-transform:uppercase;">Issues Requiring Attention</p>
+    <table style="width:100%;margin-bottom:20px;">
+      ${issues.map(i => `<tr><td style="padding:4px 0;font-size:13px;color:#fc8181;">⚠ ${i}</td></tr>`).join('')}
+    </table>` : ''}
+
+    ${feedback.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-transform:uppercase;">User Feedback (${feedback.length})</p>
+    <table style="width:100%;margin-bottom:20px;">
+      ${feedback.slice(0, 5).map(f => `<tr><td style="padding:4px 0;font-size:13px;color:rgba(255,255,255,0.5);">[${f.type}] ${f.message}</td></tr>`).join('')}
+      ${feedback.length > 5 ? `<tr><td style="padding:4px 0;font-size:12px;color:rgba(255,255,255,0.25);">+ ${feedback.length - 5} more</td></tr>` : ''}
+    </table>` : ''}
+
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.3);text-transform:uppercase;">AI Analysis</p>
+    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.7;white-space:pre-wrap;">${aiAnalysis}</p>
+  </td></tr>
+
+  <tr><td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.15);text-align:center;">LENZLY Auto Health Monitor · Runs daily at 1am ET</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
+
+            if (RESEND_KEY && OWNER_EMAIL) {
+              await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${RESEND_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'LENZLY Health <onboarding@resend.dev>',
+                  to: [OWNER_EMAIL],
+                  subject: `LENZLY Health Report · ${statusText} · ${new Date().toLocaleDateString()}`,
+                  html: emailHtml,
+                }),
+              })
+              console.log('Health report emailed to', OWNER_EMAIL)
+            }
+
+            // Fail the workflow if there are critical issues
+            if (issues.length > 0) {
+              core.warning(`Health check found ${issues.length} issue(s): ${issues.join(', ')}`)
+            } else {
+              console.log('Health check passed. All systems operational.')
+            }
