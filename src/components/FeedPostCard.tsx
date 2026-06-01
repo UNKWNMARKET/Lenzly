@@ -78,13 +78,13 @@ export default function FeedPostCard({
     const next = !liked
     setLiked(next)
     setLikesCount(c => next ? c + 1 : Math.max(0, c - 1))
+    // Count on posts is maintained by the on_post_like_change DB trigger —
+    // we only write the like row here and optimistically update local state.
     if (next) {
       const { error } = await supabase.from('post_likes').insert({ post_id: post.id, user_id: currentUserId })
       if (error) { setLiked(!next); setLikesCount(c => next ? c - 1 : c + 1); toast.error('Could not like post'); return }
-      await supabase.from('posts').update({ likes_count: likesCount + 1 }).eq('id', post.id)
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
-      await supabase.from('posts').update({ likes_count: Math.max(0, likesCount - 1) }).eq('id', post.id)
     }
   }
 
@@ -157,9 +157,10 @@ export default function FeedPostCard({
       .eq('id', currentUserId)
       .maybeSingle()
 
+    // comments_count on posts is maintained by the on_comment_insert DB
+    // trigger — we only insert the comment and optimistically bump local state.
     setComments(prev => [...prev, { ...data, profiles: prof ?? null } as unknown as Comment])
     setCommentsCount(c => c + 1)
-    await supabase.from('posts').update({ comments_count: commentsCount + 1 }).eq('id', post.id)
     setSubmitting(false)
   }
 

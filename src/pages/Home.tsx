@@ -3,6 +3,7 @@ import { Bell, MessageCircle } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
 import PostCard from '@/components/PostCard'
+import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import AppLogo from '@/components/AppLogo'
@@ -185,9 +186,14 @@ export default function Home() {
             </div>
           ))
         ) : hasPosts ? (
-          // Real posts from Supabase — render as simple cards
+          // Real posts from Supabase — full card with likes, comments, save, share
           visiblePosts.map(post => (
-            <RealPostCard key={post.id} post={post} />
+            <FeedPostCard
+              key={post.id}
+              post={toFeedPost(post)}
+              currentUserId={user?.id ?? null}
+              onDeleted={id => setRealPosts(prev => prev.filter(p => p.id !== id))}
+            />
           ))
         ) : feedTab === 'following' ? (
           // Following tab with no followed posts yet
@@ -213,80 +219,24 @@ export default function Home() {
   )
 }
 
-function RealPostCard({ post }: { post: Post }) {
-  const [liked, setLiked] = useState(false)
-  const [likes, setLikes] = useState(post.likes_count)
-
-  const toggleLike = async () => {
-    setLiked(!liked)
-    setLikes(l => liked ? l - 1 : l + 1)
+// Map a Supabase Post (with joined `profiles`) onto the FeedPost shape that
+// FeedPostCard expects (which uses singular `profile`).
+function toFeedPost(post: Post): FeedPost {
+  const p = (post as any).profiles
+  return {
+    id: post.id,
+    user_id: post.user_id,
+    image_url: post.image_url,
+    caption: post.caption ?? null,
+    location_name: post.location_name ?? null,
+    tags: post.tags ?? [],
+    likes_count: post.likes_count ?? 0,
+    comments_count: post.comments_count ?? 0,
+    category: (post as any).category ?? '',
+    created_at: post.created_at,
+    archived: (post as any).archived ?? false,
+    profile: p
+      ? { id: p.id, username: p.username ?? null, name: p.name ?? null, avatar_url: p.avatar_url ?? null, is_pro: p.is_pro ?? false }
+      : null,
   }
-
-  const profile = post.profiles
-  const timeAgo = getTimeAgo(new Date(post.created_at))
-
-  return (
-    <div className="border-b border-lenz-border">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-10 h-10 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-bold">
-              {(profile?.name || '?')[0].toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-white truncate">{profile?.name || 'Photographer'}</p>
-            {profile?.is_pro && (
-              <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-            )}
-          </div>
-          {post.location_name && (
-            <p className="text-xs text-white/40 truncate">📍 {post.location_name}</p>
-          )}
-        </div>
-        <span className="text-xs text-white/25 shrink-0">{timeAgo}</span>
-      </div>
-
-      {/* Image */}
-      <div className="aspect-square overflow-hidden bg-lenz-card">
-        <img src={post.image_url} alt={post.caption || ''} className="w-full h-full object-cover" loading="lazy" />
-      </div>
-
-      {/* Actions */}
-      <div className="px-4 py-3">
-        <div className="flex items-center gap-4 mb-2">
-          <button onClick={toggleLike} className="flex items-center gap-1.5">
-            <span className={`text-xl ${liked ? 'text-red-500' : 'text-white/50'}`}>{liked ? '❤️' : '🤍'}</span>
-            <span className="text-sm text-white/50">{likes}</span>
-          </button>
-          <button className="flex items-center gap-1.5">
-            <span className="text-xl text-white/50">💬</span>
-            <span className="text-sm text-white/50">{post.comments_count}</span>
-          </button>
-        </div>
-        {post.caption && (
-          <p className="text-sm text-white/80 leading-relaxed">
-            <span className="font-semibold text-white">{profile?.username || profile?.name}</span>{' '}
-            {post.caption}
-          </p>
-        )}
-        {post.tags && post.tags.length > 0 && (
-          <p className="text-xs text-gold/60 mt-1">{post.tags.join(' ')}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return `${Math.floor(seconds / 86400)}d ago`
 }
