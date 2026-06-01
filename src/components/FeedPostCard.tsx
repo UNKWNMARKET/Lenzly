@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
 import ReportSheet from './ReportSheet'
+import { img } from '@/lib/image'
 
 export type FeedPost = {
   id: string
@@ -188,7 +189,7 @@ export default function FeedPostCard({
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div className="w-10 h-10 rounded-full overflow-hidden bg-lenz-bg border-2 border-lenz-border shrink-0">
           {profile?.avatar_url
-            ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ? <img src={img.avatar(profile.avatar_url)} alt="" className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
           }
         </div>
@@ -234,7 +235,7 @@ export default function FeedPostCard({
 
       {/* Image — rounded inside card */}
       <div className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg">
-        <img src={post.image_url} alt={post.caption ?? ''} className="w-full h-full object-cover" loading="lazy" />
+        <img src={img.feed(post.image_url)} alt={post.caption ?? ''} className="w-full h-full object-cover" loading="lazy" />
       </div>
 
       {/* Action bar */}
@@ -291,7 +292,7 @@ export default function FeedPostCard({
             <div key={c.id} className="flex items-start gap-2.5">
               <div className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5">
                 {c.profiles?.avatar_url
-                  ? <img src={c.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ? <img src={img.avatar(c.profiles.avatar_url)} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/40 font-bold">{(c.profiles?.name || '?')[0].toUpperCase()}</div>}
               </div>
               <div className="flex-1 min-w-0 bg-white/4 rounded-2xl px-3 py-2">

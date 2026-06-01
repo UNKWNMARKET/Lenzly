@@ -6,6 +6,7 @@ import SpotDetailModal from './SpotDetailModal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
+import { img } from '@/lib/image'
 import type { PhotoSpot } from '@/data/mockData'
 
 type SpotStory = {
@@ -136,7 +137,7 @@ function StoryViewer({
       {/* Photo — crossfade on load */}
       <img
         key={story.id}
-        src={story.image_url}
+        src={img.feed(story.image_url)}
         alt=""
         onLoad={() => setImgLoaded(true)}
         className={`story-image absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -168,7 +169,7 @@ function StoryViewer({
         <div className="flex items-center gap-2.5 pointer-events-auto">
           <div className="w-9 h-9 rounded-full overflow-hidden border border-white/25 bg-lenz-card shrink-0">
             {story.profiles?.avatar_url
-              ? <img src={story.profiles.avatar_url} className="w-full h-full object-cover" />
+              ? <img src={img.avatar(story.profiles.avatar_url)} className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center text-white/60 font-bold text-sm">
                   {story.profiles?.username?.[0]?.toUpperCase() ?? '?'}
                 </div>
@@ -357,7 +358,7 @@ export default function StoriesBar() {
           {myStory ? (
             <div className={ring(!viewedIds.has(myStory.id))}>
               <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
-                <img src={myStory.image_url} className="w-full h-full object-cover" />
+                <img src={img.thumb(myStory.image_url)} className="w-full h-full object-cover" />
               </div>
             </div>
           ) : (
@@ -380,7 +381,7 @@ export default function StoriesBar() {
             >
               <div className={ring(unseen)}>
                 <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
-                  <img src={story.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={img.thumb(story.image_url)} alt="" className="w-full h-full object-cover" loading="lazy" />
                 </div>
               </div>
               <span className="text-[10px] text-white/35 w-16 text-center truncate leading-tight">
@@ -399,7 +400,7 @@ export default function StoriesBar() {
           >
             <div className={i < 3 ? 'story-ring' : 'story-ring-seen'}>
               <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
-                <img src={spot.image} alt={spot.name} className="w-full h-full object-cover" loading="lazy" />
+                <img src={img.thumb(spot.image)} alt={spot.name} className="w-full h-full object-cover" loading="lazy" />
               </div>
             </div>
             {spot.aiDiscovered && (

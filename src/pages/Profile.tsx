@@ -17,6 +17,7 @@ import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from 'wouter'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { img } from '@/lib/image'
 
 const GRID_PAGE = 30
 
@@ -207,7 +208,7 @@ export default function Profile() {
       {/* Cover photo */}
       <div className="relative h-48 overflow-hidden bg-lenz-card">
         {u.coverPhoto
-          ? <img src={u.coverPhoto} alt="cover" className="w-full h-full object-cover" />
+          ? <img src={img.hero(u.coverPhoto)} alt="cover" className="w-full h-full object-cover" />
           : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#0a0804]" />
         }
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-lenz-bg" />
@@ -240,7 +241,7 @@ export default function Profile() {
           <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
             <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
               {u.avatar
-                ? <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
                     {u.name.charAt(0).toUpperCase()}
                   </div>
@@ -411,7 +412,7 @@ export default function Profile() {
                 onClick={() => navigate(`/post/${post.id}`)}
                 className="relative overflow-hidden aspect-square group bg-lenz-card"
               >
-                <img src={post.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 <div className="absolute bottom-1.5 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <Heart size={11} className="text-white fill-white" />
@@ -447,7 +448,7 @@ export default function Profile() {
                 onClick={() => navigate(`/post/${post.id}`)}
                 className="relative overflow-hidden aspect-square group bg-lenz-card"
               >
-                <img src={post.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Bookmark size={11} className="text-gold fill-gold" />

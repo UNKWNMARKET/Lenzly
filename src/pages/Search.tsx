@@ -4,6 +4,7 @@ import { ArrowLeft, Search as SearchIcon, X, MapPin, Compass } from 'lucide-reac
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
+import { img } from '@/lib/image'
 
 type UserResult = {
   id: string
@@ -121,7 +122,7 @@ export default function Search() {
               >
                 <div className="w-11 h-11 rounded-full bg-lenz-card overflow-hidden border border-lenz-border shrink-0">
                   {u.avatar_url
-                    ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ? <img src={img.avatar(u.avatar_url)} alt="" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold">{(u.name || u.username || '?')[0].toUpperCase()}</div>}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
