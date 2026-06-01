@@ -25,6 +25,7 @@ import Login from './pages/auth/Login'
 import SignUp from './pages/auth/SignUp'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
+import PostSpot from './pages/PostSpot'
 import UploadPost from './pages/UploadPost'
 import EditProfile from './pages/EditProfile'
 import Settings from './pages/Settings'
@@ -83,6 +84,7 @@ function Router() {
 
       {/* Protected app */}
       <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
+      <Route path="/spot">{() => <ProtectedRoute component={PostSpot} />}</Route>
       <Route path="/explore">{() => <ProtectedRoute component={Explore} />}</Route>
       <Route path="/find">{() => <ProtectedRoute component={FindPhotographer} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
@@ -188,7 +190,7 @@ function GlobalSpotModal() {
 function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
-  const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password']
+  const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/spot']
   const hideNav = !user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
   if (hideNav) return null
   return (
