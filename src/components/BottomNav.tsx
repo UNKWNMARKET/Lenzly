@@ -1,4 +1,4 @@
-import { Home, Compass, MapPin, User, PlusSquare } from 'lucide-react'
+import { Home, Compass, MapPin, User, PlusSquare, Heart } from 'lucide-react'
 import { useLocation, Link } from 'wouter'
 import { cn } from '@/lib/utils'
 
@@ -6,7 +6,7 @@ const tabs = [
   { path: '/', icon: Home, label: 'Feed' },
   { path: '/explore', icon: Compass, label: 'Explore' },
   { path: '/upload', icon: PlusSquare, label: '', isUpload: true },
-  { path: '/find', icon: MapPin, label: 'Find' },
+  { path: '/weddings', icon: Heart, label: 'Weddings' },
   { path: '/profile', icon: User, label: 'Profile' },
 ]
 

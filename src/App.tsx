@@ -38,6 +38,7 @@ import Messages from './pages/Messages'
 import Chat from './pages/Chat'
 import PhotographerProfile from './pages/PhotographerProfile'
 import PostDetail from './pages/PostDetail'
+import Weddings from './pages/Weddings'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -110,6 +111,7 @@ function Router() {
       <Route path="/chat/:id">{() => <ProtectedRoute component={Chat} />}</Route>
       <Route path="/photographer/:id">{() => <ProtectedRoute component={PhotographerProfile} />}</Route>
       <Route path="/post/:id">{() => <ProtectedRoute component={PostDetail} />}</Route>
+      <Route path="/weddings">{() => <ProtectedRoute component={Weddings} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
