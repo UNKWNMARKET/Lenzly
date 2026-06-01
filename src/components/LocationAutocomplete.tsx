@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MapPin, Loader, Utensils, Building2, Landmark } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { searchUSCities } from '@/data/usCities'
@@ -35,7 +35,22 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const skipNextSearch = useRef(false)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+
+  const recalcDropdown = useCallback(() => {
+    if (!dropUp || !inputRef.current) return
+    const rect = inputRef.current.getBoundingClientRect()
+    setDropdownStyle({
+      position: 'fixed',
+      left: rect.left,
+      right: window.innerWidth - rect.right,
+      bottom: window.innerHeight - rect.top + 6,
+      maxHeight: Math.min(256, rect.top - 8),
+      zIndex: 9999,
+    })
+  }, [dropUp])
 
   useEffect(() => {
     if (skipNextSearch.current) {
@@ -96,12 +111,13 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
       }).slice(0, 12)
 
       setSuggestions(merged)
+      if (merged.length > 0) recalcDropdown()
       setOpen(merged.length > 0)
       setLoading(false)
     }, 280)
 
     return () => { clearTimeout(timer); controller.abort() }
-  }, [value])
+  }, [value, recalcDropdown])
 
   // Close on outside click
   useEffect(() => {
@@ -131,11 +147,12 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
     <div ref={containerRef} className="relative">
       <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 z-10" />
       <input
+        ref={inputRef}
         type="text"
         placeholder={placeholder ?? 'Location (e.g. Wynwood Walls, Miami FL)'}
         value={value}
         onChange={e => onChange(e.target.value)}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        onFocus={() => { recalcDropdown(); suggestions.length > 0 && setOpen(true) }}
         className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
       />
       {loading && (
@@ -143,7 +160,10 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
       )}
 
       {open && suggestions.length > 0 && (
-        <div className={`absolute z-50 left-0 right-0 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/40 max-h-64 overflow-y-auto ${dropUp ? 'bottom-full mb-1.5' : 'mt-1.5'}`}>
+        <div
+          className="bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/40 overflow-y-auto"
+          style={dropUp ? dropdownStyle : { position: 'absolute', left: 0, right: 0, marginTop: 6, zIndex: 50, maxHeight: 256 }}
+        >
           {suggestions.map((s, i) => {
             const Icon = s.source === 'place' ? placeIcon(s.category) : MapPin
             const accent = s.source === 'spot' || s.source === 'place'

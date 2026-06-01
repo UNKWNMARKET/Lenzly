@@ -163,14 +163,16 @@ export default function PostSpot() {
       {/* Bottom sheet — inputs over the photo */}
       <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-8 space-y-3">
         {/* Location */}
-        <div className="[&_input]:bg-transparent [&_input]:border-0 [&_input]:backdrop-blur-none bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-          <LocationAutocomplete
-            value={locationName}
-            onChange={setLocationName}
-            onSelect={(s: LocationSuggestion) => setLocationName(s.display)}
-            placeholder="Tag your location…"
-            dropUp
-          />
+        <div className="relative">
+          <div className="[&_input]:bg-transparent [&_input]:border-0 [&_input]:backdrop-blur-none bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl">
+            <LocationAutocomplete
+              value={locationName}
+              onChange={setLocationName}
+              onSelect={(s: LocationSuggestion) => setLocationName(s.display)}
+              placeholder="Tag your location…"
+              dropUp
+            />
+          </div>
         </div>
 
         {/* Caption */}
