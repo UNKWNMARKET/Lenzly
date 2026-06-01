@@ -193,6 +193,7 @@ function StoryViewer({
           {isOwn && (
             <button
               className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
+              onTouchStart={e => e.stopPropagation()}
               onTouchEnd={e => { e.stopPropagation(); setShowMenu(true) }}
             >
               <MoreHorizontal size={20} className="text-white" />
@@ -200,6 +201,7 @@ function StoryViewer({
           )}
           <button
             className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
+            onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => { e.stopPropagation(); onClose() }}
           >
             <X size={20} className="text-white" />
@@ -218,10 +220,12 @@ function StoryViewer({
       {showMenu && (
         <div
           className="absolute inset-0 z-40"
+          onTouchStart={e => e.stopPropagation()}
           onTouchEnd={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
         >
           <div
             className="absolute bottom-0 left-0 right-0 bg-lenz-card rounded-t-[28px] px-5 pt-3 pb-10 animate-slide-up"
+            onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
           >
             {/* Handle */}
