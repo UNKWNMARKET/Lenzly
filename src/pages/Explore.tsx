@@ -14,6 +14,7 @@ import { floridaSpots200 } from '@/data/floridaSpots200'
 
 const allFloridaSpots = [...floridaSpots, ...floridaSpots200]
 import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
+import { statesSpots, floridaExtraSpots } from '@/data/statesSpots'
 import { useLiveSpots } from '@/hooks/useLiveSpots'
 import { useLocationSearch, spotMatchesLocation } from '@/hooks/useLocationSearch'
 import { searchUSCities } from '@/data/usCities'
@@ -67,6 +68,7 @@ const LOCATION_INDEX: { label: string; city: string; state: string }[] = (() => 
   allFloridaSpots.forEach(s => add(s.city, 'FL'))
   engagementSpotData.forEach(s => add(s.city, s.state))
   carSpotData.forEach(s => add(s.city, s.state))
+  statesSpots.forEach(s => add(s.city, s.state))
   return out.sort((a, b) => a.label.localeCompare(b.label))
 })()
 
@@ -290,8 +292,13 @@ export default function Explore() {
       (s.state ?? '').toLowerCase().includes(query.toLowerCase())
     )
   }
-  const filteredAiSpots = useMemo(() => photoSpots.filter(s => s.aiDiscovered && matchPhotoSpot(s)), [query, locQuery])
-  const filteredAllSpots = useMemo(() => photoSpots.filter(matchPhotoSpot), [query, locQuery])
+  // Base photo-spot pool: original spots + new per-state spots + FL extras
+  const allPhotoSpotsPool = useMemo(
+    () => [...photoSpots, ...statesSpots, ...floridaExtraSpots],
+    []
+  )
+  const filteredAiSpots = useMemo(() => allPhotoSpotsPool.filter(s => s.aiDiscovered && matchPhotoSpot(s)), [allPhotoSpotsPool, query, locQuery])
+  const filteredAllSpots = useMemo(() => allPhotoSpotsPool.filter(matchPhotoSpot), [allPhotoSpotsPool, query, locQuery])
 
   const isAll = activeFilter === 'All'
 
