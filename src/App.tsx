@@ -14,6 +14,7 @@ import { useSwipeNav } from './hooks/useSwipeNav'
 import BottomNav from './components/BottomNav'
 import SideNav from './components/SideNav'
 import Home from './pages/Home'
+import Onboarding from './pages/Onboarding'
 import Explore from './pages/Explore'
 import FindPhotographer from './pages/FindPhotographer'
 import Profile from './pages/Profile'
@@ -56,9 +57,9 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   )
 }
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, loading } = useAuth()
-  const [, navigate] = useLocation()
+function ProtectedRoute({ component: Component, skipOnboarding }: { component: React.ComponentType; skipOnboarding?: boolean }) {
+  const { user, profile, loading } = useAuth()
+  const [location, navigate] = useLocation()
   if (loading) return (
     <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center gap-4">
       <h1 className="text-4xl font-bold tracking-[0.2em] gold-text">LENZLY</h1>
@@ -68,6 +69,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   )
   if (!user) {
     navigate('/auth/login')
+    return null
+  }
+  // Send brand-new users through onboarding before they reach the app.
+  // (profile === null means it's still loading — don't redirect yet.)
+  if (!skipOnboarding && profile && profile.onboarded === false && location !== '/onboarding') {
+    navigate('/onboarding')
     return null
   }
   return <Component />
@@ -81,6 +88,9 @@ function Router() {
       <Route path="/auth/signup" component={SignUp} />
       <Route path="/auth/forgot-password" component={ForgotPassword} />
       <Route path="/auth/reset-password" component={ResetPassword} />
+
+      {/* Onboarding (protected, but exempt from the onboarding redirect) */}
+      <Route path="/onboarding">{() => <ProtectedRoute component={Onboarding} skipOnboarding />}</Route>
 
       {/* Protected app */}
       <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
@@ -191,7 +201,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/spot']
-  const hideNav = !user || authRoutes.includes(location) || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
+  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
   if (hideNav) return null
   return (
     <>

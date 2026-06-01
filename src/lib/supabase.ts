@@ -31,6 +31,7 @@ export type Profile = {
   posts_count: number
   created_at: string
   username_changed_at: string | null
+  onboarded?: boolean
 }
 
 export type Post = {
