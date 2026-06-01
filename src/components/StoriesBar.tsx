@@ -118,32 +118,33 @@ export default function StoriesBar() {
       .eq('follower_id', user.id)
     const followingIds = new Set((followData ?? []).map((f: any) => f.following_id))
 
+    // Fetch stories — no join since user_id refs auth.users not profiles
     const { data, error } = await supabase
       .from('spot_stories')
-      .select('*, profiles:user_id(username, avatar_url)')
+      .select('*')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(30)
 
-    if (error) { console.error('spot_stories error:', JSON.stringify(error)); return }
-    if (!data) return
+    if (error || !data || data.length === 0) return
 
-    // Fetch private accounts separately
+    // Fetch profiles separately
     const posterIds = [...new Set(data.map((s: any) => s.user_id))]
-    let privateSet = new Set<string>()
-    if (posterIds.length > 0) {
-      const { data: pd } = await supabase
-        .from('profiles')
-        .select('id, private_account')
-        .in('id', posterIds)
-      privateSet = new Set((pd ?? []).filter((p: any) => p.private_account).map((p: any) => p.id))
-    }
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, private_account')
+      .in('id', posterIds)
 
-    const visible = data.filter((s: any) => {
-      if (s.user_id === user.id) return true
-      if (!privateSet.has(s.user_id)) return true
-      return followingIds.has(s.user_id)
-    })
+    const profileMap = Object.fromEntries((profileRows ?? []).map((p: any) => [p.id, p]))
+
+    // Attach profiles and filter by privacy
+    const visible = data
+      .map((s: any) => ({ ...s, profiles: profileMap[s.user_id] ?? null }))
+      .filter((s: any) => {
+        if (s.user_id === user.id) return true
+        if (!s.profiles?.private_account) return true
+        return followingIds.has(s.user_id)
+      })
 
     setSpotStories(visible as SpotStory[])
   }, [user])
