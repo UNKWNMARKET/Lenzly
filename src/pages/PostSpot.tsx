@@ -167,6 +167,7 @@ export default function PostSpot() {
             onChange={setLocationName}
             onSelect={(s: LocationSuggestion) => setLocationName(s.display)}
             placeholder="Tag your location…"
+            dropUp
           />
         </div>
 

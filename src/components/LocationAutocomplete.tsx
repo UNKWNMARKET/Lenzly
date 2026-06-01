@@ -27,9 +27,10 @@ type Props = {
   onChange: (value: string) => void
   onSelect?: (suggestion: LocationSuggestion) => void
   placeholder?: string
+  dropUp?: boolean
 }
 
-export default function LocationAutocomplete({ value, onChange, onSelect, placeholder }: Props) {
+export default function LocationAutocomplete({ value, onChange, onSelect, placeholder, dropUp }: Props) {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -142,7 +143,7 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
       )}
 
       {open && suggestions.length > 0 && (
-        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/40 max-h-64 overflow-y-auto">
+        <div className={`absolute z-50 left-0 right-0 bg-lenz-card border border-lenz-border rounded-xl overflow-hidden shadow-xl shadow-black/40 max-h-64 overflow-y-auto ${dropUp ? 'bottom-full mb-1.5' : 'mt-1.5'}`}>
           {suggestions.map((s, i) => {
             const Icon = s.source === 'place' ? placeIcon(s.category) : MapPin
             const accent = s.source === 'spot' || s.source === 'place'
