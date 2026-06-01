@@ -1,11 +1,13 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { MapPin, X, Camera, ChevronLeft, Loader } from 'lucide-react'
+import { MapPin, X, Camera, ChevronLeft, Loader, ImagePlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import LocationAutocomplete, { type LocationSuggestion } from '@/components/LocationAutocomplete'
+
+const BUCKET = 'spot-stories'
 
 export default function PostSpot() {
   const [, navigate] = useLocation()
@@ -18,13 +20,13 @@ export default function PostSpot() {
   const [locationName, setLocationName] = useState('')
   const [uploading, setUploading] = useState(false)
 
-  const pickPhoto = async () => {
+  const openCamera = async (source: CameraSource) => {
     try {
       const photo = await CapCamera.getPhoto({
         quality: 85,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt,
+        source,
       })
       if (photo.dataUrl) {
         setImagePreview(photo.dataUrl)
@@ -33,9 +35,18 @@ export default function PostSpot() {
         setImageFile(new File([blob], 'spot.jpg', { type: 'image/jpeg' }))
       }
     } catch {
-      fileInputRef.current?.click()
+      if (source === CameraSource.Camera) {
+        fileInputRef.current?.click()
+      }
     }
   }
+
+  // Auto-open camera when page loads
+  useEffect(() => {
+    openCamera(CameraSource.Camera)
+  }, [])
+
+  const pickPhoto = () => openCamera(CameraSource.Photos)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -56,11 +67,11 @@ export default function PostSpot() {
       const ext = imageFile.name.split('.').pop() || 'jpg'
       const filePath = `spots/${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from('posts')
+        .from(BUCKET)
         .upload(filePath, imageFile, { contentType: imageFile.type })
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage.from('posts').getPublicUrl(filePath)
+      const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
 
       // Insert spot story (expires in 24h)
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -104,31 +115,44 @@ export default function PostSpot() {
 
       <div className="flex-1 flex flex-col gap-4 p-4">
         {/* Photo picker */}
-        <button
-          onClick={pickPhoto}
-          className="relative w-full aspect-square rounded-2xl overflow-hidden bg-lenz-card border border-lenz-border flex items-center justify-center"
-        >
+        <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-lenz-card border border-lenz-border flex items-center justify-center">
           {imagePreview ? (
             <>
               <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <Camera size={32} className="text-white" />
-              </div>
               <button
                 onClick={e => { e.stopPropagation(); setImageFile(null); setImagePreview(null) }}
                 className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center"
               >
                 <X size={16} className="text-white" />
               </button>
+              <button
+                onClick={pickPhoto}
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 text-white text-xs font-medium"
+              >
+                <ImagePlus size={13} /> Change
+              </button>
             </>
           ) : (
-            <div className="flex flex-col items-center gap-3 text-white/30">
+            <div className="flex flex-col items-center gap-4 text-white/30">
               <Camera size={40} />
-              <p className="text-sm">Tap to add a photo</p>
-              <p className="text-xs text-white/20">Camera or library</p>
+              <p className="text-sm text-white/40">No photo selected</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => openCamera(CameraSource.Camera)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold text-lenz-bg text-sm font-semibold"
+                >
+                  <Camera size={15} /> Camera
+                </button>
+                <button
+                  onClick={pickPhoto}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 text-white text-sm font-semibold"
+                >
+                  <ImagePlus size={15} /> Library
+                </button>
+              </div>
             </div>
           )}
-        </button>
+        </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
         {/* Location — required */}
