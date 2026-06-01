@@ -243,16 +243,587 @@ const FL_EXTRA: Raw[] = [
   ['Big Cypress Bend Boardwalk', 'Copeland', 'Nature', 25.9300, -81.3300, 'Ancient bald cypress and wading birds along an Everglades boardwalk.'],
 ]
 
+const CT: Raw[] = [
+  ['Gillette Castle', 'East Haddam', 'Architecture', 41.4220, -72.4290, 'A medieval-style fieldstone castle on a bluff above the Connecticut River, built by actor William Gillette.'],
+  ['Mystic Seaport', 'Mystic', 'Historic', 41.3640, -71.9660, 'A recreated 19th-century coastal village with tall ships and a working shipyard.'],
+  ['Lighthouse Point Park', 'New Haven', 'Lighthouse', 41.2490, -72.9030, 'An 1840 lighthouse and antique carousel on Long Island Sound.'],
+  ['Kent Falls', 'Kent', 'Waterfall', 41.7660, -73.4170, 'A series of cascades dropping 250 feet through a wooded state park.'],
+  ['Yale University', 'New Haven', 'Architecture', 41.3163, -72.9223, 'Collegiate Gothic towers, Sterling Library, and the translucent-marble Beinecke.'],
+  ['Harkness Memorial', 'Waterford', 'Park', 41.3050, -72.1170, 'A Renaissance-style mansion and formal gardens on Long Island Sound.'],
+  ['Bluff Point', 'Groton', 'Beach', 41.3210, -72.0350, 'A coastal reserve of forest, marsh, and a quiet beach spit.'],
+  ['Wadsworth Falls', 'Middletown', 'Waterfall', 41.5340, -72.7160, 'A wide, powerful waterfall in a leafy state park.'],
+  ['Hammonasset Beach', 'Madison', 'Beach', 41.2640, -72.5460, "Connecticut's longest shoreline park, prime for sunrise over the Sound."],
+  ['Talcott Mountain', 'Simsbury', 'Mountains', 41.8290, -72.8240, 'Heublein Tower atop a ridge with sweeping Farmington Valley views.'],
+]
+
+const DE: Raw[] = [
+  ['Cape Henlopen', 'Lewes', 'Beach', 38.7990, -75.0940, 'Dunes, a WWII observation tower, and wide Atlantic beaches at the bay’s mouth.'],
+  ['Fort Delaware', 'Delaware City', 'Historic', 39.5870, -75.5680, 'A Civil War-era island fortress reached by ferry across the Delaware River.'],
+  ['Bombay Hook', 'Smyrna', 'Nature', 39.2610, -75.4670, 'A vast tidal marsh refuge, one of the East Coast’s top birding and sunrise spots.'],
+  ['Rehoboth Beach Boardwalk', 'Rehoboth Beach', 'Beach', 38.7210, -75.0760, 'A classic mile-long boardwalk and beach town on the Atlantic.'],
+  ['Winterthur', 'Wilmington', 'Park', 39.8060, -75.5930, 'A du Pont estate with 60 acres of naturalistic gardens.'],
+  ['Nemours Estate', 'Wilmington', 'Architecture', 39.7700, -75.5840, 'A French neoclassical mansion with the largest formal French gardens in North America.'],
+  ['Indian River Inlet Bridge', 'Bethany Beach', 'Bridge', 38.6100, -75.0670, 'A sleek cable-stayed bridge glowing in blue LED light over the inlet.'],
+  ['Brandywine Creek', 'Wilmington', 'Nature', 39.8000, -75.5780, 'Rolling meadows and stone walls along a scenic creek valley.'],
+  ['Auburn Heights', 'Yorklyn', 'Historic', 39.8050, -75.6720, 'A Victorian mansion and antique steam-car collection in the Red Clay Valley.'],
+  ['Fenwick Island Lighthouse', 'Fenwick Island', 'Lighthouse', 38.4600, -75.0490, 'An 1859 lighthouse marking the Maryland–Delaware line.'],
+]
+
+const GA: Raw[] = [
+  ['Savannah Forsyth Park', 'Savannah', 'Park', 32.0560, -81.0960, 'A grand white fountain framed by Spanish-moss-draped live oaks in the historic district.'],
+  ['Providence Canyon', 'Lumpkin', 'Canyon', 32.0700, -84.9120, "Georgia's 'Little Grand Canyon' — colorful eroded gullies of pink, orange, and white clay."],
+  ['Tallulah Gorge', 'Tallulah Falls', 'Canyon', 34.7390, -83.3920, 'A 1,000-foot gorge with a suspension bridge over waterfalls.'],
+  ['Amicalola Falls', 'Dawsonville', 'Waterfall', 34.5590, -84.2480, 'The tallest cascading waterfall in the Southeast at 729 feet.'],
+  ['Jekyll Island Driftwood Beach', 'Jekyll Island', 'Beach', 31.0890, -81.4120, 'A surreal shoreline of weathered, sun-bleached driftwood and fallen oaks.'],
+  ['Cumberland Island', 'St. Marys', 'Beach', 30.8330, -81.4360, 'Wild beaches, feral horses, and the ruins of Dungeness mansion.'],
+  ['Stone Mountain', 'Stone Mountain', 'Nature', 33.8053, -84.1455, 'The largest exposed granite dome in the world, with sweeping summit views.'],
+  ['Atlanta Ponce City Market', 'Atlanta', 'Architecture', 33.7720, -84.3650, 'A restored Sears building with a rooftop and skyline views over the BeltLine.'],
+  ['Okefenokee Swamp', 'Folkston', 'Nature', 30.7660, -82.1370, 'A vast blackwater swamp of cypress, lily pads, and mirror reflections.'],
+  ['Brasstown Bald', 'Hiawassee', 'Mountains', 34.8740, -83.8110, "Georgia's highest peak with 360-degree Blue Ridge panoramas."],
+]
+
+const HI: Raw[] = [
+  ['Waimea Canyon', 'Waimea', 'Canyon', 22.0700, -159.6610, "The 'Grand Canyon of the Pacific' — red, green, and ochre cliffs plunging 3,000 feet on Kauai."],
+  ['Na Pali Coast', 'Hanalei', 'Beach', 22.1780, -159.6440, 'Emerald sea cliffs rising sheer from the turquoise Pacific on Kauai’s wild north shore.'],
+  ['Haleakala Summit', 'Kula', 'Mountains', 20.7097, -156.2533, 'A 10,000-foot volcanic crater above the clouds, world-famous for sunrise.'],
+  ['Road to Hana', 'Hana', 'Nature', 20.7580, -155.9900, 'A winding coastal road past waterfalls, bamboo forests, and black-sand beaches.'],
+  ['Diamond Head', 'Honolulu', 'Mountains', 21.2620, -157.8050, 'A volcanic tuff cone above Waikiki with iconic crater and coastline views.'],
+  ['Waikiki Beach', 'Honolulu', 'Beach', 21.2769, -157.8268, 'The famous crescent of sand backed by Diamond Head and Pacific sunsets.'],
+  ['Kilauea Volcano', 'Volcano', 'Nature', 19.4210, -155.2870, 'An active volcano with glowing lava lakes and steaming craters on the Big Island.'],
+  ['Lanikai Beach', 'Kailua', 'Beach', 21.3930, -157.7150, 'Powder-soft sand and twin Mokulua islets in brilliant turquoise water.'],
+  ['Waimoku Falls', 'Hana', 'Waterfall', 20.6650, -156.0440, 'A 400-foot waterfall at the end of a bamboo-forest trail in Haleakala.'],
+  ['Mauna Kea', 'Hilo', 'Mountains', 19.8207, -155.4681, 'A 13,800-foot summit above the clouds — one of Earth’s premier stargazing sites.'],
+]
+
+const ID: Raw[] = [
+  ['Shoshone Falls', 'Twin Falls', 'Waterfall', 42.5950, -114.4010, "The 'Niagara of the West' — 212 feet tall, even higher than Niagara, over the Snake River."],
+  ['Sawtooth Mountains', 'Stanley', 'Mountains', 44.1670, -114.9290, 'Jagged granite peaks reflected in alpine lakes, glowing at sunrise.'],
+  ['Craters of the Moon', 'Arco', 'Nature', 43.4160, -113.5170, 'A surreal black volcanic landscape of lava flows and cinder cones.'],
+  ['Mesa Falls', 'Ashton', 'Waterfall', 44.1880, -111.3320, 'A powerful 114-foot waterfall plunging through a forested canyon.'],
+  ['Redfish Lake', 'Stanley', 'Lake', 44.1430, -114.9170, 'A clear blue lake mirroring the Sawtooth peaks.'],
+  ['Bruneau Dunes', 'Mountain Home', 'Desert', 42.8950, -115.7060, 'The tallest single-structured sand dune in North America (470 ft) beside desert lakes.'],
+  ['Perrine Bridge', 'Twin Falls', 'Bridge', 42.5990, -114.4640, 'A high steel arch over the Snake River canyon, famous for BASE jumping.'],
+  ['Lake Coeur d’Alene', 'Coeur d’Alene', 'Lake', 47.6090, -116.7770, 'A scenic mountain lake with forested shores and a long floating boardwalk.'],
+  ['Hells Canyon', 'Riggins', 'Canyon', 45.2420, -116.7020, 'The deepest river gorge in North America, deeper than the Grand Canyon.'],
+  ['City of Rocks', 'Almo', 'Desert', 42.0760, -113.7130, 'Towering granite spires and pinnacles dotting a high desert basin.'],
+]
+
+const IL: Raw[] = [
+  ['Cloud Gate (The Bean)', 'Chicago', 'Street Art', 41.8827, -87.6233, 'A mirror-polished stainless sculpture reflecting the Chicago skyline in Millennium Park.'],
+  ['Chicago Riverwalk', 'Chicago', 'Skyline', 41.8880, -87.6250, 'A waterfront promenade beneath the city’s bridges and gleaming towers.'],
+  ['Starved Rock', 'Oglesby', 'Canyon', 41.3180, -89.0010, 'Sandstone canyons and seasonal waterfalls along the Illinois River.'],
+  ['Garfield Park Conservatory', 'Chicago', 'Architecture', 41.8860, -87.7170, 'One of the largest glasshouse conservatories in the US, lush year-round.'],
+  ['Navy Pier', 'Chicago', 'Skyline', 41.8916, -87.6079, 'A lakefront pier with a Ferris wheel and skyline views over Lake Michigan.'],
+  ['Cahokia Mounds', 'Collinsville', 'Historic', 38.6550, -90.0620, 'The largest pre-Columbian earthwork in the Americas, a UNESCO site.'],
+  ['Chicago Lakefront', 'Chicago', 'Skyline', 41.8500, -87.6100, 'Sweeping skyline views from the Adler Planetarium and North Avenue Beach.'],
+  ['Matthiessen State Park', 'Oglesby', 'Waterfall', 41.3070, -89.0040, 'Canyons, bluffs, and waterfalls in a quieter neighbor to Starved Rock.'],
+  ['Chicago Theatre', 'Chicago', 'Landmark', 41.8853, -87.6275, 'The iconic 1921 marquee and vertical sign on State Street.'],
+  ['Pere Marquette', 'Grafton', 'Nature', 38.9700, -90.5470, 'Bluffs above the confluence of the Illinois and Mississippi rivers.'],
+]
+
+const IN: Raw[] = [
+  ['Indiana Dunes', 'Chesterton', 'Beach', 41.6530, -87.0530, 'Towering sand dunes and Lake Michigan beaches with the Chicago skyline on the horizon.'],
+  ['Clifty Falls', 'Madison', 'Waterfall', 38.7700, -85.4200, 'A cluster of waterfalls in a rugged canyon above the Ohio River.'],
+  ['Indianapolis Canal Walk', 'Indianapolis', 'Architecture', 39.7740, -86.1660, 'A landscaped urban canal lined with monuments and walkways.'],
+  ['Turkey Run', 'Marshall', 'Nature', 39.8870, -87.2070, 'Deep sandstone gorges, hemlock groves, and ladder trails along Sugar Creek.'],
+  ['Brown County', 'Nashville', 'Nature', 39.1480, -86.2270, "Indiana's 'Little Smokies' ablaze with autumn color from ridge overlooks."],
+  ['Soldiers & Sailors Monument', 'Indianapolis', 'Landmark', 39.7686, -86.1580, 'A 284-foot neoclassical monument at the heart of downtown.'],
+  ['Tippecanoe Battlefield', 'Battle Ground', 'Historic', 40.5060, -86.8420, 'A wooded memorial park marking the 1811 battle.'],
+  ['Marengo Cave', 'Marengo', 'Nature', 38.3680, -86.3430, 'A national-landmark show cave with dramatic dripstone formations.'],
+  ['Falls of the Ohio', 'Clarksville', 'Nature', 38.2780, -85.7600, 'Exposed Devonian fossil beds along the Ohio River.'],
+  ['West Baden Springs', 'West Baden Springs', 'Architecture', 38.5680, -86.6160, 'A historic domed atrium hotel once called the "Eighth Wonder of the World".'],
+]
+
+const IA: Raw[] = [
+  ['Maquoketa Caves', 'Maquoketa', 'Nature', 42.1110, -90.7720, 'A trail winding through more caves than any other Iowa park, with natural bridges.'],
+  ['Pikes Peak State Park', 'McGregor', 'Nature', 42.9930, -91.1620, 'High bluffs above the Mississippi River with sweeping valley overlooks.'],
+  ['Bridges of Madison County', 'Winterset', 'Bridge', 41.3370, -94.0130, 'The famous covered bridges immortalized in film and novel.'],
+  ['Iowa State Capitol', 'Des Moines', 'Architecture', 41.5910, -93.6030, 'A gleaming 23-karat gold dome crowning the riverfront capitol.'],
+  ['Backbone State Park', 'Dundee', 'Nature', 42.6160, -91.5560, "Iowa's first state park, with a rocky ridge and the Maquoketa River."],
+  ['Effigy Mounds', 'Harpers Ferry', 'Historic', 43.0900, -91.1850, 'Ancient animal-shaped earthworks on bluffs above the Mississippi.'],
+  ['Lake Okoboji', 'Arnolds Park', 'Lake', 43.3680, -95.1440, 'A blue glacial lake and vintage lakeside amusement park.'],
+  ['Grotto of the Redemption', 'West Bend', 'Architecture', 42.9650, -94.0420, 'An elaborate folk-art shrine encrusted with gems and minerals.'],
+  ['Loess Hills', 'Council Bluffs', 'Nature', 41.4000, -95.8000, 'Rare wind-deposited hills found in only one other place on Earth.'],
+  ['Ledges State Park', 'Boone', 'Canyon', 42.0080, -93.8800, 'Sandstone canyon walls and creek crossings in central Iowa.'],
+]
+
+const KS: Raw[] = [
+  ['Monument Rocks', 'Oakley', 'Nature', 38.7920, -100.7630, 'Chalk pillars rising 70 feet from the prairie — the first National Natural Landmark.'],
+  ['Castle Rock', 'Quinter', 'Nature', 38.8700, -100.0820, 'A solitary chalk spire and badlands eroding from the High Plains.'],
+  ['Flint Hills', 'Cottonwood Falls', 'Nature', 38.3690, -96.5410, 'The largest remaining tallgrass prairie, golden at sunset.'],
+  ['Kansas Cosmosphere', 'Hutchinson', 'Architecture', 38.0420, -97.9290, 'A space museum with historic rockets and a striking modern interior.'],
+  ['Tallgrass Prairie Preserve', 'Strong City', 'Nature', 38.4310, -96.5580, 'Rolling prairie, a historic stone barn, and roaming bison.'],
+  ['Kansas State Capitol', 'Topeka', 'Architecture', 39.0480, -95.6780, 'A French Renaissance dome with John Brown murals inside.'],
+  ['Mushroom Rock', 'Brookville', 'Nature', 38.7240, -97.9230, 'Bizarre mushroom-shaped sandstone formations on the prairie.'],
+  ['Big Brutus', 'West Mineral', 'Landmark', 37.3340, -94.8650, 'A 16-story electric coal shovel, one of the largest in the world.'],
+  ['Lake Scott', 'Scott City', 'Lake', 38.6770, -100.9080, 'A spring-fed canyon lake with bluffs and historic ruins.'],
+  ['Wichita Keeper of the Plains', 'Wichita', 'Landmark', 37.6890, -97.3380, 'A 44-foot steel sculpture at the river confluence, ringed by fire at dusk.'],
+]
+
+const KY: Raw[] = [
+  ['Red River Gorge', 'Slade', 'Canyon', 37.8190, -83.6240, 'A sandstone wonderland of natural arches, cliffs, and the famous Sky Bridge.'],
+  ['Mammoth Cave', 'Mammoth Cave', 'Nature', 37.1869, -86.1006, 'The longest known cave system on Earth, with vast underground chambers.'],
+  ['Cumberland Falls', 'Corbin', 'Waterfall', 36.8380, -84.3420, 'A 68-foot "Niagara of the South" famous for its rare moonbow.'],
+  ['Natural Bridge', 'Slade', 'Nature', 37.7770, -83.6840, 'A massive sandstone arch reached by trail or sky lift.'],
+  ['Churchill Downs', 'Louisville', 'Landmark', 38.2030, -85.7700, 'The twin-spired home of the Kentucky Derby.'],
+  ['Kentucky Horse Country', 'Lexington', 'Nature', 38.1300, -84.7400, 'Rolling bluegrass pastures, white fences, and historic horse farms.'],
+  ['Big South Fork', 'Stearns', 'Canyon', 36.6500, -84.6900, 'Sandstone gorges, arches, and the Cumberland River’s wild upper reaches.'],
+  ['Bernheim Forest', 'Clermont', 'Park', 37.9230, -85.6480, 'An arboretum with giant troll sculptures and a canopy walkway.'],
+  ['Louisville Waterfront', 'Louisville', 'Skyline', 38.2640, -85.7430, 'The Big Four pedestrian bridge and skyline over the Ohio River.'],
+  ['Pine Mountain', 'Pineville', 'Mountains', 36.7400, -83.7100, 'Ridgeline overlooks ablaze with rhododendron and autumn color.'],
+]
+
+const LA: Raw[] = [
+  ['French Quarter', 'New Orleans', 'Architecture', 29.9580, -90.0650, 'Wrought-iron balconies, pastel façades, and gas lamps in America’s most atmospheric quarter.'],
+  ['Oak Alley Plantation', 'Vacherie', 'Historic', 30.0080, -90.7820, 'A quarter-mile canopy of 28 live oaks framing an antebellum mansion.'],
+  ['St. Louis Cathedral', 'New Orleans', 'Architecture', 29.9580, -90.0630, 'The triple-spired cathedral over Jackson Square, glowing at blue hour.'],
+  ['Atchafalaya Basin', 'Henderson', 'Nature', 30.3000, -91.7500, 'The largest river swamp in the US — cypress, Spanish moss, and mirror water.'],
+  ['Avery Island', 'Avery Island', 'Nature', 29.9000, -91.9000, 'Lush jungle gardens, a bird sanctuary, and the Tabasco home.'],
+  ['City Park New Orleans', 'New Orleans', 'Park', 29.9940, -90.0980, 'Ancient live oaks and lagoons in one of the oldest urban parks in America.'],
+  ['Kisatchie National Forest', 'Provencal', 'Nature', 31.4700, -93.0400, "Louisiana's only national forest, with sandstone bluffs and longleaf pine."],
+  ['Crescent City Connection', 'New Orleans', 'Bridge', 29.9320, -90.0610, 'Twin cantilever bridges arcing over the Mississippi at sunset.'],
+  ['Jean Lafitte Preserve', 'Marrero', 'Nature', 29.7800, -90.1100, 'A bayou boardwalk through alligator-filled wetlands.'],
+  ['Tunica Hills', 'St. Francisville', 'Nature', 30.9700, -91.5300, 'Rare loess ravines, waterfalls, and forested bluffs near the Mississippi.'],
+]
+
+const ME: Raw[] = [
+  ['Portland Head Light', 'Cape Elizabeth', 'Lighthouse', 43.6231, -70.2080, 'Maine’s most iconic lighthouse, perched on rocky cliffs since 1791.'],
+  ['Acadia Cadillac Mountain', 'Bar Harbor', 'Mountains', 44.3530, -68.2250, 'The first place to see sunrise in the US, with granite summit panoramas.'],
+  ['Bass Harbor Head Light', 'Tremont', 'Lighthouse', 44.2220, -68.3370, 'A red-roofed lighthouse on pink granite ledges in Acadia.'],
+  ['Thunder Hole', 'Bar Harbor', 'Beach', 44.3190, -68.1900, 'A rocky inlet where waves boom and spray erupts on the Acadia coast.'],
+  ['Jordan Pond', 'Bar Harbor', 'Lake', 44.3210, -68.2530, 'A glassy pond mirroring the rounded "Bubbles" mountains.'],
+  ['Old Orchard Beach', 'Old Orchard Beach', 'Beach', 43.5150, -70.3770, 'A classic pier and seven miles of sand on Saco Bay.'],
+  ['Pemaquid Point Light', 'Bristol', 'Lighthouse', 43.8370, -69.5050, 'A lighthouse atop dramatic striated rock ledges.'],
+  ['Camden Hills', 'Camden', 'Mountains', 44.2300, -69.0500, 'Mount Battie overlooks a harbor of schooners and islands.'],
+  ['Quoddy Head', 'Lubec', 'Lighthouse', 44.8150, -66.9500, 'The candy-striped easternmost lighthouse in the US.'],
+  ['Marshall Point Light', 'Port Clyde', 'Lighthouse', 43.9170, -69.2600, 'The wooden-walkway lighthouse made famous by Forrest Gump.'],
+]
+
+const MD: Raw[] = [
+  ['Thomas Point Light', 'Annapolis', 'Lighthouse', 38.8990, -76.4360, 'A screw-pile lighthouse standing in the Chesapeake Bay, Maryland’s most famous.'],
+  ['Inner Harbor', 'Baltimore', 'Skyline', 39.2850, -76.6100, 'A bustling waterfront of historic ships and a glowing city skyline.'],
+  ['Assateague Island', 'Berlin', 'Beach', 38.0630, -75.2120, 'Wild beaches roamed by free wild ponies along the Atlantic.'],
+  ['Great Falls Potomac', 'Potomac', 'Waterfall', 38.9970, -77.2540, 'The Potomac River cascading through a rocky gorge near DC.'],
+  ['Antietam', 'Sharpsburg', 'Historic', 39.4760, -77.7440, 'A Civil War battlefield with stone bridges and rolling fields.'],
+  ['Ocean City Boardwalk', 'Ocean City', 'Beach', 38.3370, -75.0840, 'A 3-mile boardwalk and Atlantic beach resort.'],
+  ['Annapolis Naval Academy', 'Annapolis', 'Architecture', 38.9840, -76.4850, 'The domed chapel and Beaux-Arts campus on the Severn River.'],
+  ['Swallow Falls', 'Oakland', 'Waterfall', 39.4990, -79.4200, 'Maryland’s highest free-falling waterfall amid old-growth hemlock.'],
+  ['Calvert Cliffs', 'Lusby', 'Beach', 38.3850, -76.4350, 'Fossil-rich cliffs above a Chesapeake Bay beach.'],
+  ['Harpers Ferry View', 'Knoxville', 'Nature', 39.3260, -77.7290, 'Maryland Heights overlook above the river confluence.'],
+]
+
+const MA: Raw[] = [
+  ['Acadia of the East / Cape Cod Light', 'Truro', 'Lighthouse', 42.0390, -70.0680, 'Cape Cod’s oldest lighthouse on windswept Atlantic dunes.'],
+  ['Boston Public Garden', 'Boston', 'Park', 42.3540, -71.0700, 'America’s first public botanical garden, with swan boats and a lagoon bridge.'],
+  ['Acorn Street', 'Boston', 'Street Art', 42.3580, -71.0690, 'The most photographed cobblestone street in America, in Beacon Hill.'],
+  ['Nubble Light / Rockport', 'Rockport', 'Lighthouse', 42.6550, -70.6150, 'Motif No. 1, the iconic red fishing shack on the harbor.'],
+  ['Provincetown', 'Provincetown', 'Beach', 42.0580, -70.1780, 'Dunes, the Pilgrim Monument, and the tip of Cape Cod.'],
+  ['Martha’s Vineyard', 'Aquinnah', 'Beach', 41.3480, -70.8360, 'The colorful Gay Head clay cliffs and a brick lighthouse.'],
+  ['Mount Greylock', 'Adams', 'Mountains', 42.6370, -73.1660, 'The highest peak in Massachusetts with a war-memorial tower.'],
+  ['Bash Bish Falls', 'Mount Washington', 'Waterfall', 42.1170, -73.4940, 'The state’s highest single-drop waterfall in a dramatic gorge.'],
+  ['Boston Skyline / Esplanade', 'Boston', 'Skyline', 42.3560, -71.0730, 'The Charles River reflecting the Back Bay skyline at dusk.'],
+  ['Salem', 'Salem', 'Historic', 42.5190, -70.8960, 'Witch-trial history, the House of Seven Gables, and waterfront wharves.'],
+]
+
+const MI: Raw[] = [
+  ['Pictured Rocks', 'Munising', 'Beach', 46.5600, -86.3500, 'Multicolored sandstone cliffs rising straight from Lake Superior’s turquoise water.'],
+  ['Mackinac Bridge', 'Mackinaw City', 'Bridge', 45.8170, -84.7280, 'A five-mile suspension bridge linking Michigan’s two peninsulas.'],
+  ['Sleeping Bear Dunes', 'Empire', 'Beach', 44.8810, -86.0580, 'Towering dunes plunging 450 feet to Lake Michigan’s blue waters.'],
+  ['Tahquamenon Falls', 'Paradise', 'Waterfall', 46.5750, -85.2530, 'A wide amber waterfall, one of the largest east of the Mississippi.'],
+  ['Mackinac Island', 'Mackinac Island', 'Historic', 45.8490, -84.6180, 'A car-free Victorian island with the Grand Hotel and lakeside arch rock.'],
+  ['Detroit Riverwalk', 'Detroit', 'Skyline', 42.3290, -83.0410, 'A renewed waterfront with skyline and Windsor views.'],
+  ['Holland State Park', 'Holland', 'Lighthouse', 42.7740, -86.2130, 'The red "Big Red" lighthouse on a Lake Michigan channel.'],
+  ['Porcupine Mountains', 'Ontonagon', 'Mountains', 46.8200, -89.7400, 'The Lake of the Clouds overlook in an old-growth wilderness.'],
+  ['Kitch-iti-kipi', 'Manistique', 'Nature', 46.0040, -86.3800, 'A crystal-clear spring where you watch fish through emerald water.'],
+  ['Grand Haven Pier', 'Grand Haven', 'Lighthouse', 43.0570, -86.2480, 'Twin red lighthouses along a catwalk pier at sunset.'],
+]
+
+const MN: Raw[] = [
+  ['Split Rock Lighthouse', 'Two Harbors', 'Lighthouse', 47.2003, -91.3670, 'A 1910 lighthouse atop a 130-foot cliff over Lake Superior — Minnesota’s icon.'],
+  ['Minnehaha Falls', 'Minneapolis', 'Waterfall', 44.9150, -93.2110, 'A 53-foot urban waterfall in a wooded city park.'],
+  ['Gooseberry Falls', 'Two Harbors', 'Waterfall', 47.1390, -91.4710, 'A series of waterfalls tumbling toward Lake Superior on the North Shore.'],
+  ['Boundary Waters', 'Ely', 'Lake', 47.9500, -91.5000, 'A million-acre wilderness of interconnected lakes and canoe routes.'],
+  ['Stone Arch Bridge', 'Minneapolis', 'Bridge', 44.9810, -93.2560, 'A historic curved rail bridge over St. Anthony Falls and the skyline.'],
+  ['Palisade Head', 'Silver Bay', 'Mountains', 47.3210, -91.2100, 'Sheer rhyolite cliffs above Lake Superior with sweeping views.'],
+  ['Itasca State Park', 'Park Rapids', 'Nature', 47.2070, -95.2080, 'The headwaters of the Mississippi River amid old-growth pines.'],
+  ['High Falls Grand Portage', 'Grand Portage', 'Waterfall', 47.9990, -89.7000, 'The tallest waterfall in Minnesota on the Pigeon River.'],
+  ['Lake of the Isles', 'Minneapolis', 'Lake', 44.9560, -93.3070, 'A serene city lake ringed by mansions and walking paths.'],
+  ['Mystery Cave', 'Preston', 'Nature', 43.6300, -92.2600, 'Minnesota’s longest cave with underground pools and formations.'],
+]
+
+const MS: Raw[] = [
+  ['Windsor Ruins', 'Port Gibson', 'Historic', 31.9300, -91.0500, 'Twenty-three towering Corinthian columns, all that remain of an antebellum mansion.'],
+  ['Biloxi Lighthouse', 'Biloxi', 'Lighthouse', 30.3920, -88.9030, 'A cast-iron 1848 lighthouse in the median of a coastal highway.'],
+  ['Natchez Bluffs', 'Natchez', 'Historic', 31.5590, -91.4030, 'Antebellum mansions on bluffs above the Mississippi River.'],
+  ['Gulf Islands Seashore', 'Ocean Springs', 'Beach', 30.3900, -88.7900, 'White-sand barrier-island beaches on the Gulf of Mexico.'],
+  ['Tishomingo State Park', 'Tishomingo', 'Nature', 34.6100, -88.1800, 'Mossy sandstone outcrops and a swinging bridge in the Appalachian foothills.'],
+  ['Natchez Trace Parkway', 'Tupelo', 'Nature', 34.2580, -88.7780, 'A historic forested parkway with cypress swamps and the Sunken Trace.'],
+  ['Vicksburg Battlefield', 'Vicksburg', 'Historic', 32.3530, -90.8500, 'A sprawling Civil War park of monuments above the river.'],
+  ['Clark Creek', 'Woodville', 'Waterfall', 31.0800, -91.5200, 'A network of waterfalls hidden in loess ravines near the river.'],
+  ['Ship Island', 'Gulfport', 'Beach', 30.2130, -88.9200, 'A remote barrier island with Fort Massachusetts and clear Gulf water.'],
+  ['Friendship Cemetery', 'Columbus', 'Historic', 33.4900, -88.4100, 'Live oaks and antebellum monuments where Memorial Day was born.'],
+]
+
+const MO: Raw[] = [
+  ['Gateway Arch', 'St. Louis', 'Landmark', 38.6247, -90.1848, 'The 630-foot stainless-steel arch on the Mississippi, the tallest monument in the US.'],
+  ['Ha Ha Tonka', 'Camdenton', 'Historic', 38.0700, -92.7700, 'Castle ruins on a bluff above a spring-fed lake in the Ozarks.'],
+  ['Elephant Rocks', 'Belleview', 'Nature', 37.6540, -90.6880, 'Giant rounded granite boulders standing end to end like elephants.'],
+  ['Johnson’s Shut-Ins', 'Middlebrook', 'Nature', 37.5400, -90.8500, 'Volcanic rock chutes and natural water slides on the Black River.'],
+  ['Forest Park', 'St. Louis', 'Park', 38.6360, -90.2840, 'A grand urban park with the art museum atop Art Hill.'],
+  ['Grand Falls', 'Joplin', 'Waterfall', 37.0200, -94.5300, 'The largest continuously flowing waterfall in Missouri.'],
+  ['Onondaga Cave', 'Leasburg', 'Nature', 38.0600, -91.2300, 'A show cave with active formations and an underground river.'],
+  ['Kansas City Fountains', 'Kansas City', 'Architecture', 39.0440, -94.5900, 'The City of Fountains and the Spanish-style Country Club Plaza.'],
+  ['Taum Sauk Mountain', 'Ironton', 'Mountains', 37.5720, -90.7280, 'The highest point in Missouri, near Mina Sauk Falls.'],
+  ['Katy Trail', 'Rocheport', 'Nature', 38.9800, -92.5600, 'A rail-trail along the Missouri River beneath limestone bluffs.'],
+]
+
+const MT: Raw[] = [
+  ['Glacier St. Mary Lake', 'St. Mary', 'Lake', 48.6680, -113.4380, 'Wild Goose Island in a turquoise glacial lake ringed by sharp peaks — a Glacier classic.'],
+  ['Going-to-the-Sun Road', 'West Glacier', 'Mountains', 48.7500, -113.7800, 'A breathtaking alpine highway over Logan Pass in Glacier National Park.'],
+  ['Hidden Lake', 'West Glacier', 'Lake', 48.6950, -113.7180, 'An alpine lake below Bearhat Mountain, reached from Logan Pass.'],
+  ['Lake McDonald', 'West Glacier', 'Lake', 48.5800, -113.8800, 'Famous multicolored pebbles beneath crystal-clear glacial water.'],
+  ['Beartooth Highway', 'Red Lodge', 'Mountains', 45.0000, -109.4000, 'A switchbacking road to 10,947 feet past alpine lakes and tundra.'],
+  ['Bigfork / Flathead Lake', 'Bigfork', 'Lake', 47.9100, -114.0700, 'The largest natural freshwater lake in the West, with cherry orchards.'],
+  ['Garnet Ghost Town', 'Drummond', 'Historic', 46.8200, -113.3300, 'Montana’s best-preserved gold-mining ghost town.'],
+  ['Quake Lake', 'West Yellowstone', 'Lake', 44.8300, -111.4200, 'A lake formed by a 1959 earthquake, with ghostly standing dead trees.'],
+  ['Bighorn Canyon', 'Fort Smith', 'Canyon', 45.0900, -108.1700, 'Sheer red canyon walls above a deep blue reservoir.'],
+  ['Pictograph Cave', 'Billings', 'Historic', 45.7300, -108.4100, 'Ancient rock paintings in sandstone caves on the plains.'],
+]
+
+const NE: Raw[] = [
+  ['Chimney Rock', 'Bayard', 'Nature', 41.7030, -103.3460, 'A 300-foot spire that guided Oregon Trail pioneers across the plains.'],
+  ['Scotts Bluff', 'Gering', 'Nature', 41.8300, -103.7070, 'Towering bluffs and a wagon-trail summit road over the North Platte.'],
+  ['Toadstool Geologic Park', 'Crawford', 'Nature', 42.8700, -103.5800, 'Badlands hoodoos and toadstool rock formations in the Oglala grassland.'],
+  ['Carhenge', 'Alliance', 'Street Art', 42.1420, -102.8580, 'A replica of Stonehenge built from vintage gray-painted automobiles.'],
+  ['Sandhills', 'Valentine', 'Nature', 42.3000, -100.5500, 'The largest sand dune formation in the Western Hemisphere, grass-covered and rolling.'],
+  ['Smith Falls', 'Valentine', 'Waterfall', 42.8900, -100.3000, "Nebraska's tallest waterfall on the Niobrara River."],
+  ['Ashfall Fossil Beds', 'Royal', 'Historic', 42.4250, -98.1580, 'Complete fossil skeletons preserved in volcanic ash.'],
+  ['Indian Cave', 'Shubert', 'Nature', 40.2600, -95.5600, 'Forested bluffs and a sandstone cave above the Missouri River.'],
+  ['Lake McConaughy', 'Ogallala', 'Lake', 41.2500, -101.7000, 'A vast reservoir with white-sand beaches under big skies.'],
+  ['Nebraska State Capitol', 'Lincoln', 'Architecture', 40.8080, -96.6990, 'A soaring 400-foot Art Deco tower crowned by "The Sower".'],
+]
+
+const NV: Raw[] = [
+  ['Fire Wave', 'Overton', 'Desert', 36.4710, -114.5170, 'Striped red-and-white sandstone undulating like frozen waves in Valley of Fire.'],
+  ['Valley of Fire', 'Overton', 'Desert', 36.4290, -114.5150, 'Brilliant red Aztec sandstone formations and ancient petroglyphs.'],
+  ['Red Rock Canyon', 'Las Vegas', 'Desert', 36.1350, -115.4270, 'Towering red sandstone escarpments minutes from the Strip.'],
+  ['Lake Tahoe (NV)', 'Incline Village', 'Lake', 39.2400, -119.9400, 'Sand Harbor’s clear water and granite boulders on the lake’s east shore.'],
+  ['Las Vegas Strip', 'Las Vegas', 'Skyline', 36.1147, -115.1728, 'The neon-soaked boulevard of mega-resorts, dazzling at night.'],
+  ['Great Basin / Wheeler Peak', 'Baker', 'Mountains', 38.9850, -114.3130, 'Ancient bristlecone pines and dark-sky stargazing below a 13,000-foot peak.'],
+  ['Cathedral Gorge', 'Panaca', 'Canyon', 37.8200, -114.4100, 'Slot canyons and cathedral-like spires of soft bentonite clay.'],
+  ['Hoover Dam', 'Boulder City', 'Architecture', 36.0160, -114.7370, 'An Art Deco engineering marvel arcing across the Colorado River canyon.'],
+  ['Bonneville Salt / Black Rock', 'Gerlach', 'Desert', 40.7500, -119.2000, 'A vast white playa, surreal and empty to the horizon.'],
+  ['Lamoille Canyon', 'Lamoille', 'Mountains', 40.6400, -115.4000, 'The "Yosemite of Nevada" — glacial canyon in the Ruby Mountains.'],
+]
+
+const NH: Raw[] = [
+  ['Mount Washington', 'Sargents Purchase', 'Mountains', 44.2705, -71.3033, 'The Northeast’s highest peak, famed for extreme weather and cog-railway summit views.'],
+  ['Flume Gorge', 'Lincoln', 'Canyon', 44.0970, -71.6810, 'A narrow granite gorge with a boardwalk beside a rushing stream.'],
+  ['Diana’s Baths', 'Bartlett', 'Waterfall', 44.0760, -71.1800, 'A staircase of small waterfalls and pools in the White Mountains.'],
+  ['Cannon Mountain', 'Franconia', 'Mountains', 44.1570, -71.6990, 'Aerial-tram summit views over Franconia Notch.'],
+  ['Lake Winnipesaukee', 'Meredith', 'Lake', 43.6200, -71.3000, 'New Hampshire’s largest lake, dotted with islands and mountains.'],
+  ['Kancamagus Highway', 'Lincoln', 'Nature', 44.0000, -71.4000, 'A 34-mile scenic byway ablaze with autumn color.'],
+  ['Portsmouth Harbor', 'New Castle', 'Lighthouse', 43.0710, -70.7080, 'A historic lighthouse at the mouth of the Piscataqua River.'],
+  ['Sabbaday Falls', 'Waterville Valley', 'Waterfall', 43.9900, -71.3900, 'A multi-tiered waterfall through a carved flume.'],
+  ['Mount Monadnock', 'Jaffrey', 'Mountains', 42.8610, -72.1080, 'One of the most-climbed mountains in the world, with bald-rock summit views.'],
+  ['Castle in the Clouds', 'Moultonborough', 'Architecture', 43.7500, -71.3100, 'An Arts-and-Crafts mansion on a ridge above Lake Winnipesaukee.'],
+]
+
+const NJ: Raw[] = [
+  ['Cape May Lighthouse', 'Cape May', 'Lighthouse', 38.9330, -74.9600, 'An 1859 lighthouse over Victorian Cape May and Atlantic dunes.'],
+  ['Atlantic City Boardwalk', 'Atlantic City', 'Skyline', 39.3540, -74.4290, 'The world’s first boardwalk, lined with casinos and ocean views.'],
+  ['Great Falls Paterson', 'Paterson', 'Waterfall', 40.9160, -74.1810, 'A 77-foot urban waterfall that powered America’s first planned industrial city.'],
+  ['Liberty State Park', 'Jersey City', 'Skyline', 40.7050, -74.0550, 'Statue of Liberty and Manhattan skyline views across the harbor.'],
+  ['Sandy Hook', 'Highlands', 'Beach', 40.4350, -73.9900, 'A barrier spit with the oldest working lighthouse in the US and NYC skyline views.'],
+  ['Lucy the Elephant', 'Margate City', 'Landmark', 39.3210, -74.5110, 'A six-story elephant-shaped building from 1881 on the shore.'],
+  ['Delaware Water Gap', 'Hardwick', 'Mountains', 41.0900, -75.1300, 'A dramatic river gap cut through the Kittatinny Ridge.'],
+  ['Ocean Grove', 'Ocean Grove', 'Historic', 40.2120, -74.0070, 'Victorian "tent city" and a grand auditorium by the sea.'],
+  ['Buttermilk Falls NJ', 'Layton', 'Waterfall', 41.1900, -74.8700, 'The tallest waterfall in New Jersey, cascading in tiers.'],
+  ['Grounds for Sculpture', 'Hamilton', 'Street Art', 40.2300, -74.6900, 'A 42-acre park of monumental contemporary sculptures.'],
+]
+
+const NM: Raw[] = [
+  ['White Sands', 'Alamogordo', 'Desert', 32.7790, -106.1710, 'Rippling dunes of pure white gypsum sand glowing pink at sunset.'],
+  ['Bisti Badlands', 'Farmington', 'Desert', 36.2600, -108.0000, 'Surreal hoodoos and petrified-wood formations in a remote badland.'],
+  ['Carlsbad Caverns', 'Carlsbad', 'Nature', 32.1480, -104.5570, 'A vast underground chamber of dripstone, and a famous bat exodus at dusk.'],
+  ['Taos Pueblo', 'Taos', 'Architecture', 36.4390, -105.5450, 'A 1,000-year-old multistoried adobe pueblo, still inhabited.'],
+  ['Tent Rocks', 'Cochiti', 'Canyon', 35.6600, -106.4100, 'Cone-shaped tent rock hoodoos and a slot-canyon slot trail.'],
+  ['Santa Fe Plaza', 'Santa Fe', 'Architecture', 35.6870, -105.9380, 'Adobe architecture, the historic Palace of the Governors, and golden light.'],
+  ['Rio Grande Gorge Bridge', 'Taos', 'Bridge', 36.4640, -105.7290, 'A steel arch 565 feet above the Rio Grande, the West’s great chasm.'],
+  ['Shiprock', 'Shiprock', 'Desert', 36.6870, -108.8360, 'A 1,500-foot volcanic monolith sacred to the Navajo, rising from the desert.'],
+  ['Sandia Peak', 'Albuquerque', 'Mountains', 35.2080, -106.4490, 'A tramway to a 10,378-foot ridge glowing watermelon-pink at sunset.'],
+  ['Valles Caldera', 'Jemez Springs', 'Nature', 35.8900, -106.5300, 'A vast grassy volcanic caldera roamed by elk.'],
+]
+
+const NY: Raw[] = [
+  ['Niagara Falls', 'Niagara Falls', 'Waterfall', 43.0962, -79.0377, 'The thundering Horseshoe and American falls, mist-wrapped and floodlit at night.'],
+  ['Brooklyn Bridge', 'New York', 'Bridge', 40.7061, -73.9969, 'The 1883 Gothic-arched suspension bridge over the East River with skyline views.'],
+  ['Central Park Bow Bridge', 'New York', 'Park', 40.7757, -73.9712, 'A cast-iron bridge over the lake framing Manhattan’s skyline.'],
+  ['Top of the Rock', 'New York', 'Skyline', 40.7593, -73.9794, 'The classic Empire State Building and Central Park panorama.'],
+  ['Watkins Glen', 'Watkins Glen', 'Waterfall', 42.3760, -76.8720, 'Nineteen waterfalls along a gorge trail of stone bridges and tunnels.'],
+  ['Letchworth Gorge', 'Castile', 'Canyon', 42.5870, -78.0510, 'The "Grand Canyon of the East" with three major waterfalls and a rail trestle.'],
+  ['Times Square', 'New York', 'Skyline', 40.7580, -73.9855, 'The dazzling neon crossroads of the world.'],
+  ['Lake Placid', 'Lake Placid', 'Mountains', 44.2790, -73.9790, 'Adirondack High Peaks reflected in a mirror lake.'],
+  ['Montauk Point Light', 'Montauk', 'Lighthouse', 41.0710, -71.8570, 'New York’s oldest lighthouse on the easternmost tip of Long Island.'],
+  ['Flatiron Building', 'New York', 'Architecture', 40.7411, -73.9897, 'The iconic 1902 wedge-shaped skyscraper at a Manhattan crossroads.'],
+  ['Kaaterskill Falls', 'Haines Falls', 'Waterfall', 42.1960, -74.0600, 'A 260-foot two-tier waterfall in the Catskills, painted by the Hudson River School.'],
+  ['Storm King', 'New Windsor', 'Street Art', 41.4250, -74.0570, 'A 500-acre open-air museum of monumental landscape sculpture.'],
+]
+
+const NC: Raw[] = [
+  ['Cape Hatteras Light', 'Buxton', 'Lighthouse', 35.2510, -75.5290, 'The tallest brick lighthouse in America, spiral-striped on the Outer Banks.'],
+  ['Blue Ridge Parkway', 'Asheville', 'Mountains', 35.5950, -82.4500, 'America’s favorite scenic drive, ablaze with autumn color and ridge overlooks.'],
+  ['Linville Falls', 'Linville Falls', 'Waterfall', 35.9540, -81.9280, 'A powerful multi-tier waterfall in the rugged Linville Gorge.'],
+  ['Biltmore Estate', 'Asheville', 'Architecture', 35.5400, -82.5510, 'America’s largest home, a 250-room French Renaissance château.'],
+  ['Chimney Rock', 'Chimney Rock', 'Mountains', 35.4320, -82.2440, 'A granite monolith with an American flag and Hickory Nut Gorge views.'],
+  ['Cape Lookout', 'Harkers Island', 'Lighthouse', 34.6230, -76.5240, 'A diamond-patterned lighthouse on a wild barrier island.'],
+  ['Grandfather Mountain', 'Linville', 'Mountains', 36.0950, -81.8310, 'A mile-high swinging bridge over a rocky alpine summit.'],
+  ['Whitewater Falls', 'Sapphire', 'Waterfall', 35.0290, -83.0150, 'The highest waterfall east of the Rockies, plunging 411 feet.'],
+  ['Wright Brothers Memorial', 'Kill Devil Hills', 'Historic', 36.0140, -75.6680, 'A granite monument on the dune where powered flight began.'],
+  ['Max Patch', 'Hot Springs', 'Mountains', 35.8000, -82.9600, 'A grassy bald with 360-degree Appalachian sunset views.'],
+]
+
+const ND: Raw[] = [
+  ['Theodore Roosevelt NP', 'Medora', 'Nature', 46.9790, -103.5390, 'Colorful painted badlands roamed by bison and wild horses.'],
+  ['Painted Canyon', 'Medora', 'Canyon', 46.8900, -103.3800, 'A sweeping badlands overlook of banded buttes and ravines.'],
+  ['Enchanted Highway', 'Regent', 'Street Art', 46.4200, -102.5500, 'A 32-mile road lined with giant scrap-metal sculptures.'],
+  ['North Dakota Capitol', 'Bismarck', 'Architecture', 46.8200, -100.7800, 'A 19-story Art Deco "Skyscraper on the Prairie".'],
+  ['Lake Sakakawea', 'Pick City', 'Lake', 47.5000, -101.4000, 'One of the largest man-made lakes in the US, with big-sky sunsets.'],
+  ['Sullys Hill', 'Fort Totten', 'Nature', 47.9800, -98.9600, 'A wooded preserve and bison range above Devils Lake.'],
+  ['Pembina Gorge', 'Walhalla', 'Canyon', 48.9200, -97.8600, 'The deepest river valley in North Dakota, forested and remote.'],
+  ['White Butte', 'Amidon', 'Nature', 46.3850, -103.3000, 'The highest point in North Dakota, rising from the badlands.'],
+  ['Fort Mandan', 'Washburn', 'Historic', 47.2900, -101.0900, 'A reconstruction of Lewis and Clark’s 1804 winter fort.'],
+  ['International Peace Garden', 'Dunseith', 'Park', 48.9990, -100.0590, 'A formal garden straddling the US–Canada border.'],
+]
+
+const OH: Raw[] = [
+  ['Hocking Hills', 'Logan', 'Canyon', 39.4280, -82.5410, 'Old Man’s Cave gorge, recessed caves, and waterfalls in hemlock-shaded sandstone.'],
+  ['Cuyahoga Valley Brandywine', 'Peninsula', 'Waterfall', 41.2770, -81.5400, 'A 65-foot waterfall in Ohio’s only national park.'],
+  ['Cleveland Skyline', 'Cleveland', 'Skyline', 41.4990, -81.6940, 'The Rock Hall and waterfront towers over Lake Erie.'],
+  ['Marblehead Lighthouse', 'Marblehead', 'Lighthouse', 41.5360, -82.7120, 'The oldest continuously operating lighthouse on the Great Lakes.'],
+  ['Cedar Point', 'Sandusky', 'Landmark', 41.4820, -82.6830, 'A roller-coaster skyline on a Lake Erie peninsula.'],
+  ['Ash Cave', 'South Bloomingville', 'Canyon', 39.3970, -82.5460, 'A vast horseshoe-shaped recess cave with a slender waterfall.'],
+  ['Lake Erie Islands', 'Put-in-Bay', 'Lake', 41.6520, -82.8170, 'Perry’s Victory monument and island harbors on Lake Erie.'],
+  ['Serpent Mound', 'Peebles', 'Historic', 39.0250, -83.4300, 'A 1,348-foot prehistoric effigy mound coiled along a ridge.'],
+  ['Conkles Hollow', 'Rockbridge', 'Canyon', 39.4500, -82.5700, 'One of the deepest gorges in Ohio with sheer cliff rims.'],
+  ['Columbus Skyline', 'Columbus', 'Skyline', 39.9610, -83.0000, 'The Scioto Mile and bridges reflecting the downtown towers.'],
+]
+
+const OK: Raw[] = [
+  ['Wichita Mountains', 'Lawton', 'Mountains', 34.7280, -98.7100, 'Ancient granite peaks and free-roaming bison on the southern plains.'],
+  ['Turner Falls', 'Davis', 'Waterfall', 34.4250, -97.1470, 'A 77-foot waterfall into a natural swimming pool in the Arbuckle Mountains.'],
+  ['Gloss Mountains', 'Fairview', 'Mountains', 36.3400, -98.5600, 'Flat-topped mesas glittering with selenite crystal in red-rock country.'],
+  ['Great Salt Plains', 'Jet', 'Desert', 36.7500, -98.2000, 'A vast white salt flat where you can dig hourglass selenite crystals.'],
+  ['Beavers Bend', 'Broken Bow', 'Nature', 34.1390, -94.6810, 'Pine forests and a clear river beneath the Ouachita Mountains.'],
+  ['Tulsa Art Deco', 'Tulsa', 'Architecture', 36.1540, -95.9920, 'One of America’s richest collections of Art Deco towers.'],
+  ['Black Mesa', 'Kenton', 'Nature', 36.9300, -102.9700, 'The highest point in Oklahoma in a remote panhandle landscape.'],
+  ['Robbers Cave', 'Wilburton', 'Nature', 34.9900, -95.3300, 'Sandstone bluffs and a cave once used by outlaws.'],
+  ['Oklahoma City Memorial', 'Oklahoma City', 'Landmark', 35.4730, -97.5070, 'The Field of Empty Chairs and reflecting pool, moving at dusk.'],
+  ['Natural Falls', 'West Siloam Springs', 'Waterfall', 36.1700, -94.6700, 'A 77-foot waterfall in a lush green grotto.'],
+]
+
+const OR: Raw[] = [
+  ['Crater Lake', 'Crater Lake', 'Lake', 42.9446, -122.1090, 'The deepest lake in the US — impossibly blue water filling a collapsed volcano.'],
+  ['Multnomah Falls', 'Bridal Veil', 'Waterfall', 45.5762, -122.1158, 'A 620-foot two-tier waterfall with an arched footbridge, Oregon’s most famous.'],
+  ['Cannon Beach Haystack Rock', 'Cannon Beach', 'Beach', 45.8847, -123.9680, 'A 235-foot sea stack rising from a misty Pacific beach.'],
+  ['Thor’s Well', 'Yachats', 'Beach', 44.2780, -124.1130, 'A coastal "sinkhole" that swallows and erupts seawater at high tide.'],
+  ['Painted Hills', 'Mitchell', 'Desert', 44.6610, -120.2740, 'Banded red, gold, and black hills glowing at golden hour.'],
+  ['Mount Hood / Trillium Lake', 'Government Camp', 'Mountains', 45.2440, -121.7270, 'Oregon’s tallest peak mirrored in a still alpine lake.'],
+  ['Columbia River Gorge', 'Hood River', 'Canyon', 45.7000, -121.5000, 'A dramatic river canyon strung with waterfalls and basalt cliffs.'],
+  ['Smith Rock', 'Terrebonne', 'Mountains', 44.3680, -121.1390, 'Sheer volcanic tuff cliffs above a river bend, birthplace of US sport climbing.'],
+  ['Toketee Falls', 'Idleyld Park', 'Waterfall', 43.2660, -122.4230, 'A waterfall framed by towering columnar basalt.'],
+  ['Proxy Falls', 'McKenzie Bridge', 'Waterfall', 44.1620, -121.9200, 'A delicate veil cascading over moss-covered lava rock.'],
+]
+
+const PA: Raw[] = [
+  ['Fallingwater', 'Mill Run', 'Architecture', 39.9060, -79.4680, 'Frank Lloyd Wright’s masterpiece cantilevered over a waterfall.'],
+  ['Philadelphia Skyline / Art Museum', 'Philadelphia', 'Architecture', 39.9656, -75.1810, 'The "Rocky Steps" and Greek-revival museum framing the skyline.'],
+  ['Pine Creek Gorge', 'Wellsboro', 'Canyon', 41.6900, -77.4500, 'The "Grand Canyon of Pennsylvania", 1,000 feet deep and forested.'],
+  ['Ricketts Glen', 'Benton', 'Waterfall', 41.3300, -76.2700, 'A trail past 21 named waterfalls in an old-growth gorge.'],
+  ['Pittsburgh Skyline', 'Pittsburgh', 'Skyline', 40.4400, -80.0090, 'The Mount Washington overlook of three rivers and golden bridges.'],
+  ['Gettysburg', 'Gettysburg', 'Historic', 39.8090, -77.2350, 'Rolling battlefields, monuments, and Little Round Top at dawn.'],
+  ['Longwood Gardens', 'Kennett Square', 'Park', 39.8700, -75.6740, 'Grand fountains and conservatories on a former du Pont estate.'],
+  ['Ohiopyle Falls', 'Ohiopyle', 'Waterfall', 39.8690, -79.4920, 'A wide waterfall on the Youghiogheny River in the Laurel Highlands.'],
+  ['Hawk Falls / Hickory Run', 'White Haven', 'Waterfall', 41.0300, -75.6700, 'A waterfall and a field of boulders left by glaciers.'],
+  ['Kinzua Bridge Skywalk', 'Mount Jewett', 'Bridge', 41.7610, -78.5880, 'A partially collapsed rail viaduct turned glass-floored skywalk.'],
+]
+
+const RI: Raw[] = [
+  ['The Breakers', 'Newport', 'Architecture', 41.4699, -71.2986, 'A Gilded Age Vanderbilt mansion on the cliffs above the Atlantic.'],
+  ['Cliff Walk', 'Newport', 'Beach', 41.4790, -71.3000, 'A 3.5-mile path between Gilded Age mansions and crashing surf.'],
+  ['Beavertail Lighthouse', 'Jamestown', 'Lighthouse', 41.4490, -71.3990, 'A rugged-rock lighthouse at the mouth of Narragansett Bay.'],
+  ['Block Island', 'Block Island', 'Beach', 41.1680, -71.5580, 'The Mohegan Bluffs and Southeast Light on dramatic clay cliffs.'],
+  ['WaterFire Providence', 'Providence', 'Skyline', 41.8260, -71.4090, 'Bonfires on the river at the heart of the capital at night.'],
+  ['Newport Harbor', 'Newport', 'Skyline', 41.4870, -71.3160, 'Sailing yachts and church steeples in a classic New England harbor.'],
+  ['Sachuest Point', 'Middletown', 'Beach', 41.4790, -71.2440, 'A coastal wildlife refuge of rocky shore and surf.'],
+  ['Roger Williams Park', 'Providence', 'Park', 41.7900, -71.4180, 'Victorian gardens, lakes, and a domed museum.'],
+  ['Point Judith Light', 'Narragansett', 'Lighthouse', 41.3610, -71.4810, 'A working lighthouse marking a storied stretch of coast.'],
+  ['Watch Hill', 'Westerly', 'Beach', 41.3050, -71.8580, 'A historic carousel and breezy bluff over the ocean.'],
+]
+
+const SC: Raw[] = [
+  ['Angel Oak', 'Johns Island', 'Nature', 32.7180, -80.0810, 'A sprawling live oak estimated at 400+ years, its limbs touching the ground.'],
+  ['Charleston Rainbow Row', 'Charleston', 'Architecture', 32.7760, -79.9270, 'A row of pastel Georgian houses along the historic waterfront.'],
+  ['Boneyard Beach', 'Bulls Island', 'Beach', 32.8800, -79.6300, 'A surreal beach of sun-bleached, salt-killed oak skeletons.'],
+  ['Caesars Head', 'Cleveland', 'Mountains', 35.1080, -82.6320, 'A granite overlook of the Blue Ridge escarpment and Table Rock.'],
+  ['Magnolia Plantation', 'Charleston', 'Park', 32.8870, -80.0810, 'America’s oldest public garden, with mossy oaks and reflective ponds.'],
+  ['Myrtle Beach', 'Myrtle Beach', 'Beach', 33.6890, -78.8860, 'A bustling boardwalk and SkyWheel along the Grand Strand.'],
+  ['Hunting Island Light', 'Hunting Island', 'Lighthouse', 32.3760, -80.4380, 'A climbable lighthouse on a wild maritime-forest beach.'],
+  ['Table Rock', 'Pickens', 'Mountains', 35.0270, -82.6980, 'A massive granite dome reflected in a mountain reservoir.'],
+  ['Congaree National Park', 'Hopkins', 'Nature', 33.7930, -80.7820, 'The largest old-growth bottomland forest, with towering cypress.'],
+  ['Ravenel Bridge', 'Charleston', 'Bridge', 32.8040, -79.9080, 'A sweeping cable-stayed bridge over the Cooper River.'],
+]
+
+const SD: Raw[] = [
+  ['Mount Rushmore', 'Keystone', 'Landmark', 43.8791, -103.4591, 'Four presidents carved 60 feet tall into a granite mountain face.'],
+  ['Badlands National Park', 'Interior', 'Nature', 43.8554, -102.3397, 'Striped, eroded spires and buttes glowing at sunrise and sunset.'],
+  ['Custer State Park', 'Custer', 'Nature', 43.7500, -103.4200, 'Granite spires, the Needles Highway, and a roaming bison herd.'],
+  ['Crazy Horse Memorial', 'Crazy Horse', 'Landmark', 43.8360, -103.6230, 'The world’s largest mountain carving in progress.'],
+  ['Sylvan Lake', 'Custer', 'Lake', 43.8470, -103.5580, 'A still lake encircled by granite boulders in the Black Hills.'],
+  ['Spearfish Canyon', 'Spearfish', 'Canyon', 44.3800, -103.8400, 'Limestone walls and waterfalls along a forested canyon drive.'],
+  ['Wind Cave', 'Hot Springs', 'Nature', 43.5570, -103.4780, 'One of the world’s longest caves, with rare boxwork formations.'],
+  ['Needles Highway', 'Custer', 'Mountains', 43.8200, -103.5000, 'A road threading granite needles and one-lane tunnels.'],
+  ['Falls Park', 'Sioux Falls', 'Waterfall', 43.5560, -96.7210, 'Pink quartzite falls of the Big Sioux River in the city center.'],
+  ['Palisades State Park', 'Garretson', 'Nature', 43.6900, -96.5300, 'Sheer quartzite cliffs along Split Rock Creek.'],
+]
+
+const TN: Raw[] = [
+  ['Great Smoky Mountains', 'Gatlinburg', 'Mountains', 35.6532, -83.5070, 'Mist-layered ridgelines, the most-visited national park, glowing at sunrise from Clingmans Dome.'],
+  ['Roan Mountain', 'Roan Mountain', 'Mountains', 36.1040, -82.1300, 'Grassy balds and the world’s largest natural rhododendron garden.'],
+  ['Fall Creek Falls', 'Spencer', 'Waterfall', 35.6620, -85.3550, 'One of the highest waterfalls in the eastern US at 256 feet.'],
+  ['Nashville Skyline', 'Nashville', 'Skyline', 36.1620, -86.7740, 'The pedestrian bridge and "Batman" tower over the Cumberland River.'],
+  ['Ruby Falls', 'Chattanooga', 'Waterfall', 35.0180, -85.3390, 'A 145-foot underground waterfall deep inside Lookout Mountain.'],
+  ['Rock City', 'Lookout Mountain', 'Nature', 34.9720, -85.3500, 'Sandstone passages and a "see seven states" overlook.'],
+  ['Cummins Falls', 'Cookeville', 'Waterfall', 36.2470, -85.5660, 'A wide swimming-hole waterfall in a river gorge.'],
+  ['Foster Falls', 'Sequatchie', 'Waterfall', 35.1800, -85.6700, 'A 60-foot waterfall plunging into a plunge pool on the Cumberland Plateau.'],
+  ['Memphis Beale Street', 'Memphis', 'Skyline', 35.1390, -90.0510, 'Neon blues clubs and the Mississippi riverfront.'],
+  ['Burgess Falls', 'Sparta', 'Waterfall', 36.0420, -85.5900, 'A series of cascades dropping into a deep gorge.'],
+]
+
+const TX: Raw[] = [
+  ['Big Bend', 'Big Bend', 'Desert', 29.1275, -103.2425, 'Vast desert, the Chisos Mountains, and the Rio Grande canyons under dark skies.'],
+  ['San Antonio River Walk', 'San Antonio', 'Architecture', 29.4250, -98.4860, 'A cypress-lined canal of arched bridges and lantern light below street level.'],
+  ['The Alamo', 'San Antonio', 'Historic', 29.4259, -98.4861, 'The 18th-century mission and shrine of Texas independence.'],
+  ['Enchanted Rock', 'Fredericksburg', 'Mountains', 30.5060, -98.8190, 'A massive pink-granite dome glowing at sunset in the Hill Country.'],
+  ['Hamilton Pool', 'Dripping Springs', 'Nature', 30.3420, -98.1270, 'A collapsed grotto with a waterfall into a jade-green pool.'],
+  ['Palo Duro Canyon', 'Canyon', 'Canyon', 34.9370, -101.6600, 'The second-largest canyon in the US, banded red and orange.'],
+  ['Gulf Coast Galveston', 'Galveston', 'Beach', 29.3010, -94.7980, 'Historic piers and beaches along the Gulf of Mexico.'],
+  ['Big Bend Santa Elena', 'Terlingua', 'Canyon', 29.1660, -103.6100, 'Sheer 1,500-foot canyon walls split by the Rio Grande.'],
+  ['Austin Skyline / Congress Bats', 'Austin', 'Skyline', 30.2640, -97.7450, 'The skyline and 1.5 million bats streaming from Congress Avenue Bridge at dusk.'],
+  ['Caddo Lake', 'Uncertain', 'Lake', 32.7100, -94.1000, 'A maze of bayous and cypress draped in Spanish moss.'],
+  ['Marfa', 'Marfa', 'Desert', 30.3090, -104.0210, 'High-desert art town with the Prada Marfa installation and mystery lights.'],
+  ['Guadalupe Peak', 'Salt Flat', 'Mountains', 31.8910, -104.8600, 'The highest point in Texas, rising from the Chihuahuan Desert.'],
+]
+
+const UT: Raw[] = [
+  ['Delicate Arch', 'Moab', 'Desert', 38.7436, -109.4993, 'The free-standing arch icon of Utah, framing the La Sal Mountains at sunset.'],
+  ['Mesa Arch', 'Moab', 'Desert', 38.3886, -109.8680, 'A cliff-edge arch that glows fiery orange-red at sunrise in Canyonlands.'],
+  ['Bryce Canyon', 'Bryce', 'Canyon', 37.5930, -112.1871, 'An amphitheater of thousands of orange hoodoo spires, surreal at sunrise.'],
+  ['Zion Narrows', 'Springdale', 'Canyon', 37.2850, -112.9480, 'A river hike between 1,000-foot sandstone walls.'],
+  ['Angels Landing', 'Springdale', 'Mountains', 37.2690, -112.9470, 'A knife-edge ridge with chains to a dizzying canyon overlook.'],
+  ['Horseshoe Bend region / Reflection Canyon', 'Escalante', 'Canyon', 37.2700, -110.9000, 'Serpentine river canyons carved in red rock.'],
+  ['Monument Valley (UT)', 'Mexican Hat', 'Desert', 37.0040, -110.0150, 'Mitten buttes and the Forrest Gump highway stretching to the horizon.'],
+  ['The Wave / Coyote Buttes', 'Kanab', 'Desert', 37.0000, -112.0000, 'Swirling striped sandstone in a remote permit-only basin.'],
+  ['Great Salt Lake Spiral Jetty', 'Corinne', 'Lake', 41.4380, -112.6690, 'Robert Smithson’s earthwork coiling into a pink salt lake.'],
+  ['Dead Horse Point', 'Moab', 'Canyon', 38.4830, -109.7400, 'A gooseneck of the Colorado River 2,000 feet below a mesa rim.'],
+  ['Cathedral Valley', 'Torrey', 'Desert', 38.4000, -111.4000, 'Monolithic sandstone temples in remote Capitol Reef.'],
+  ['Bonneville Salt Flats', 'Wendover', 'Desert', 40.7600, -113.8500, 'A blinding-white salt plain stretching to the mountains.'],
+]
+
+const VT: Raw[] = [
+  ['Sleepy Hollow Farm', 'Woodstock', 'Nature', 43.6360, -72.4870, 'A storybook farmhouse and winding lane, the most-photographed scene in Vermont autumn.'],
+  ['Stowe / Mount Mansfield', 'Stowe', 'Mountains', 44.5440, -72.8140, "Vermont's highest peak above a classic church-steeple village."],
+  ['Quechee Gorge', 'Quechee', 'Canyon', 43.6390, -72.4070, "Vermont's deepest gorge, 165 feet down to the Ottauquechee River."],
+  ['Moss Glen Falls', 'Stowe', 'Waterfall', 44.5300, -72.7600, 'A graceful waterfall in a narrow forested gorge.'],
+  ['Jenne Farm', 'Reading', 'Nature', 43.5300, -72.5500, 'An iconic red-barn farmstead amid rolling autumn hills.'],
+  ['Smugglers Notch', 'Cambridge', 'Mountains', 44.5560, -72.7900, 'A narrow mountain pass between towering cliffs and boulders.'],
+  ['Lake Willoughby', 'Westmore', 'Lake', 44.7300, -72.0500, 'A fjord-like glacial lake between two steep mountains.'],
+  ['Church Street Burlington', 'Burlington', 'Skyline', 44.4790, -73.2120, 'A brick pedestrian marketplace near Lake Champlain sunsets.'],
+  ['Texas Falls', 'Hancock', 'Waterfall', 43.9500, -72.8600, 'A series of cascades through sculpted rock in the Green Mountains.'],
+  ['Hildene', 'Manchester', 'Architecture', 43.1500, -73.0700, 'Lincoln family Georgian mansion with formal gardens and mountain views.'],
+]
+
+const VA: Raw[] = [
+  ['Skyline Drive', 'Luray', 'Mountains', 38.5000, -78.4500, 'A 105-mile ridge-top drive through Shenandoah with blue-layered mountain overlooks.'],
+  ['McAfee Knob', 'Catawba', 'Mountains', 37.3920, -80.0370, 'The most-photographed overlook on the Appalachian Trail, a jutting rock ledge.'],
+  ['Great Falls VA', 'McLean', 'Waterfall', 38.9970, -77.2540, 'The Potomac River roaring through a rocky gorge near DC.'],
+  ['Colonial Williamsburg', 'Williamsburg', 'Historic', 37.2710, -76.7000, 'A restored 18th-century town of brick buildings and costumed life.'],
+  ['Natural Bridge', 'Natural Bridge', 'Nature', 37.6280, -79.5430, 'A 215-foot limestone arch once surveyed by George Washington.'],
+  ['Virginia Beach Boardwalk', 'Virginia Beach', 'Beach', 36.8520, -75.9780, 'A 3-mile oceanfront boardwalk and King Neptune statue.'],
+  ['Shenandoah Dark Hollow Falls', 'Syria', 'Waterfall', 38.5200, -78.4300, 'A cascading waterfall over greenstone in the national park.'],
+  ['Chincoteague', 'Chincoteague', 'Beach', 37.9330, -75.3580, 'Wild ponies and a candy-striped lighthouse on the Eastern Shore.'],
+  ['Monticello', 'Charlottesville', 'Architecture', 38.0080, -78.4530, 'Thomas Jefferson’s neoclassical mountaintop home.'],
+  ['Crabtree Falls', 'Montebello', 'Waterfall', 37.8500, -79.0800, 'The highest cascading waterfall east of the Mississippi.'],
+]
+
+const WA: Raw[] = [
+  ['Mount Rainier / Reflection Lakes', 'Ashford', 'Mountains', 46.7700, -121.7300, 'A 14,411-foot glaciated volcano mirrored in alpine lakes and wildflower meadows.'],
+  ['Snoqualmie Falls', 'Snoqualmie', 'Waterfall', 47.5417, -121.8377, 'A 268-foot waterfall taller than Niagara, often mist-wrapped.'],
+  ['Space Needle / Seattle', 'Seattle', 'Skyline', 47.6205, -122.3493, 'The skyline and Space Needle framed by Mount Rainier at sunset.'],
+  ['Diablo Lake', 'Newhalem', 'Lake', 48.7140, -121.1360, 'A startlingly turquoise glacial lake in the North Cascades.'],
+  ['Ruby Beach', 'Forks', 'Beach', 47.7100, -124.4150, 'Sea stacks and driftwood on a wild Olympic coast beach.'],
+  ['Palouse Falls', 'LaCrosse', 'Waterfall', 46.6640, -118.2240, 'A 200-foot waterfall plunging into a desert canyon, Washington’s state waterfall.'],
+  ['Hoh Rain Forest', 'Forks', 'Nature', 47.8600, -123.9350, 'Moss-draped old-growth in one of the wettest places in the US.'],
+  ['Deception Pass Bridge', 'Oak Harbor', 'Bridge', 48.4060, -122.6470, 'A dramatic bridge over churning tidal waters between islands.'],
+  ['Mount St. Helens', 'Toutle', 'Mountains', 46.1910, -122.1950, 'The blown-out crater of the 1980 eruption amid recovering forest.'],
+  ['Cape Flattery', 'Neah Bay', 'Beach', 48.3840, -124.7130, 'The northwesternmost point of the contiguous US, with sea caves and cliffs.'],
+]
+
+const WV: Raw[] = [
+  ['New River Gorge Bridge', 'Fayetteville', 'Bridge', 38.0700, -81.0760, 'One of the longest steel arch bridges in the world, soaring over a forested gorge.'],
+  ['Blackwater Falls', 'Davis', 'Waterfall', 39.1130, -79.4900, 'An amber-tinted 57-foot waterfall in a rhododendron canyon.'],
+  ['Seneca Rocks', 'Seneca Rocks', 'Mountains', 38.8350, -79.3730, 'A sheer 900-foot quartzite fin rising above the valley.'],
+  ['Glade Creek Grist Mill', 'Clifftop', 'Historic', 37.8200, -80.9300, 'A picturesque working mill beside a creek in Babcock State Park.'],
+  ['Dolly Sods', 'Hopeville', 'Nature', 39.0300, -79.3300, 'A high windswept plateau of bogs, heath, and one-sided spruce.'],
+  ['Harpers Ferry', 'Harpers Ferry', 'Historic', 39.3260, -77.7290, 'A historic town at the dramatic confluence of two rivers.'],
+  ['Cooper’s Rock', 'Morgantown', 'Canyon', 39.6600, -79.7900, 'A clifftop overlook of the Cheat River gorge.'],
+  ['Sandstone Falls', 'Hinton', 'Waterfall', 37.7700, -80.8900, 'The largest waterfall on the New River, spanning the channel.'],
+  ['Spruce Knob', 'Riverton', 'Mountains', 38.6990, -79.5320, 'The highest point in West Virginia with a stone observation tower.'],
+  ['Grandview', 'Beaver', 'Canyon', 37.8300, -81.0600, 'A sweeping overlook of a horseshoe bend in the New River Gorge.'],
+]
+
+const WI: Raw[] = [
+  ['Apostle Islands Sea Caves', 'Bayfield', 'Beach', 46.9300, -90.6600, 'Lake Superior sea caves that freeze into ice cathedrals in winter.'],
+  ['Wisconsin Dells', 'Wisconsin Dells', 'Canyon', 43.6270, -89.7710, 'Sandstone gorges and cliffs along the Wisconsin River.'],
+  ['Devil’s Lake', 'Baraboo', 'Lake', 43.4280, -89.7300, 'A clear lake ringed by 500-foot quartzite bluffs.'],
+  ['Cave Point', 'Sturgeon Bay', 'Beach', 44.9200, -87.2700, 'Limestone cliffs and underwater caves on the Door County shore.'],
+  ['Milwaukee Art Museum', 'Milwaukee', 'Architecture', 43.0400, -87.8970, 'Calatrava’s winged "Burke Brise Soleil" on the Lake Michigan shore.'],
+  ['Lake Geneva', 'Lake Geneva', 'Lake', 42.5910, -88.4330, 'A historic resort lake ringed by Gilded Age estates.'],
+  ['Pewits Nest', 'Baraboo', 'Canyon', 43.4600, -89.7900, 'A hidden slot gorge with waterfalls and pools.'],
+  ['Door County Lighthouses', 'Baileys Harbor', 'Lighthouse', 45.0600, -87.1200, 'The Cana Island Light on a rocky causeway in Lake Michigan.'],
+  ['Pattison State Park', 'Superior', 'Waterfall', 46.5300, -91.8500, 'Big Manitou Falls, the highest waterfall in Wisconsin.'],
+  ['Holy Hill', 'Hubertus', 'Architecture', 43.2500, -88.2900, 'A twin-spired basilica on a glacial hill above autumn forest.'],
+]
+
+const WY: Raw[] = [
+  ['Grand Teton / Schwabacher', 'Moose', 'Mountains', 43.7900, -110.6800, 'The jagged Teton range mirrored in a quiet Snake River channel at sunrise.'],
+  ['Grand Prismatic Spring', 'Yellowstone', 'Nature', 44.5250, -110.8380, 'A vast rainbow-ringed hot spring, the largest in the US.'],
+  ['Old Faithful', 'Yellowstone', 'Nature', 44.4605, -110.8281, 'The world’s most famous geyser, erupting on a near-clockwork schedule.'],
+  ['Mormon Row / T.A. Moulton Barn', 'Moose', 'Historic', 43.7350, -110.6500, 'The most-photographed barn in America beneath the Tetons.'],
+  ['Lower Yellowstone Falls', 'Yellowstone', 'Waterfall', 44.7180, -110.4960, 'A 308-foot waterfall in the colorful Grand Canyon of the Yellowstone.'],
+  ['Jenny Lake', 'Moose', 'Lake', 43.7600, -110.7200, 'A glassy lake at the foot of the Tetons with Hidden Falls.'],
+  ['Devils Tower', 'Devils Tower', 'Nature', 44.5902, -104.7146, 'A 867-foot volcanic monolith rising from the plains, the first national monument.'],
+  ['Mammoth Hot Springs', 'Yellowstone', 'Nature', 44.9700, -110.7000, 'Terraced travertine pools cascading like a frozen waterfall.'],
+  ['Snake River Overlook', 'Moose', 'Mountains', 43.7400, -110.6300, 'Ansel Adams’ famous vista of the river bending below the Tetons.'],
+  ['Hot Springs / Thermopolis', 'Thermopolis', 'Nature', 43.6500, -108.2000, 'The world’s largest mineral hot spring with travertine terraces.'],
+]
+
 // ─── REGISTRY ────────────────────────────────────────────────────────────────
-// Add new states here as they're authored. Each expands to full PhotoSpots.
+// All authored states. Each expands to full PhotoSpots via the generator.
 const RAW_BY_STATE: Record<string, Raw[]> = {
   AL, AK, AZ, AR, CA, CO,
+  CT, DE, GA, HI, ID, IL, IN, IA,
+  KS, KY, LA, ME, MD, MA, MI,
+  MN, MS, MO, MT, NE, NV, NH,
+  NJ, NM, NY, NC, ND, OH, OK,
+  OR, PA, RI, SC, SD, TN, TX, UT,
+  VT, VA, WA, WV, WI, WY,
 }
 
-// FL extras merge into the existing Florida dataset elsewhere; exported separately.
+// FL extras merge into the existing Florida dataset; exported separately.
 export const floridaExtraSpots: PhotoSpot[] = expand('FL', FL_EXTRA)
 
-// All authored state spots, flattened.
+// All authored per-state spots, flattened.
 export const statesSpots: PhotoSpot[] = Object.entries(RAW_BY_STATE)
   .flatMap(([state, raws]) => expand(state, raws))
 
