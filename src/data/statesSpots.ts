@@ -820,15 +820,96 @@ const RAW_BY_STATE: Record<string, Raw[]> = {
   VT, VA, WA, WV, WI, WY,
 }
 
-// FL extras merge into the existing Florida dataset; exported separately.
-export const floridaExtraSpots: PhotoSpot[] = expand('FL', FL_EXTRA)
+// Supplemental rows that deepen each state toward 30 spots. Defined in
+// RAW_EXTRA below and merged per state. Dedupes by name within a state.
+function mergedRaws(state: string): Raw[] {
+  const base = RAW_BY_STATE[state] ?? []
+  const extra = RAW_EXTRA[state] ?? []
+  const seen = new Set(base.map(r => r[0].toLowerCase()))
+  return [...base, ...extra.filter(r => !seen.has(r[0].toLowerCase()))]
+}
 
-// All authored per-state spots, flattened.
-export const statesSpots: PhotoSpot[] = Object.entries(RAW_BY_STATE)
-  .flatMap(([state, raws]) => expand(state, raws))
+const ALL_STATE_CODES = Object.keys(RAW_BY_STATE)
+
+// ─── SUPPLEMENTAL SPOTS (deepening toward 30/state) ──────────────────────────
+const RAW_EXTRA: Record<string, Raw[]> = {
+  AL: [
+    ['DeSoto Falls', 'Mentone', 'Waterfall', 34.5800, -85.6200, 'A 104-foot waterfall plunging into a deep gorge atop Lookout Mountain.'],
+    ['Gulf Shores Beach', 'Gulf Shores', 'Beach', 30.2460, -87.7010, 'Miles of sugar-white sand and emerald Gulf water on the Alabama coast.'],
+    ['Birmingham Museum / Railroad Park', 'Birmingham', 'Skyline', 33.5060, -86.8090, 'A green urban park reflecting the downtown skyline.'],
+    ['Wheeler Wildlife Refuge', 'Decatur', 'Nature', 34.5400, -86.9700, 'Wintering sandhill cranes and wetlands along the Tennessee River.'],
+    ['Rickwood Caverns', 'Warrior', 'Nature', 33.8800, -86.8600, 'A 260-million-year-old limestone cave with an underground pool.'],
+    ['Fort Morgan', 'Gulf Shores', 'Historic', 30.2280, -88.0240, 'A star-shaped 19th-century fort guarding Mobile Bay.'],
+    ['Mobile Bay Causeway', 'Spanish Fort', 'Nature', 30.6500, -87.9300, 'Marshland sunsets and the bay skyline along the causeway.'],
+    ['High Falls Park', 'Geraldine', 'Waterfall', 34.3600, -85.9000, 'A wide rocky waterfall with a natural bridge above it.'],
+    ['Oak Mountain State Park', 'Pelham', 'Nature', 33.3300, -86.7600, "Alabama's largest state park with lakes, ridges, and waterfalls."],
+    ['Stephens Gap Cave', 'Woodville', 'Nature', 34.6200, -86.3000, 'A famous cave pit where a light beam falls onto a waterfall.'],
+    ['Montgomery Riverfront', 'Montgomery', 'Skyline', 32.3790, -86.3080, 'The Alabama River and capital skyline at golden hour.'],
+    ['Cheaha Bald Rock', 'Delta', 'Mountains', 33.4900, -85.8100, 'A boardwalk to a cliff edge with sweeping forest views.'],
+    ['Dismals Canyon', 'Phil Campbell', 'Canyon', 34.3200, -87.7700, 'A sandstone gorge famous for glowing bioluminescent "dismalites".'],
+    ['Point Mallard', 'Decatur', 'Nature', 34.5700, -86.9500, 'Riverside park and wetlands on the Tennessee River.'],
+    ['Fort Toulouse', 'Wetumpka', 'Historic', 32.5050, -86.2530, 'A reconstructed colonial fort at the river confluence.'],
+    ['Wetumpka Crater', 'Wetumpka', 'Nature', 32.5300, -86.2000, 'The rim of an ancient meteor impact crater.'],
+    ['Bon Secour Refuge', 'Gulf Shores', 'Beach', 30.2400, -87.8200, 'Protected dunes and nesting sea-turtle beaches.'],
+    ['Sipsey Wilderness', 'Double Springs', 'Waterfall', 34.3300, -87.4000, '"Land of a Thousand Waterfalls" in Bankhead Forest.'],
+    ['Tannehill Ironworks', 'McCalla', 'Historic', 33.2400, -87.0700, 'Civil War-era furnace ruins in a wooded park.'],
+    ['Gulf State Park Lake', 'Gulf Shores', 'Lake', 30.2700, -87.6400, 'Coastal lakes and trails behind the dune line.'],
+  ],
+  AK: [
+    ['Tracy Arm Fjord', 'Juneau', 'Nature', 57.8300, -133.5800, 'A narrow fjord of sheer cliffs, waterfalls, and twin Sawyer glaciers.'],
+    ['Worthington Glacier', 'Valdez', 'Nature', 61.1700, -145.7500, 'A roadside glacier you can walk right up to near Thompson Pass.'],
+    ['Byron Glacier', 'Girdwood', 'Nature', 60.7700, -148.8400, 'A short trail to an ice field and avalanche slopes.'],
+    ['Anchorage Coastal Trail', 'Anchorage', 'Nature', 61.2100, -149.9100, 'A bayside trail with Sleeping Lady mountain and beluga views.'],
+    ['Valdez Harbor', 'Valdez', 'Mountains', 61.1300, -146.3500, 'A fishing harbor ringed by snow-capped peaks and waterfalls.'],
+    ['Seward Resurrection Bay', 'Seward', 'Nature', 60.1200, -149.4400, 'A deep fjord harbor framed by mountains and glaciers.'],
+    ['Eklutna Lake', 'Chugiak', 'Lake', 61.4100, -149.1300, 'A glacier-fed turquoise lake in the Chugach Mountains.'],
+    ['Reflections Lake', 'Palmer', 'Lake', 61.5400, -149.0300, 'Still water mirroring the Chugach near the Knik River.'],
+    ['Thunderbird Falls', 'Chugiak', 'Waterfall', 61.4500, -149.3500, 'A short forest trail to a misty gorge waterfall.'],
+    ['Knik Glacier', 'Palmer', 'Nature', 61.4200, -148.4000, 'A vast glacier calving icebergs into a meltwater lake.'],
+    ['Nome / Bering Coast', 'Nome', 'Beach', 64.5000, -165.4000, 'Gold-rush beaches and tundra on the Bering Sea.'],
+    ['Katmai Brooks Falls', 'King Salmon', 'Waterfall', 58.5600, -155.7800, 'Brown bears catching leaping salmon at a famous waterfall.'],
+    ['Wrangell-St. Elias', 'Copper Center', 'Mountains', 61.7100, -142.9900, 'The largest national park, with massive peaks and glaciers.'],
+    ['Homer Spit', 'Homer', 'Beach', 59.6000, -151.4200, 'A long gravel spit into Kachemak Bay below glaciers.'],
+    ['Chena Hot Springs', 'Fairbanks', 'Nature', 65.0500, -146.0500, 'Steaming springs and an aurora-viewing resort.'],
+    ['Savage River', 'Denali Park', 'Mountains', 63.7400, -149.3000, 'Tundra valley walk with Denali-range views.'],
+    ['Kennecott Mines', 'McCarthy', 'Historic', 61.4800, -142.8800, 'Red ghost-town mill buildings beneath the Root Glacier.'],
+    ['Bird Creek', 'Anchorage', 'Nature', 60.9700, -149.4800, 'Turnagain Arm fishing and bore-tide viewing.'],
+    ['Flattop Mountain', 'Anchorage', 'Mountains', 61.1000, -149.6800, 'The most-climbed peak in Alaska, overlooking the city.'],
+    ['Skagway', 'Skagway', 'Historic', 59.4600, -135.3100, 'A preserved gold-rush town and the White Pass railway.'],
+  ],
+  AZ: [
+    ['Cathedral Rock Trail', 'Sedona', 'Mountains', 34.8200, -111.7900, 'A steep scramble to a saddle between red-rock spires.'],
+    ['Devil’s Bridge', 'Sedona', 'Desert', 34.9020, -111.8150, 'The largest natural sandstone arch in the Sedona area.'],
+    ['Lake Powell', 'Page', 'Lake', 36.9370, -111.4840, 'Sapphire water winding through red-rock canyons.'],
+    ['Bell Rock', 'Sedona', 'Mountains', 34.8000, -111.7660, 'A bell-shaped red butte glowing at sunset.'],
+    ['Meteor Crater', 'Winslow', 'Desert', 35.0270, -111.0220, 'A nearly mile-wide impact crater in the high desert.'],
+    ['Tucson Saguaro East', 'Tucson', 'Desert', 32.1800, -110.7300, 'Dense saguaro forest against the Rincon Mountains.'],
+    ['Grand Canyon Desert View', 'Grand Canyon', 'Canyon', 36.0440, -111.8260, 'The historic Watchtower and an eastern canyon panorama.'],
+    ['Slide Rock', 'Sedona', 'Nature', 34.9430, -111.7530, 'A natural sandstone water slide in Oak Creek Canyon.'],
+    ['Vermilion Cliffs', 'Marble Canyon', 'Desert', 36.8000, -111.6000, 'Towering red cliffs and condor country.'],
+    ['Antelope Point', 'Page', 'Lake', 36.9300, -111.4400, 'Sweeping Lake Powell vistas and slot-canyon access.'],
+    ['Sabino Canyon', 'Tucson', 'Desert', 32.3100, -110.8200, 'A desert canyon with creek pools below the Catalinas.'],
+    ['Montezuma Castle', 'Camp Verde', 'Historic', 34.6110, -111.8350, 'A cliff dwelling tucked into a limestone alcove.'],
+    ['Jerome', 'Jerome', 'Historic', 34.7490, -112.1130, 'A hillside mining town clinging to Cleopatra Hill.'],
+    ['Oak Creek Canyon', 'Sedona', 'Canyon', 34.9900, -111.7400, 'A switchbacking canyon drive between red walls and pines.'],
+    ['Lake Havasu / London Bridge', 'Lake Havasu City', 'Bridge', 34.4670, -114.3490, 'The relocated London Bridge over a desert lake.'],
+    ['Picacho Peak', 'Picacho', 'Mountains', 32.6450, -111.4000, 'A sharp desert peak blanketed with spring wildflowers.'],
+    ['Walnut Canyon', 'Flagstaff', 'Canyon', 35.1700, -111.5100, 'Cliff dwellings along a forested limestone canyon.'],
+    ['Coal Mine Canyon', 'Tuba City', 'Canyon', 36.0500, -111.0500, 'Eroded pink-and-white hoodoos on the Navajo Nation.'],
+    ['Sunset Crater', 'Flagstaff', 'Desert', 35.3640, -111.5030, 'A black cinder volcano amid ponderosa pines.'],
+    ['Tonto Bridge Pine Creek', 'Pine', 'Nature', 34.3200, -111.4500, 'Fern grottos beneath the world’s largest travertine bridge.'],
+  ],
+}
+
+// ─── EXPORTS (must come after RAW_BY_STATE and RAW_EXTRA) ─────────────────────
+// FL extras merge into the existing Florida dataset; exported separately.
+export const floridaExtraSpots: PhotoSpot[] = expand('FL', [...FL_EXTRA, ...(RAW_EXTRA['FL'] ?? [])])
+
+// All authored per-state spots, flattened (base + supplemental).
+export const statesSpots: PhotoSpot[] = ALL_STATE_CODES
+  .flatMap(state => expand(state, mergedRaws(state)))
 
 // Convenience: spots for a single state code.
 export function spotsForState(state: string): PhotoSpot[] {
-  const raws = RAW_BY_STATE[state]
-  return raws ? expand(state, raws) : []
+  return expand(state, mergedRaws(state))
 }
