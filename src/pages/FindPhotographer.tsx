@@ -5,12 +5,10 @@ import { Search, SlidersHorizontal, List, Map as MapIcon, X, Star, MapPin } from
 import VerifiedBadge from '@/components/VerifiedBadge'
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
-import { floridaPhotographers } from '@/data/floridaData'
 import { useRealPhotographers } from '@/hooks/useRealPhotographers'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
 import { useLocation } from 'wouter'
 
-const mockPhotographers = [...photographers, ...floridaPhotographers]
 import { cn, formatCount } from '@/lib/utils'
 
 // Lazy-load the map to avoid SSR issues
@@ -112,11 +110,10 @@ export default function FindPhotographer() {
     }
   }, [view])
 
-  // Real Supabase users shown as photographers, merged ahead of sample data
+  // Only real signed-up users — no fabricated sample photographers
   const { photographers: realPhotographers } = useRealPhotographers()
   const { blockedIds } = useBlockedUsers()
-  const allPhotographers = [...realPhotographers, ...mockPhotographers]
-    .filter(p => !blockedIds.has(String(p.id)))
+  const allPhotographers = realPhotographers.filter(p => !blockedIds.has(String(p.id)))
 
   const handleRefresh = useCallback(async () => {
     await new Promise(r => setTimeout(r, 500))

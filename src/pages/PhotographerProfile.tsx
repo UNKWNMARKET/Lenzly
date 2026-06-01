@@ -5,8 +5,6 @@ import {
   MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck,
   MoreVertical, Ban, ShieldOff, Flag
 } from 'lucide-react'
-import { photographers } from '@/data/mockData'
-import { floridaPhotographers } from '@/data/floridaData'
 import { formatCount } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -14,8 +12,6 @@ import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReportSheet from '@/components/ReportSheet'
-
-const allPhotographers = [...photographers, ...floridaPhotographers]
 
 type HireStep = 'idle' | 'form' | 'sent'
 
@@ -131,10 +127,9 @@ export default function PhotographerProfile() {
     setFollowLoading(false)
   }
 
-  // Prefer a real Supabase profile; fall back to sample data by id
+  // Real signed-up users only — no fabricated sample profiles
   const { photographer: realP, loading: realLoading } = useRealPhotographer(id)
-  const mockP = allPhotographers.find(ph => ph.id === id)
-  const p = realP ?? mockP
+  const p = realP
 
   if (!p) {
     // Still loading a real profile lookup

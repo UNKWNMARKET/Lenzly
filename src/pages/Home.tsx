@@ -2,12 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { Bell, MessageCircle, Search } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
-import PostCard from '@/components/PostCard'
 import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import AppLogo from '@/components/AppLogo'
-import { posts as mockPosts } from '@/data/mockData'
 import { supabase, Post } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
@@ -246,10 +244,25 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          // Mock posts fallback (For You with no real posts)
-          mockPosts.map(post => (
-            <PostCard key={post.id} post={post} />
-          ))
+          // For You with no posts in the app yet — real empty state
+          <div className="text-center py-16 px-8">
+            <p className="text-white/40 text-sm font-medium">No posts yet</p>
+            <p className="text-white/25 text-xs mt-2">Be the first to share — post a photo or a spot, and follow photographers to fill your feed.</p>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => navigate('/upload')}
+                className="text-lenz-bg bg-gold text-xs font-semibold rounded-full px-4 py-2"
+              >
+                Share a photo
+              </button>
+              <button
+                onClick={() => navigate('/find')}
+                className="text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+              >
+                Find photographers
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Infinite-scroll sentinel + spinner (only for the real feed) */}
