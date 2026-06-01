@@ -15,7 +15,7 @@ workflows:
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.unkwnmarket.lenzly"
         DEVELOPMENT_TEAM: "S9HC8WQ7YH"
-      node: 22.12.0
+      node: 22
       xcode: latest
 
     scripts:
