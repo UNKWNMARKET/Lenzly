@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase, Profile } from '@/lib/supabase'
+import { initOneSignal, logoutOneSignal } from '@/lib/onesignal'
 
 type AuthContextType = {
   session: Session | null
@@ -52,6 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(sess?.user ?? null)
       if (sess?.user) {
         fetchProfile(sess.user.id)
+        // Register this device for push, tied to the Supabase user id
+        initOneSignal(sess.user.id)
       } else {
         setProfile(null)
       }
@@ -77,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = async () => {
+    await logoutOneSignal()
     await supabase.auth.signOut()
   }
 
