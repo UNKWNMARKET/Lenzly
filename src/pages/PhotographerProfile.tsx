@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter'
 import {
   ChevronLeft, Star, MapPin, Camera,
   MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck,
-  MoreVertical, Ban, ShieldOff
+  MoreVertical, Ban, ShieldOff, Flag
 } from 'lucide-react'
 import { photographers } from '@/data/mockData'
 import { floridaPhotographers } from '@/data/floridaData'
@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 import VerifiedBadge from '@/components/VerifiedBadge'
+import ReportSheet from '@/components/ReportSheet'
 
 const allPhotographers = [...photographers, ...floridaPhotographers]
 
@@ -37,6 +38,7 @@ export default function PhotographerProfile() {
   const [isBlocked, setIsBlocked] = useState(false)
   const [blockLoading, setBlockLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   const isUuidId = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const isSelf = !!user && user.id === id
@@ -231,12 +233,18 @@ export default function PhotographerProfile() {
                     <button
                       onClick={toggleBlock}
                       disabled={blockLoading}
-                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5 disabled:opacity-50"
+                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5 disabled:opacity-50 border-b border-lenz-border/50"
                     >
                       {isBlocked
                         ? <><ShieldOff size={15} className="text-white/60" /><span className="text-white/80">Unblock user</span></>
                         : <><Ban size={15} className="text-red-400" /><span className="text-red-400">Block user</span></>
                       }
+                    </button>
+                    <button
+                      onClick={() => { setMenuOpen(false); setReportOpen(true) }}
+                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5"
+                    >
+                      <Flag size={15} className="text-red-400" /><span className="text-red-400">Report user</span>
                     </button>
                   </div>
                 </>
@@ -531,6 +539,10 @@ export default function PhotographerProfile() {
             )}
           </div>
         </div>
+      )}
+
+      {reportOpen && id && (
+        <ReportSheet targetType="user" targetId={id} onClose={() => setReportOpen(false)} />
       )}
     </div>
   )

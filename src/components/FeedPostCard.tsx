@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
+import ReportSheet from './ReportSheet'
 
 export type FeedPost = {
   id: string
@@ -52,6 +53,7 @@ export default function FeedPostCard({
   const [submitting, setSubmitting] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isOwner = currentUserId === post.user_id
@@ -202,25 +204,32 @@ export default function FeedPostCard({
             </div>
           )}
         </div>
-        {isOwner && (
-          <div className="relative">
-            <button onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-              <MoreVertical size={17} className="text-white/50" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-10 w-44 bg-[#161616] border border-lenz-border rounded-2xl overflow-hidden shadow-2xl shadow-black/60 z-30">
-                <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleArchive() }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-white/80 hover:bg-white/5 border-b border-lenz-border/50">
-                  <Archive size={15} className="text-white/50" /> Archive
-                </button>
-                <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleDelete() }}
+        <div className="relative">
+          <button onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+            <MoreVertical size={17} className="text-white/50" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-10 w-44 bg-[#161616] border border-lenz-border rounded-2xl overflow-hidden shadow-2xl shadow-black/60 z-30">
+              {isOwner ? (
+                <>
+                  <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleArchive() }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-white/80 hover:bg-white/5 border-b border-lenz-border/50">
+                    <Archive size={15} className="text-white/50" /> Archive
+                  </button>
+                  <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleDelete() }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-red-400 hover:bg-red-500/10">
+                    <Trash2 size={15} className="text-red-400" /> Delete
+                  </button>
+                </>
+              ) : (
+                <button onClick={e => { e.stopPropagation(); setMenuOpen(false); setReportOpen(true) }}
                   className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-red-400 hover:bg-red-500/10">
-                  <Trash2 size={15} className="text-red-400" /> Delete
+                  <Flag size={15} className="text-red-400" /> Report
                 </button>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Image — rounded inside card */}
@@ -321,6 +330,9 @@ export default function FeedPostCard({
           caption={post.caption}
           onClose={() => setShareOpen(false)}
         />
+      )}
+      {reportOpen && (
+        <ReportSheet targetType="post" targetId={post.id} onClose={() => setReportOpen(false)} />
       )}
     </article>
   )
