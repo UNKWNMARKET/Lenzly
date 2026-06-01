@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import LocationAutocomplete, { type LocationSuggestion } from '@/components/LocationAutocomplete'
 
-const BUCKET = 'spot-stories'
+const BUCKET = 'photos'
 
 export default function PostSpot() {
   const [, navigate] = useLocation()
