@@ -6,7 +6,7 @@ const SWIPE_TABS = ['/', '/explore', '/find', '/profile']
 
 const THRESHOLD          = 60   // min horizontal px to count as a swipe
 const THRESHOLD_MAP      = 120  // much higher threshold when on the map page
-const THRESHOLD_EXPLORE  = 110  // high threshold on explore — lots of horizontal scrolling
+const THRESHOLD_EXPLORE  = 150  // very high on explore — full of horizontal carousels
 const RATIO              = 2.5  // horizontal must be this much more than vertical
 
 // Returns true if the touch started inside a Leaflet map or any map container
@@ -20,11 +20,26 @@ function isTouchOnMap(e: React.TouchEvent): boolean {
   )
 }
 
+// Returns true if the touch started inside an element that can scroll
+// horizontally (carousels, chip rows, story bars). Page-nav must yield to
+// these so the user can actually scroll through the content.
+function isTouchOnHScroll(e: React.TouchEvent): boolean {
+  let el: HTMLElement | null = e.target as HTMLElement
+  while (el && el !== document.body) {
+    const ox = window.getComputedStyle(el).overflowX
+    if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 4) {
+      return true
+    }
+    el = el.parentElement
+  }
+  return false
+}
+
 export function useSwipeNav() {
   const [location, navigate] = useLocation()
   const startX = useRef(0)
   const startY = useRef(0)
-  const blockedByMap = useRef(false)
+  const blocked = useRef(false)
 
   const currentIdx = SWIPE_TABS.indexOf(location)
   const isMapPage = location === '/find'
@@ -33,13 +48,14 @@ export function useSwipeNav() {
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
-    // Block swipe nav for the entire gesture if it starts on a map element
-    blockedByMap.current = isMapPage && isTouchOnMap(e)
+    // Block page-nav for the whole gesture if it starts on a map element or
+    // inside any horizontally scrollable container (carousels, chip rows).
+    blocked.current = (isMapPage && isTouchOnMap(e)) || isTouchOnHScroll(e)
   }
 
   const onTouchEnd = (e: React.TouchEvent) => {
     if (currentIdx === -1) return
-    if (blockedByMap.current) { blockedByMap.current = false; return }
+    if (blocked.current) { blocked.current = false; return }
 
     const dx = e.changedTouches[0].clientX - startX.current
     const dy = e.changedTouches[0].clientY - startY.current
