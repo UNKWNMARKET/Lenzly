@@ -21,7 +21,7 @@ export default function PostSpot() {
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
 
-  const openCamera = async (source: CameraSource) => {
+  const openCamera = async (source: CameraSource, fallback = true) => {
     try {
       const photo = await CapCamera.getPhoto({
         quality: 90,
@@ -37,11 +37,13 @@ export default function PostSpot() {
         setStep('details')
       }
     } catch {
-      if (source === CameraSource.Camera) fileInputRef.current?.click()
+      // Only fall back to file input when user explicitly taps Library button
+      if (fallback && source === CameraSource.Camera) fileInputRef.current?.click()
     }
   }
 
-  useEffect(() => { openCamera(CameraSource.Camera) }, [])
+  // Auto-open camera on mount — no fallback if dismissed
+  useEffect(() => { openCamera(CameraSource.Camera, false) }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
