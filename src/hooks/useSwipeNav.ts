@@ -4,9 +4,10 @@ import { useLocation } from 'wouter'
 // Swipeable tabs in order — Upload is intentionally excluded
 const SWIPE_TABS = ['/', '/explore', '/find', '/profile']
 
-const THRESHOLD     = 60   // min horizontal px to count as a swipe
-const THRESHOLD_MAP = 120  // much higher threshold when on the map page
-const RATIO         = 2.5  // horizontal must be this much more than vertical
+const THRESHOLD          = 60   // min horizontal px to count as a swipe
+const THRESHOLD_MAP      = 120  // much higher threshold when on the map page
+const THRESHOLD_EXPLORE  = 110  // high threshold on explore — lots of horizontal scrolling
+const RATIO              = 2.5  // horizontal must be this much more than vertical
 
 // Returns true if the touch started inside a Leaflet map or any map container
 function isTouchOnMap(e: React.TouchEvent): boolean {
@@ -27,6 +28,7 @@ export function useSwipeNav() {
 
   const currentIdx = SWIPE_TABS.indexOf(location)
   const isMapPage = location === '/find'
+  const isExplorePage = location === '/explore'
 
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
@@ -41,7 +43,7 @@ export function useSwipeNav() {
 
     const dx = e.changedTouches[0].clientX - startX.current
     const dy = e.changedTouches[0].clientY - startY.current
-    const threshold = isMapPage ? THRESHOLD_MAP : THRESHOLD
+    const threshold = isMapPage ? THRESHOLD_MAP : isExplorePage ? THRESHOLD_EXPLORE : THRESHOLD
 
     if (Math.abs(dx) < threshold) return
     if (Math.abs(dy) * RATIO > Math.abs(dx)) return
