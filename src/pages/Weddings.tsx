@@ -2379,11 +2379,14 @@ function Stars({ rating }: { rating: number }) {
 function VenueSheet({ venue, onClose }: { venue: Venue; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[80] flex flex-col">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onTouchEnd={onClose} />
+      {/* Backdrop — only closes when tapping outside the sheet */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Sheet */}
-      <div className="absolute bottom-0 left-0 right-0 max-h-[92dvh] bg-lenz-bg rounded-t-[28px] flex flex-col overflow-hidden animate-slide-up">
+      {/* Sheet — stop propagation so taps inside never reach the backdrop */}
+      <div
+        className="absolute bottom-0 left-0 right-0 max-h-[92dvh] bg-lenz-bg rounded-t-[28px] flex flex-col overflow-hidden animate-slide-up"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Hero image */}
         <div className="relative w-full h-52 shrink-0">
           <img
@@ -2404,7 +2407,7 @@ function VenueSheet({ venue, onClose }: { venue: Venue; onClose: () => void }) {
           )}
           <button
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
-            onTouchEnd={onClose} onClick={onClose}
+            onClick={onClose}
           >
             <X size={16} className="text-white" />
           </button>
