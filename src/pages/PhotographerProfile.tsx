@@ -255,7 +255,8 @@ export default function PhotographerProfile() {
 
       {/* Avatar row */}
       <div className="px-4 -mt-14 relative z-10">
-        <div className="flex items-end justify-between gap-3">
+        {/* Avatar only — buttons move to their own row below */}
+        <div className="flex items-end justify-between">
           <div className="relative shrink-0">
             <div className={p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
               <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
@@ -265,46 +266,6 @@ export default function PhotographerProfile() {
             {p.available && (
               <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-lenz-bg" />
             )}
-          </div>
-
-          {/* CTA buttons — flex row, each shrinks equally, no overflow */}
-          <div className="flex items-center gap-2 mb-2 flex-1 min-w-0">
-            {isBlocked ? (
-              <button
-                onClick={toggleBlock}
-                disabled={blockLoading}
-                className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50 truncate"
-              >
-                <Ban size={13} className="shrink-0" />
-                <span className="truncate">Blocked</span>
-              </button>
-            ) : (
-              <button
-                onClick={toggleFollow}
-                disabled={followLoading}
-                className={`flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 truncate ${
-                  isFollowing
-                    ? 'bg-lenz-card border border-gold/40 text-gold'
-                    : 'bg-gold text-lenz-bg'
-                }`}
-              >
-                {isFollowing ? <UserCheck size={13} className="shrink-0" /> : <UserPlus size={13} className="shrink-0" />}
-                <span className="truncate">{isFollowing ? 'Following' : 'Follow'}</span>
-              </button>
-            )}
-            <button
-              onClick={handleMessageStart}
-              className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-lenz-border text-white/70 truncate"
-            >
-              <MessageCircle size={13} className="shrink-0" />
-              <span className="truncate">Message</span>
-            </button>
-            <button
-              onClick={() => setHireStep('form')}
-              className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center rounded-full font-bold bg-gold text-lenz-bg truncate"
-            >
-              <span className="truncate">Hire {p.name.split(' ')[0]}</span>
-            </button>
           </div>
         </div>
 
@@ -324,6 +285,46 @@ export default function PhotographerProfile() {
             )}
           </div>
           <p className="text-sm text-white/40 mt-0.5">@{p.username}</p>
+        </div>
+
+        {/* CTA buttons — full width row, always visible */}
+        <div className="flex items-center gap-2 mt-3">
+          {isBlocked ? (
+            <button
+              onClick={toggleBlock}
+              disabled={blockLoading}
+              className="flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50"
+            >
+              <Ban size={13} />
+              Blocked
+            </button>
+          ) : (
+            <button
+              onClick={toggleFollow}
+              disabled={followLoading}
+              className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                isFollowing
+                  ? 'bg-lenz-card border border-gold/40 text-gold'
+                  : 'bg-gold text-lenz-bg'
+              }`}
+            >
+              {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
+          )}
+          <button
+            onClick={handleMessageStart}
+            className="flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold bg-lenz-card border border-lenz-border text-white/70"
+          >
+            <MessageCircle size={13} />
+            Message
+          </button>
+          <button
+            onClick={() => setHireStep('form')}
+            className="flex-1 py-2.5 flex items-center justify-center rounded-full text-xs font-bold bg-gold text-lenz-bg"
+          >
+            Hire {p.name.split(' ')[0]}
+          </button>
         </div>
 
         {/* Rating + Price */}
