@@ -403,6 +403,8 @@ export default function FeedPostCard({
           postId={post.id}
           imageUrl={post.image_url}
           caption={post.caption}
+          postAuthorId={post.user_id}
+          locationName={post.location_name}
           onClose={() => setShareOpen(false)}
         />
       )}

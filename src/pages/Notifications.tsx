@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -34,8 +34,9 @@ const typeIcon = (type: string) => {
     case 'like':    return <Heart size={14} className="fill-rose-500 text-rose-500" />
     case 'comment': return <MessageCircle size={14} className="text-blue-400" />
     case 'follow':  return <UserPlus size={14} className="text-green-400" />
-    case 'mention': return <Aperture size={14} className="text-gold" />
-    default:        return <Bell size={14} className="text-white/50" />
+    case 'mention':      return <Aperture size={14} className="text-gold" />
+    case 'story_share':  return <Clapperboard size={14} className="text-amber-400" />
+    default:             return <Bell size={14} className="text-white/50" />
   }
 }
 
@@ -45,8 +46,9 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'like':    return `${name} liked your photo`
     case 'comment': return `${name} commented on your photo`
     case 'follow':  return `${name} started following you`
-    case 'mention': return `${name} mentioned you in a comment`
-    default:        return 'New notification'
+    case 'mention':      return `${name} mentioned you in a comment`
+    case 'story_share':  return `${name} shared your photo to their story`
+    default:             return 'New notification'
   }
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Search, Send, Check } from 'lucide-react'
+import { X, Search, Send, Check, Clapperboard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -11,11 +11,15 @@ export default function SharePostSheet({
   postId,
   imageUrl,
   caption,
+  postAuthorId,
+  locationName,
   onClose,
 }: {
   postId: string
   imageUrl: string
   caption: string | null
+  postAuthorId: string
+  locationName?: string | null
   onClose: () => void
 }) {
   const { user } = useAuth()
@@ -24,6 +28,8 @@ export default function SharePostSheet({
   const [results, setResults] = useState<UserRow[]>([])
   const [sent, setSent] = useState<Set<string>>(new Set())
   const [sending, setSending] = useState<string | null>(null)
+  const [sharingToStory, setSharingToStory] = useState(false)
+  const [sharedToStory, setSharedToStory] = useState(false)
 
   useEffect(() => {
     const q = query.trim()
@@ -107,6 +113,55 @@ export default function SharePostSheet({
     toast.success(`Sent to ${recipient.username || recipient.name}`)
   }
 
+  const handleShareToStory = async () => {
+    if (!user || sharingToStory || sharedToStory) return
+    setSharingToStory(true)
+
+    // Check daily story limit (5 per day)
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    const { count } = await supabase
+      .from('spot_stories')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', startOfDay.toISOString())
+    if ((count ?? 0) >= 5) {
+      toast.error("You've reached the 5 story limit for today")
+      setSharingToStory(false)
+      return
+    }
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const storyCaption = caption ? `📸 ${caption}` : '📸 Check out this spot'
+    const storyLocation = locationName?.trim() || 'Shared from feed'
+
+    const { error } = await supabase.from('spot_stories').insert({
+      user_id: user.id,
+      image_url: imageUrl,
+      caption: storyCaption,
+      location_name: storyLocation,
+      expires_at: expiresAt,
+    })
+
+    if (error) { toast.error('Could not add to story'); setSharingToStory(false); return }
+
+    // Notify the original post author (skip if sharing own post)
+    if (postAuthorId && postAuthorId !== user.id) {
+      await supabase.from('notifications').insert({
+        user_id: postAuthorId,
+        actor_id: user.id,
+        post_id: postId,
+        type: 'story_share',
+        message: 'shared your photo to their story',
+        read: false,
+      })
+    }
+
+    setSharedToStory(true)
+    setSharingToStory(false)
+    toast.success('Added to your story!')
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div
@@ -128,6 +183,35 @@ export default function SharePostSheet({
             <img src={imageUrl} alt="" className="w-full h-full object-cover" />
           </div>
           <p className="text-sm text-white/60 truncate flex-1">{caption || 'Photo'}</p>
+        </div>
+
+        {/* Share to Story */}
+        <div className="px-4 py-3 border-b border-lenz-border/50 shrink-0">
+          <button
+            onClick={handleShareToStory}
+            disabled={sharingToStory || sharedToStory}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] ${
+              sharedToStory
+                ? 'bg-green-500/15 border border-green-500/30'
+                : 'bg-gradient-to-r from-gold/20 to-amber-500/10 border border-gold/30 hover:border-gold/50'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${sharedToStory ? 'bg-green-500/20' : 'bg-gold/20'}`}>
+              {sharedToStory
+                ? <Check size={18} className="text-green-400" />
+                : <Clapperboard size={18} className="text-gold" />
+              }
+            </div>
+            <div className="text-left">
+              <p className={`text-[14px] font-bold ${sharedToStory ? 'text-green-400' : 'text-gold'}`}>
+                {sharedToStory ? 'Added to your story!' : 'Share to your Story'}
+              </p>
+              <p className="text-[11px] text-white/35 mt-0.5">
+                {sharedToStory ? 'Visible to everyone for 24 hours' : 'Post this photo to your spot story for 24h'}
+              </p>
+            </div>
+            {sharingToStory && <div className="ml-auto w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin shrink-0" />}
+          </button>
         </div>
 
         {/* Search */}
