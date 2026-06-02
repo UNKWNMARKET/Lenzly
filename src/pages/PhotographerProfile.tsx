@@ -193,57 +193,45 @@ export default function PhotographerProfile() {
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-8">
-      {/* Cover */}
-      <div className="relative h-48 overflow-hidden bg-lenz-card">
+      {/* ── Hero cover — taller, stronger gradient fade into page bg ── */}
+      <div className="relative h-56 overflow-hidden bg-lenz-card">
         {p.coverPhoto
           ? <img src={p.coverPhoto} alt="cover" className="w-full h-full object-cover" />
-          : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#0a0804]" />
+          : <div className="w-full h-full bg-gradient-to-br from-[#1c1608] via-[#0d0d0d] to-[#080808]" />
         }
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-lenz-bg" />
+        {/* Stronger bottom fade so avatar sits seamlessly on top */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-lenz-bg" />
 
-        {/* Back + Share */}
+        {/* Back */}
         <div className="absolute top-4 left-4 safe-top">
-          <button
-            onClick={() => navigate('/find')}
-            className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80"
-          >
-            <ChevronLeft size={20} />
+          <button onClick={() => navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+            <ChevronLeft size={20} className="text-white" />
           </button>
         </div>
+
+        {/* Share + ⋮ */}
         <div className="absolute top-4 right-4 safe-top flex items-center gap-2">
-          <button
-            onClick={handleShare}
-            className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80"
-          >
-            <Share2 size={17} />
+          <button onClick={handleShare} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+            <Share2 size={16} className="text-white" />
           </button>
           {isUuidId && !isSelf && (
             <div className="relative">
-              <button
-                onClick={() => setMenuOpen(o => !o)}
-                className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/80"
-              >
-                <MoreVertical size={17} />
+              <button onClick={() => setMenuOpen(o => !o)} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+                <MoreVertical size={16} className="text-white" />
               </button>
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-44 bg-lenz-card border border-lenz-border rounded-xl shadow-xl z-50 overflow-hidden">
-                    <button
-                      onClick={toggleBlock}
-                      disabled={blockLoading}
-                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5 disabled:opacity-50 border-b border-lenz-border/50"
-                    >
+                  <div className="absolute right-0 mt-2 w-44 bg-lenz-card border border-lenz-border rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    <button onClick={toggleBlock} disabled={blockLoading}
+                      className="flex items-center gap-2.5 w-full px-4 py-3.5 text-sm text-left hover:bg-white/5 disabled:opacity-50 border-b border-lenz-border/40">
                       {isBlocked
-                        ? <><ShieldOff size={15} className="text-white/60" /><span className="text-white/80">Unblock user</span></>
-                        : <><Ban size={15} className="text-red-400" /><span className="text-red-400">Block user</span></>
-                      }
+                        ? <><ShieldOff size={14} className="text-white/50" /><span className="text-white/70">Unblock</span></>
+                        : <><Ban size={14} className="text-red-400" /><span className="text-red-400">Block user</span></>}
                     </button>
-                    <button
-                      onClick={() => { setMenuOpen(false); setReportOpen(true) }}
-                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-white/5"
-                    >
-                      <Flag size={15} className="text-red-400" /><span className="text-red-400">Report user</span>
+                    <button onClick={() => { setMenuOpen(false); setReportOpen(true) }}
+                      className="flex items-center gap-2.5 w-full px-4 py-3.5 text-sm text-left hover:bg-white/5">
+                      <Flag size={14} className="text-red-400" /><span className="text-red-400">Report</span>
                     </button>
                   </div>
                 </>
@@ -253,117 +241,81 @@ export default function PhotographerProfile() {
         </div>
       </div>
 
-      {/* Avatar row */}
-      <div className="px-4 -mt-14 relative z-10">
-        {/* Avatar only — buttons move to their own row below */}
-        <div className="flex items-end justify-between">
+      {/* ── Profile identity ── */}
+      <div className="px-4 -mt-16 relative z-10">
+
+        {/* Avatar + quick stats side by side */}
+        <div className="flex items-end gap-4">
+          {/* Avatar */}
           <div className="relative shrink-0">
             <div className={p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
-              <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+              <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
                 <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
               </div>
             </div>
             {p.available && (
-              <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-lenz-bg" />
+              <span className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-lenz-bg" />
             )}
+          </div>
+
+          {/* Stats — fill remaining width, align bottom with avatar */}
+          <div className="flex flex-1 justify-around pb-1">
+            {[
+              { label: 'Posts',     value: formatCount(p.posts) },
+              { label: 'Followers', value: formatCount(p.followers) },
+              { label: 'Hired',     value: String(p.hired) },
+            ].map(({ label, value }) => (
+              <div key={label} className="text-center">
+                <p className="text-[17px] font-bold text-white leading-none">{value}</p>
+                <p className="text-[10px] text-white/35 mt-1 tracking-wide uppercase">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Name + badges */}
-        <div className="mt-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg font-bold text-white">{p.name}</h1>
-            {p.verified && <VerifiedBadge size={15} />}
-            {p.pro && (
-              <span className="text-[10px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-0.5 rounded-full">PRO</span>
-            )}
-            {p.secondShooter && (
-              <span className="text-[10px] font-bold tracking-widest text-gold border border-gold/40 bg-gold/10 px-2 py-0.5 rounded-full">2nd Shooter</span>
-            )}
-            {!realP && (
-              <span className="text-[10px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full">SAMPLE</span>
-            )}
-          </div>
-          <p className="text-sm text-white/40 mt-0.5">@{p.username}</p>
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <h1 className="text-[17px] font-bold text-white leading-tight">{p.name}</h1>
+          {p.verified && <VerifiedBadge size={14} />}
+          {p.pro && <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-[3px] rounded-full">PRO</span>}
+          {p.secondShooter && <span className="text-[9px] font-bold tracking-widest text-gold border border-gold/40 bg-gold/10 px-2 py-[3px] rounded-full">2ND SHOOTER</span>}
+          {!realP && <span className="text-[9px] font-bold tracking-widest text-white/40 bg-white/8 border border-white/12 px-2 py-[3px] rounded-full">SAMPLE</span>}
         </div>
+        <p className="text-[13px] text-white/40 mt-0.5">@{p.username}</p>
 
-        {/* CTA buttons — full width row, always visible */}
-        <div className="flex items-center gap-2 mt-3">
-          {isBlocked ? (
-            <button
-              onClick={toggleBlock}
-              disabled={blockLoading}
-              className="flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50"
-            >
-              <Ban size={13} />
-              Blocked
-            </button>
-          ) : (
-            <button
-              onClick={toggleFollow}
-              disabled={followLoading}
-              className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
-                isFollowing
-                  ? 'bg-lenz-card border border-gold/40 text-gold'
-                  : 'bg-gold text-lenz-bg'
-              }`}
-            >
-              {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
-              {isFollowing ? 'Following' : 'Follow'}
-            </button>
-          )}
-          <button
-            onClick={handleMessageStart}
-            className="flex-1 py-2.5 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold bg-lenz-card border border-lenz-border text-white/70"
-          >
-            <MessageCircle size={13} />
-            Message
-          </button>
-          <button
-            onClick={() => setHireStep('form')}
-            className="flex-1 py-2.5 flex items-center justify-center rounded-full text-xs font-bold bg-gold text-lenz-bg"
-          >
-            Hire {p.name.split(' ')[0]}
-          </button>
-        </div>
-
-        {/* Rating + Price */}
-        <div className="flex items-center gap-3 mt-2">
-          <div className="flex items-center gap-1">
+        {/* Rating + price inline */}
+        <div className="flex items-center gap-2.5 mt-1.5">
+          <div className="flex items-center gap-0.5">
             {[1,2,3,4,5].map(s => (
-              <Star key={s} size={12} className={s <= Math.round(p.rating) ? 'text-gold fill-gold' : 'text-white/15'} />
+              <Star key={s} size={11} className={s <= Math.round(p.rating) ? 'text-gold fill-gold' : 'text-white/15'} />
             ))}
-            <span className="text-xs text-white/60 ml-1">{p.rating} · {p.hired} bookings</span>
           </div>
-          {p.priceRange && (
-            <span className="text-xs text-gold font-semibold">{p.priceRange}</span>
-          )}
+          <span className="text-[12px] text-white/40">{p.rating} · {p.hired} bookings</span>
+          {p.priceRange && <span className="text-[12px] text-gold font-semibold">{p.priceRange}</span>}
         </div>
 
         {/* Bio */}
-        <p className="text-sm text-white/70 mt-3 leading-relaxed">{p.bio}</p>
+        {p.bio && <p className="text-[13px] text-white/65 mt-2.5 leading-relaxed">{p.bio}</p>}
 
-        {/* Meta */}
-        <div className="flex flex-col gap-1.5 mt-3">
+        {/* Meta links */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
           {p.location && (
-            <div className="flex items-center gap-1.5">
-              <MapPin size={13} className="text-white/30" />
-              <span className="text-sm text-white/50">{p.location}</span>
+            <div className="flex items-center gap-1">
+              <MapPin size={11} className="text-white/30 shrink-0" />
+              <span className="text-[12px] text-white/45">{p.location}</span>
             </div>
           )}
           {p.portfolio && (
-            <button
-              onClick={() => window.open(p.portfolio.startsWith('http') ? p.portfolio : `https://${p.portfolio}`, '_blank')}
-              className="flex items-center gap-1.5 group"
-            >
-              <Globe size={13} className="text-white/30 group-hover:text-gold transition-colors" />
-              <span className="text-sm text-white/50 group-hover:text-gold transition-colors">{p.portfolio}</span>
+            <button onClick={() => window.open(p.portfolio.startsWith('http') ? p.portfolio : `https://${p.portfolio}`, '_blank')}
+              className="flex items-center gap-1 group">
+              <Globe size={11} className="text-white/30 group-hover:text-gold transition-colors shrink-0" />
+              <span className="text-[12px] text-white/45 group-hover:text-gold transition-colors">{p.portfolio}</span>
             </button>
           )}
           {p.instagram && (
-            <div className="flex items-center gap-1.5">
-              <AtSign size={13} className="text-white/30" />
-              <span className="text-sm text-white/50">{p.instagram}</span>
+            <div className="flex items-center gap-1">
+              <AtSign size={11} className="text-white/30 shrink-0" />
+              <span className="text-[12px] text-white/45">{p.instagram}</span>
             </div>
           )}
         </div>
@@ -371,30 +323,40 @@ export default function PhotographerProfile() {
         {/* Specialties */}
         <div className="flex flex-wrap gap-1.5 mt-3">
           {p.specialty.map(s => (
-            <span
-              key={s}
-              className="text-[11px] font-medium text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full"
-            >
+            <span key={s} className="text-[11px] text-white/55 bg-white/5 border border-white/10 px-2.5 py-[5px] rounded-full">
               {s}
             </span>
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 mt-4 py-4 border-t border-b border-lenz-border">
-          {[
-            { label: 'Posts',     value: formatCount(p.posts) },
-            { label: 'Followers', value: formatCount(p.followers) },
-            { label: 'Hired',     value: p.hired },
-          ].map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <p className="text-base font-bold text-white">{value}</p>
-              <p className="text-[10px] text-white/30 mt-0.5 tracking-wide">{label}</p>
-            </div>
-          ))}
+        {/* ── CTA buttons — full width, 3 equal pills ── */}
+        <div className="flex items-center gap-2.5 mt-4">
+          {isBlocked ? (
+            <button onClick={toggleBlock} disabled={blockLoading}
+              className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50 active:scale-95 transition-transform">
+              <Ban size={13} />Blocked
+            </button>
+          ) : (
+            <button onClick={toggleFollow} disabled={followLoading}
+              className={`flex-1 h-10 flex items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold transition-all active:scale-95 disabled:opacity-50 ${
+                isFollowing ? 'bg-lenz-card border border-gold/50 text-gold' : 'bg-gold text-lenz-bg shadow-[0_0_16px_rgba(201,168,76,0.35)]'
+              }`}>
+              {isFollowing ? <UserCheck size={14} /> : <UserPlus size={14} />}
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
+          )}
+          <button onClick={handleMessageStart}
+            className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold bg-lenz-card border border-lenz-border text-white/70 active:scale-95 transition-transform">
+            <MessageCircle size={14} />Message
+          </button>
+          <button onClick={() => setHireStep('form')}
+            className="flex-1 h-10 flex items-center justify-center rounded-full text-[13px] font-bold bg-gold text-lenz-bg shadow-[0_0_16px_rgba(201,168,76,0.35)] active:scale-95 transition-transform">
+            Hire {p.name.split(' ')[0]}
+          </button>
         </div>
       </div>
 
+      {/* ── Divider before portfolio ── */}
       {/* Photo grid — real uploads take priority, fall back to portfolio */}
       {(() => { const gridPhotos = realPosts.length > 0 ? realPosts : p.photos; return gridPhotos.length > 0 && (
         <div className="mt-1">
