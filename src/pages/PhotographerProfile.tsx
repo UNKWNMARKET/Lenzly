@@ -253,10 +253,10 @@ export default function PhotographerProfile() {
         </div>
       </div>
 
-      {/* Avatar */}
+      {/* Avatar row */}
       <div className="px-4 -mt-14 relative z-10">
-        <div className="flex items-end justify-between">
-          <div className="relative">
+        <div className="flex items-end justify-between gap-3">
+          <div className="relative shrink-0">
             <div className={p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
               <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
                 <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
@@ -267,43 +267,43 @@ export default function PhotographerProfile() {
             )}
           </div>
 
-          {/* CTA buttons */}
-          <div className="flex items-center gap-2 mb-2">
+          {/* CTA buttons — flex row, each shrinks equally, no overflow */}
+          <div className="flex items-center gap-2 mb-2 flex-1 min-w-0">
             {isBlocked ? (
               <button
                 onClick={toggleBlock}
                 disabled={blockLoading}
-                className="text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50"
+                className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-red-400/40 text-red-400 disabled:opacity-50 truncate"
               >
-                <Ban size={13} />
-                Blocked
+                <Ban size={13} className="shrink-0" />
+                <span className="truncate">Blocked</span>
               </button>
             ) : (
               <button
                 onClick={toggleFollow}
                 disabled={followLoading}
-                className={`text-xs py-2 px-4 flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 ${
+                className={`flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-50 truncate ${
                   isFollowing
                     ? 'bg-lenz-card border border-gold/40 text-gold'
                     : 'bg-gold text-lenz-bg'
                 }`}
               >
-                {isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? <UserCheck size={13} className="shrink-0" /> : <UserPlus size={13} className="shrink-0" />}
+                <span className="truncate">{isFollowing ? 'Following' : 'Follow'}</span>
               </button>
             )}
             <button
               onClick={handleMessageStart}
-              className="btn-ghost text-xs py-2 px-4 flex items-center gap-1.5"
+              className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-full font-semibold bg-lenz-card border border-lenz-border text-white/70 truncate"
             >
-              <MessageCircle size={13} />
-              Message
+              <MessageCircle size={13} className="shrink-0" />
+              <span className="truncate">Message</span>
             </button>
             <button
               onClick={() => setHireStep('form')}
-              className="btn-primary text-xs py-2 px-4"
+              className="flex-1 min-w-0 text-xs py-2.5 px-3 flex items-center justify-center rounded-full font-bold bg-gold text-lenz-bg truncate"
             >
-              Hire {p.name.split(' ')[0]}
+              <span className="truncate">Hire {p.name.split(' ')[0]}</span>
             </button>
           </div>
         </div>
