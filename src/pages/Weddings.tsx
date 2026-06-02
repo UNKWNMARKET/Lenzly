@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Star, Phone, ExternalLink, MapPin, DollarSign, X, ChevronRight, Award, Heart } from 'lucide-react'
+import { ArrowLeft, Phone, ExternalLink, MapPin, DollarSign, X, ChevronRight, Award, Heart } from 'lucide-react'
 import { useLocation } from 'wouter'
 
 // ─── Venue data ────────────────────────────────────────────────────────────────
@@ -2352,28 +2352,6 @@ const VENUES: Venue[] = [
   },
 ]
 
-// ─── Star display ─────────────────────────────────────────────────────────────
-function Stars({ rating }: { rating: number }) {
-  const full = Math.floor(rating)
-  const partial = rating - full
-  return (
-    <div className="flex items-center gap-[2px]">
-      {[0, 1, 2, 3, 4].map(i => {
-        const fill = i < full ? 1 : i === full && partial >= 0.5 ? 0.5 : 0
-        return (
-          <span key={i} className="relative w-3 h-3">
-            <Star size={12} className="absolute inset-0 text-white/10" fill="currentColor" />
-            {fill > 0 && (
-              <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-                <Star size={12} className="text-gold" fill="currentColor" />
-              </span>
-            )}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
 
 // ─── Venue detail sheet ───────────────────────────────────────────────────────
 function VenueSheet({ venue, onClose }: { venue: Venue; onClose: () => void }) {
@@ -2421,22 +2399,6 @@ function VenueSheet({ venue, onClose }: { venue: Venue; onClose: () => void }) {
             <div className="flex items-center gap-1.5 mt-1">
               <MapPin size={12} className="text-gold/80 shrink-0" />
               <p className="text-white/45 text-[13px]">{venue.city}, {venue.state}</p>
-            </div>
-
-            {/* Rating row */}
-            <div className="flex items-center gap-2 mt-3">
-              <Stars rating={venue.rating} />
-              <span className="text-gold font-bold text-[13px]">{venue.rating.toFixed(2)}</span>
-              <span className="text-white/35 text-xs">({venue.reviewCount.toLocaleString()} reviews)</span>
-              <a
-                href={venue.ratingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto flex items-center gap-1 text-[10px] text-white/30 hover:text-white/50"
-              >
-                <span>via {venue.ratingSource}</span>
-                <ExternalLink size={9} />
-              </a>
             </div>
 
             {/* Price */}
@@ -2500,7 +2462,7 @@ function VenueSheet({ venue, onClose }: { venue: Venue; onClose: () => void }) {
 
             {/* Legal disclaimer */}
             <p className="mt-6 text-[10px] text-white/18 leading-relaxed text-center">
-              Ratings sourced from {venue.ratingSource}. Prices are publicly listed estimates and may change — contact the venue for a current quote. Phone numbers listed are the venue's publicly registered business number.
+              Prices are publicly listed estimates and may change — contact the venue directly for a current quote. Phone numbers are the venue's publicly registered business number. Not affiliated with WeddingWire or The Knot.
             </p>
           </div>
         </div>
@@ -2548,15 +2510,7 @@ function VenueCard({ venue, onTap }: { venue: Venue; onTap: () => void }) {
         {/* Info row */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div>
-            {/* Rating */}
-            <div className="flex items-center gap-1.5">
-              <Stars rating={venue.rating} />
-              <span className="text-gold font-bold text-[12px]">{venue.rating.toFixed(2)}</span>
-              <span className="text-white/30 text-[11px]">({venue.reviewCount})</span>
-              <span className="text-white/20 text-[10px] ml-0.5">· {venue.ratingSource}</span>
-            </div>
-            {/* Price */}
-            <p className="text-white/50 text-[12px] mt-1">{venue.priceLabel}</p>
+            <p className="text-white/50 text-[12px]">{venue.priceLabel}</p>
           </div>
           <ChevronRight size={16} className="text-white/25 shrink-0" />
         </div>
