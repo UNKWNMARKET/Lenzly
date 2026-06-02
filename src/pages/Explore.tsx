@@ -395,29 +395,17 @@ export default function Explore() {
             {/* Wedding Venues feature banner */}
             <div
               onClick={() => navigate('/weddings')}
-              className="relative overflow-hidden rounded-3xl h-28 cursor-pointer active:scale-[0.98] transition-transform duration-150"
+              className="w-full rounded-3xl bg-lenz-card border border-gold/30 flex items-center px-5 py-4 gap-4 active:opacity-70 transition-opacity"
             >
-              <img
-                src="https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800"
-                alt="Wedding Venues"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
-              <div className="absolute inset-0 flex items-center px-5 gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0">
-                  <Heart size={22} className="text-gold" fill="currentColor" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gold/80 mb-0.5">Featured</p>
-                  <h2 className="text-[17px] font-bold text-white leading-tight">Wedding Venues</h2>
-                  <p className="text-[11px] text-white/50 mt-0.5">100+ verified venues · 11 states</p>
-                </div>
-                <div className="ml-auto shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">›</span>
-                  </div>
-                </div>
+              <div className="w-11 h-11 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
+                <Heart size={20} className="text-gold" fill="currentColor" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-gold/70 mb-0.5">Featured</p>
+                <p className="text-[16px] font-bold text-white leading-tight">Wedding Venues</p>
+                <p className="text-[11px] text-white/40 mt-0.5">100+ verified venues · 11 states</p>
+              </div>
+              <span className="text-white/40 text-xl font-light shrink-0">›</span>
             </div>
 
             {/* Community Discovered (live from DB) — the hero, full grid */}
