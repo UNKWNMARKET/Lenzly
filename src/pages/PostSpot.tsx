@@ -63,6 +63,19 @@ export default function PostSpot() {
 
     setUploading(true)
     try {
+      // Enforce 5-story daily limit
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
+      const { count } = await supabase
+        .from('spot_stories')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startOfDay.toISOString())
+      if ((count ?? 0) >= 5) {
+        toast.error("You've reached the 5 story limit for today. Come back tomorrow!")
+        setUploading(false)
+        return
+      }
       const ext = imageFile.name.split('.').pop() || 'jpg'
       // Path structured as user_id/filename so storage policies match
       const filePath = `${user.id}/spot_${Date.now()}.${ext}`

@@ -110,6 +110,16 @@ function StoryViewer({
     if (showMenu || confirmDelete) { setShowMenu(false); setConfirmDelete(false); return }
     if (Math.abs(dy) > 60 && dy < 0) { onClose(); return } // swipe up = close
 
+    // Horizontal swipe > 40px = navigate between stories
+    if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
+      if (dx < 0) {
+        if (index < stories.length - 1) setIndex(i => i + 1); else onClose()
+      } else {
+        if (index > 0) setIndex(i => i - 1); else onClose()
+      }
+      return
+    }
+
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
       // tap — left 35% goes back, right 65% goes forward
       const x = e.changedTouches[0].clientX
@@ -195,7 +205,8 @@ function StoryViewer({
             <button
               className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
               onTouchStart={e => e.stopPropagation()}
-              onTouchEnd={e => { e.stopPropagation(); setShowMenu(true) }}
+              onTouchEnd={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); setShowMenu(true) }}
             >
               <MoreHorizontal size={20} className="text-white" />
             </button>
@@ -203,7 +214,8 @@ function StoryViewer({
           <button
             className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
             onTouchStart={e => e.stopPropagation()}
-            onTouchEnd={e => { e.stopPropagation(); onClose() }}
+            onTouchEnd={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); onClose() }}
           >
             <X size={20} className="text-white" />
           </button>
@@ -222,12 +234,14 @@ function StoryViewer({
         <div
           className="absolute inset-0 z-40"
           onTouchStart={e => e.stopPropagation()}
-          onTouchEnd={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
+          onTouchEnd={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
         >
           <div
             className="absolute bottom-0 left-0 right-0 bg-lenz-card rounded-t-[28px] px-5 pt-3 pb-10 animate-slide-up"
             onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             {/* Handle */}
             <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-6" />
@@ -236,7 +250,9 @@ function StoryViewer({
               <div className="space-y-2">
                 <button
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl active:bg-white/5 transition-colors"
-                  onTouchEnd={e => { e.stopPropagation(); setConfirmDelete(true) }}
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchEnd={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setConfirmDelete(true) }}
                 >
                   <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
                     <X size={16} className="text-red-400" />
@@ -248,7 +264,9 @@ function StoryViewer({
                 </button>
                 <button
                   className="w-full py-4 rounded-2xl bg-white/5 text-white/50 font-semibold text-[15px] active:bg-white/10"
-                  onTouchEnd={e => { e.stopPropagation(); setShowMenu(false) }}
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchEnd={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setShowMenu(false) }}
                 >
                   Cancel
                 </button>
@@ -259,13 +277,17 @@ function StoryViewer({
                 <p className="text-white/35 text-sm text-center mb-5">It will be removed for all viewers immediately.</p>
                 <button
                   className="w-full py-4 rounded-2xl bg-red-500 text-white font-bold text-[15px] active:bg-red-600 transition-colors"
-                  onTouchEnd={e => { e.stopPropagation(); handleDelete() }}
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchEnd={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); handleDelete() }}
                 >
                   Yes, Delete
                 </button>
                 <button
                   className="w-full py-4 rounded-2xl bg-white/6 text-white/55 font-semibold text-[15px] active:bg-white/10"
-                  onTouchEnd={e => { e.stopPropagation(); setConfirmDelete(false) }}
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchEnd={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}
                 >
                   Keep It
                 </button>
