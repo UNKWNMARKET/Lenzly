@@ -21,6 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [activeStoryUserIds, setActiveStoryUserIds] = useState<Set<string>>(new Set())
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
@@ -37,6 +38,17 @@ export default function Home() {
     setRealPosts(data ?? [])
     setHasMore((data?.length ?? 0) === PAGE_SIZE)
     setLoading(false)
+
+    // Batch check which post authors have active stories
+    if (data && data.length > 0) {
+      const authorIds = [...new Set(data.map((p: any) => p.user_id))]
+      const { data: storyRows } = await supabase
+        .from('spot_stories')
+        .select('user_id')
+        .in('user_id', authorIds)
+        .gt('expires_at', new Date().toISOString())
+      setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
+    }
   }, [])
 
   // Load the next page using the oldest loaded post's created_at as the cursor
@@ -231,6 +243,7 @@ export default function Home() {
               key={post.id}
               post={toFeedPost(post)}
               currentUserId={user?.id ?? null}
+              hasStory={activeStoryUserIds.has(post.user_id)}
               onDeleted={id => setRealPosts(prev => prev.filter(p => p.id !== id))}
             />
           ))

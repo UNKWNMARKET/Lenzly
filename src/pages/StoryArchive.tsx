@@ -17,6 +17,7 @@ type SpotStory = {
 }
 
 const STORY_DURATION = 6000
+const DELETED_SENTINEL = '2000-01-01T00:00:00.000Z'
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -26,8 +27,16 @@ function timeAgo(iso: string) {
   return `${Math.floor(s / 86400)}d ago`
 }
 
+function isActive(iso: string) {
+  return new Date(iso).getTime() > Date.now()
+}
+
+function isDeleted(iso: string) {
+  return iso === DELETED_SENTINEL
+}
+
 function isExpired(iso: string) {
-  return new Date(iso).getTime() < Date.now()
+  return !isActive(iso) && !isDeleted(iso)
 }
 
 // ─── Archive Story Viewer ─────────────────────────────────────────────────────
@@ -112,12 +121,14 @@ function ArchiveViewer({
   }
 
   const handleDelete = async () => {
+    // Permanently delete from archive (user chose to remove it entirely)
     const { error } = await supabase.from('spot_stories').delete().eq('id', story.id)
     if (error) { toast.error('Could not delete'); return }
     onDelete(story.id)
     onClose()
   }
 
+  const deleted = isDeleted(story.expires_at)
   const expired = isExpired(story.expires_at)
 
   return (
@@ -156,6 +167,12 @@ function ArchiveViewer({
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-20 pb-2 flex items-center justify-between safe-top pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
+          {deleted && (
+            <div className="flex items-center gap-1 bg-black/60 rounded-full px-2.5 py-1">
+              <X size={9} className="text-rose-400/80" />
+              <span className="text-[10px] text-rose-400/80 font-medium">Deleted</span>
+            </div>
+          )}
           {expired && (
             <div className="flex items-center gap-1 bg-black/50 rounded-full px-2.5 py-1">
               <Clock size={10} className="text-white/60" />
@@ -284,8 +301,9 @@ export default function StoryArchive() {
     setStories(prev => prev.filter(s => s.id !== id))
   }
 
-  const active = stories.filter(s => !isExpired(s.expires_at))
+  const active = stories.filter(s => isActive(s.expires_at))
   const expired = stories.filter(s => isExpired(s.expires_at))
+  const deleted = stories.filter(s => isDeleted(s.expires_at))
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-8">
@@ -319,9 +337,8 @@ export default function StoryArchive() {
                     <StoryTile
                       key={story.id}
                       story={story}
-                      globalIndex={i}
                       onOpen={() => setViewerIndex(i)}
-                      expired={false}
+                      state="active"
                     />
                   ))}
                 </div>
@@ -336,9 +353,24 @@ export default function StoryArchive() {
                     <StoryTile
                       key={story.id}
                       story={story}
-                      globalIndex={active.length + i}
                       onOpen={() => setViewerIndex(active.length + i)}
-                      expired={true}
+                      state="expired"
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {deleted.length > 0 && (
+              <section>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-white/25 uppercase mb-3">Deleted ({deleted.length})</p>
+                <div className="grid grid-cols-3 gap-[2px] rounded-2xl overflow-hidden">
+                  {deleted.map((story, i) => (
+                    <StoryTile
+                      key={story.id}
+                      story={story}
+                      onOpen={() => setViewerIndex(active.length + expired.length + i)}
+                      state="deleted"
                     />
                   ))}
                 </div>
@@ -364,12 +396,11 @@ export default function StoryArchive() {
 function StoryTile({
   story,
   onOpen,
-  expired,
+  state,
 }: {
   story: SpotStory
-  globalIndex: number
   onOpen: () => void
-  expired: boolean
+  state: 'active' | 'expired' | 'deleted'
 }) {
   return (
     <button
@@ -379,14 +410,22 @@ function StoryTile({
       <img
         src={img.thumb(story.image_url)}
         alt=""
-        className={`w-full h-full object-cover ${expired ? 'opacity-50' : ''}`}
+        className={`w-full h-full object-cover ${state !== 'active' ? 'opacity-40' : ''}`}
         loading="lazy"
       />
-      {expired && (
+      {state === 'expired' && (
         <div className="absolute top-1.5 left-1.5">
           <div className="flex items-center gap-0.5 bg-black/60 rounded-full px-1.5 py-0.5">
             <Clock size={8} className="text-white/60" />
             <span className="text-[8px] text-white/60">expired</span>
+          </div>
+        </div>
+      )}
+      {state === 'deleted' && (
+        <div className="absolute top-1.5 left-1.5">
+          <div className="flex items-center gap-0.5 bg-black/70 rounded-full px-1.5 py-0.5">
+            <X size={8} className="text-rose-400/80" />
+            <span className="text-[8px] text-rose-400/80">deleted</span>
           </div>
         </div>
       )}

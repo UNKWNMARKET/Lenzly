@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
 import ReportSheet from './ReportSheet'
+import StoryViewer, { type SpotStory } from './StoryViewer'
 import { img } from '@/lib/image'
 import { haptics } from '@/lib/haptics'
 import ZoomableImage from './ZoomableImage'
@@ -40,10 +41,11 @@ function timeAgo(iso: string) {
 }
 
 export default function FeedPostCard({
-  post, currentUserId, onDeleted,
+  post, currentUserId, hasStory, onDeleted,
 }: {
   post: FeedPost
   currentUserId: string | null
+  hasStory?: boolean
   onDeleted?: (id: string) => void
 }) {
   const [liked, setLiked] = useState(false)
@@ -60,6 +62,11 @@ export default function FeedPostCard({
   const [heartAnim, setHeartAnim] = useState(false)
   const [doubleTapHeart, setDoubleTapHeart] = useState(false)
   const [imgError, setImgError] = useState(false)
+  const [profileStories, setProfileStories] = useState<SpotStory[] | null>(null)
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false)
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('viewed_spots') ?? '[]')) } catch { return new Set() }
+  })
   const inputRef = useRef<HTMLInputElement>(null)
   const lastTapRef = useRef(0)
 
@@ -205,16 +212,51 @@ export default function FeedPostCard({
     onDeleted?.(post.id)
   }
 
+  const handleAvatarClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!hasStory) return
+    haptics.light()
+    if (profileStories) { setStoryViewerOpen(true); return }
+    const { data } = await supabase
+      .from('spot_stories')
+      .select('*, profiles:profiles(username, avatar_url)')
+      .eq('user_id', post.user_id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: true })
+    if (data && data.length > 0) {
+      setProfileStories(data as SpotStory[])
+      setStoryViewerOpen(true)
+    }
+  }
+
+  const markViewed = (id: string) => {
+    setViewedIds(prev => {
+      const next = new Set(prev)
+      next.add(id)
+      try { localStorage.setItem('viewed_spots', JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
+
+  const storyUnseen = hasStory && profileStories
+    ? profileStories.some(s => !viewedIds.has(s.id))
+    : hasStory
+
   return (
     <article className="mx-3 my-3 bg-lenz-card rounded-3xl overflow-hidden border border-lenz-border/60 shadow-xl shadow-black/30" onClick={() => menuOpen && setMenuOpen(false)}>
       {/* Author row */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-lenz-bg border-2 border-lenz-border shrink-0">
-          {profile?.avatar_url
-            ? <img src={img.avatar(profile.avatar_url)} alt="" className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
-          }
-        </div>
+        <button
+          onClick={handleAvatarClick}
+          className={`shrink-0 rounded-full transition-transform active:scale-90 ${hasStory ? (storyUnseen ? 'p-[2.5px] bg-gradient-to-tr from-gold via-yellow-300 to-amber-200 shadow-[0_0_10px_2px_rgba(201,168,76,0.4)]' : 'p-[2.5px] bg-white/20') : ''}`}
+        >
+          <div className={`w-10 h-10 rounded-full overflow-hidden bg-lenz-bg shrink-0 ${hasStory ? 'border-2 border-lenz-bg' : 'border-2 border-lenz-border'}`}>
+            {profile?.avatar_url
+              ? <img src={img.avatar(profile.avatar_url)} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
+            }
+          </div>
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-bold text-white truncate">{profile?.username || profile?.name || 'Photographer'}</p>
@@ -366,6 +408,16 @@ export default function FeedPostCard({
       )}
       {reportOpen && (
         <ReportSheet targetType="post" targetId={post.id} onClose={() => setReportOpen(false)} />
+      )}
+      {storyViewerOpen && profileStories && profileStories.length > 0 && (
+        <StoryViewer
+          stories={profileStories}
+          startIndex={0}
+          userId={currentUserId ?? ''}
+          onClose={() => setStoryViewerOpen(false)}
+          onDelete={id => setProfileStories(prev => prev ? prev.filter(s => s.id !== id) : prev)}
+          onViewed={markViewed}
+        />
       )}
     </article>
   )
