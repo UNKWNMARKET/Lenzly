@@ -4,6 +4,8 @@ import { App as CapApp } from '@capacitor/app'
 import { supabase } from '@/lib/supabase'
 import { Toaster } from 'sonner'
 import ErrorBoundary from './components/ErrorBoundary'
+import PageErrorBoundary from './components/PageErrorBoundary'
+import OfflineBanner from './components/OfflineBanner'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -80,7 +82,7 @@ function ProtectedRoute({ component: Component, skipOnboarding }: { component: R
     navigate('/onboarding')
     return null
   }
-  return <Component />
+  return <PageErrorBoundary><Component /></PageErrorBoundary>
 }
 
 function Router() {
@@ -141,6 +143,7 @@ export default function App() {
           <AdminAuthProvider>
           <SpotModalProvider>
             <SwipeWrapper>
+              <OfflineBanner />
               <DeepLinkHandler />
               <Router />
               <BottomNavWrapper />

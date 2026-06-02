@@ -40,6 +40,9 @@ export default function GoPro() {
             <Camera size={38} className="text-lenz-bg" strokeWidth={2.5} />
           </div>
           <h1 className="text-2xl font-bold gold-text tracking-wide">Go Pro</h1>
+          <div className="mt-2 bg-gold/10 border border-gold/25 rounded-full px-4 py-1.5">
+            <p className="text-[12px] text-gold font-semibold tracking-wide">7-day free trial</p>
+          </div>
           <p className="text-sm text-white/40 mt-2 max-w-xs">
             Get verified, get discovered, and unlock everything LENZLY has to offer.
           </p>
@@ -74,7 +77,8 @@ export default function GoPro() {
             {/* Price + CTA */}
             <div className="text-center mb-3">
               <p className="text-3xl font-bold text-white">$4.99<span className="text-base font-medium text-white/40">/month</span></p>
-              <p className="text-[11px] text-white/30 mt-1">Cancel anytime in your Apple account settings</p>
+              <p className="text-[11px] text-gold/60 mt-1 font-medium">Free for 7 days, then $4.99/month</p>
+              <p className="text-[10px] text-white/25 mt-0.5">Cancel anytime in your Apple account settings</p>
             </div>
 
             <button
@@ -82,7 +86,7 @@ export default function GoPro() {
               disabled={busy}
               className="btn-primary w-full py-4 text-sm font-bold tracking-wider disabled:opacity-50"
             >
-              Subscribe to Pro
+              Start Free Trial
             </button>
 
             <button
@@ -95,9 +99,9 @@ export default function GoPro() {
 
             {/* Required legal links for App Store compliance */}
             <p className="text-[10px] text-white/25 text-center leading-relaxed mt-4 px-2">
-              Payment is charged to your Apple ID. Subscription renews automatically for $4.99/month
-              unless canceled at least 24 hours before the end of the period. Manage or cancel in
-              your App Store account settings. See our{' '}
+              7-day free trial, then $4.99/month. Payment charged to your Apple ID after trial ends.
+              Subscription renews automatically unless canceled at least 24 hours before the end of the period.
+              Manage or cancel in your App Store account settings. See our{' '}
               <span className="text-gold/60" onClick={() => navigate('/terms')}>Terms</span> and{' '}
               <span className="text-gold/60" onClick={() => navigate('/privacy')}>Privacy Policy</span>.
             </p>

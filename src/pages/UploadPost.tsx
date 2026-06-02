@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Geolocation } from '@capacitor/geolocation'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
+import { haptics } from '@/lib/haptics'
 
 const CATEGORIES = ['Portrait', 'Landscape', 'Street', 'Wedding', 'Concert', 'Commercial', 'Travel', 'Nature', 'Fashion', 'Other']
 
@@ -173,6 +174,7 @@ export default function UploadPost() {
         }
       }
 
+      haptics.success()
       toast.success('Photo posted!')
       navigate('/profile')
     } catch (err: any) {

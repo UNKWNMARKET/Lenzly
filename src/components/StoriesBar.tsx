@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { img } from '@/lib/image'
+import { haptics } from '@/lib/haptics'
 import type { PhotoSpot } from '@/data/mockData'
 
 type SpotStory = {
@@ -356,7 +357,7 @@ export default function StoriesBar() {
       <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar">
         {/* Your Spot */}
         <button
-          onClick={() => myStory ? setStoryIndex(0) : navigate('/spot')}
+          onClick={() => { haptics.light(); myStory ? setStoryIndex(0) : navigate('/spot') }}
           className="flex flex-col items-center gap-1.5 shrink-0 active:scale-95 transition-transform duration-150"
         >
           {myStory ? (
@@ -380,7 +381,7 @@ export default function StoriesBar() {
           return (
             <button
               key={story.id}
-              onClick={() => setStoryIndex(idx)}
+              onClick={() => { haptics.light(); setStoryIndex(idx) }}
               className="flex flex-col items-center gap-1.5 shrink-0 active:scale-95 transition-transform duration-150"
             >
               <div className={ring(unseen)}>

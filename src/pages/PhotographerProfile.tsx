@@ -8,6 +8,7 @@ import {
 import { formatCount } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import { haptics } from '@/lib/haptics'
 import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 import VerifiedBadge from '@/components/VerifiedBadge'
@@ -108,6 +109,7 @@ export default function PhotographerProfile() {
     if (!user) { navigate('/auth/login'); return }
     if (!id) return
     setFollowLoading(true)
+    haptics.medium()
     if (isFollowing) {
       await supabase.from('follows').delete()
         .eq('follower_id', user.id).eq('following_id', id)
@@ -119,8 +121,10 @@ export default function PhotographerProfile() {
       })
       if (!error) {
         setIsFollowing(true)
+        haptics.success()
         toast.success(`Following ${p?.name.split(' ')[0] ?? ''}`)
       } else {
+        haptics.error()
         toast.error('Could not follow. Try again.')
       }
     }

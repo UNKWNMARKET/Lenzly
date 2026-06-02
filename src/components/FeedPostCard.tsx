@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
 import ReportSheet from './ReportSheet'
 import { img } from '@/lib/image'
+import { haptics } from '@/lib/haptics'
+import ZoomableImage from './ZoomableImage'
 
 export type FeedPost = {
   id: string
@@ -55,7 +57,11 @@ export default function FeedPostCard({
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [heartAnim, setHeartAnim] = useState(false)
+  const [doubleTapHeart, setDoubleTapHeart] = useState(false)
+  const [imgError, setImgError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastTapRef = useRef(0)
 
   const isOwner = currentUserId === post.user_id
   const profile = post.profile
@@ -76,25 +82,41 @@ export default function FeedPostCard({
     return () => { active = false }
   }, [post.id, currentUserId])
 
-  const toggleLike = async () => {
+  const triggerLike = useCallback(async (forceOn = false) => {
     if (!currentUserId) { toast.error('Sign in to like posts'); return }
-    const next = !liked
+    const next = forceOn ? true : !liked
+    if (forceOn && liked) return
     setLiked(next)
     setLikesCount(c => next ? c + 1 : Math.max(0, c - 1))
-    // Count on posts is maintained by the on_post_like_change DB trigger —
-    // we only write the like row here and optimistically update local state.
+    setHeartAnim(true)
+    setTimeout(() => setHeartAnim(false), 450)
+    haptics.light()
     if (next) {
       const { error } = await supabase.from('post_likes').insert({ post_id: post.id, user_id: currentUserId })
       if (error) { setLiked(!next); setLikesCount(c => next ? c - 1 : c + 1); toast.error('Could not like post'); return }
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
     }
+  }, [currentUserId, liked, post.id])
+
+  const toggleLike = () => triggerLike()
+
+  const handleImageTap = () => {
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) {
+      // double-tap
+      triggerLike(true)
+      setDoubleTapHeart(true)
+      setTimeout(() => setDoubleTapHeart(false), 900)
+    }
+    lastTapRef.current = now
   }
 
   const toggleSave = async () => {
     if (!currentUserId) { toast.error('Sign in to save posts'); return }
     const next = !saved
     setSaved(next)
+    haptics.medium()
     if (next) {
       const { error } = await supabase.from('saved_posts').insert({ post_id: post.id, user_id: currentUserId })
       if (error) { setSaved(!next); toast.error('Could not save post'); return }
@@ -233,16 +255,26 @@ export default function FeedPostCard({
         </div>
       </div>
 
-      {/* Image — rounded inside card */}
-      <div className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg">
-        <img src={img.feed(post.image_url)} alt={post.caption ?? ''} className="w-full h-full object-cover" loading="lazy" />
+      {/* Image — double-tap to like, pinch to zoom */}
+      <div className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg relative" onClick={handleImageTap}>
+        <ZoomableImage
+          src={img.feed(post.image_url)}
+          alt={post.caption ?? ''}
+          className="w-full h-full"
+        />
+        {/* Double-tap heart burst */}
+        {doubleTapHeart && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Heart size={80} className="text-white fill-white drop-shadow-lg heart-burst" />
+          </div>
+        )}
       </div>
 
       {/* Action bar */}
       <div className="flex items-center justify-between px-4 pt-3">
         <div className="flex items-center gap-5">
-          <button onClick={toggleLike} className="flex items-center gap-1.5 group active:scale-90 transition-transform">
-            <Heart size={24} className={`transition-all duration-200 ${liked ? 'text-red-500 fill-red-500 scale-110' : 'text-white/70 group-hover:text-white'}`} />
+          <button onClick={toggleLike} className="flex items-center gap-1.5 group">
+            <Heart size={24} className={`transition-colors duration-200 ${heartAnim ? 'heart-burst' : ''} ${liked ? 'text-red-500 fill-red-500' : 'text-white/70 group-hover:text-white'}`} />
             {likesCount > 0 && <span className="text-sm font-semibold text-white/80">{likesCount}</span>}
           </button>
           <button onClick={openComments} className="flex items-center gap-1.5 group active:scale-90 transition-transform">
