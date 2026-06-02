@@ -392,7 +392,7 @@ export default function Explore() {
         {isAll ? (
           <>
             {/* Wedding Venues feature banner */}
-            <Link href="/weddings">
+            <Link href="/weddings" className="block">
               <div className="relative overflow-hidden rounded-3xl h-28 cursor-pointer active:scale-[0.98] transition-transform duration-150">
                 <img
                   src="https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800"
