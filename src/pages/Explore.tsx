@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'wouter'
+import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
@@ -170,6 +170,7 @@ function FocusedSection({
 }
 
 export default function Explore() {
+  const [, navigate] = useLocation()
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -392,31 +393,32 @@ export default function Explore() {
         {isAll ? (
           <>
             {/* Wedding Venues feature banner */}
-            <Link href="/weddings" className="block">
-              <div className="relative overflow-hidden rounded-3xl h-28 cursor-pointer active:scale-[0.98] transition-transform duration-150">
-                <img
-                  src="https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800"
-                  alt="Wedding Venues"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
-                <div className="absolute inset-0 flex items-center px-5 gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0">
-                    <Heart size={22} className="text-gold" fill="currentColor" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gold/80 mb-0.5">Featured</p>
-                    <h2 className="text-[17px] font-bold text-white leading-tight">Wedding Venues</h2>
-                    <p className="text-[11px] text-white/50 mt-0.5">100+ verified venues · 11 states</p>
-                  </div>
-                  <div className="ml-auto shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">›</span>
-                    </div>
+            <div
+              onClick={() => navigate('/weddings')}
+              className="relative overflow-hidden rounded-3xl h-28 cursor-pointer active:scale-[0.98] transition-transform duration-150"
+            >
+              <img
+                src="https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Wedding Venues"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
+              <div className="absolute inset-0 flex items-center px-5 gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0">
+                  <Heart size={22} className="text-gold" fill="currentColor" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gold/80 mb-0.5">Featured</p>
+                  <h2 className="text-[17px] font-bold text-white leading-tight">Wedding Venues</h2>
+                  <p className="text-[11px] text-white/50 mt-0.5">100+ verified venues · 11 states</p>
+                </div>
+                <div className="ml-auto shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">›</span>
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
 
             {/* Community Discovered (live from DB) — the hero, full grid */}
             {(filteredLiveSpots.length > 0 || liveSpotsLoading) && (
