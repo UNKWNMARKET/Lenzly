@@ -51,7 +51,7 @@ export default function Search() {
   }, [query, runSearch])
 
   return (
-    <div className="min-h-[100dvh] bg-lenz-bg safe-top">
+    <div className="min-h-[100dvh] bg-lenz-bg">
       {/* Search bar header */}
       <header className="sticky top-0 z-40 glass-dark px-3 py-3 flex items-center gap-2 safe-top">
         <button onClick={() => navigate('/')} className="p-2 -ml-1 shrink-0">

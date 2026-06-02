@@ -182,7 +182,7 @@ export default function UploadPost() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24 safe-top">
+    <div className="min-h-screen bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => navigate('/')} className="p-2 -ml-2">

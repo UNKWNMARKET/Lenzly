@@ -2583,7 +2583,7 @@ export default function Weddings() {
     : VENUES.filter(v => v.state === stateFilter)
 
   return (
-    <div className="min-h-[100dvh] bg-lenz-bg safe-top">
+    <div className="min-h-[100dvh] bg-lenz-bg">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <div className="flex items-center gap-3">

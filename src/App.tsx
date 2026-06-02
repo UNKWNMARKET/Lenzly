@@ -39,6 +39,7 @@ import Chat from './pages/Chat'
 import PhotographerProfile from './pages/PhotographerProfile'
 import PostDetail from './pages/PostDetail'
 import Weddings from './pages/Weddings'
+import StoryArchive from './pages/StoryArchive'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/photographer/:id">{() => <ProtectedRoute component={PhotographerProfile} />}</Route>
       <Route path="/post/:id">{() => <ProtectedRoute component={PostDetail} />}</Route>
       <Route path="/weddings">{() => <ProtectedRoute component={Weddings} />}</Route>
+      <Route path="/story-archive">{() => <ProtectedRoute component={StoryArchive} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
@@ -205,7 +207,7 @@ function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
   const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/spot']
-  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/search' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/')
+  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/search' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/') || location === '/story-archive'
   if (hideNav) return null
   return (
     <>

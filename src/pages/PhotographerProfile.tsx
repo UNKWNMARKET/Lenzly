@@ -188,7 +188,7 @@ export default function PhotographerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <div className="min-h-screen bg-lenz-bg pb-8">
       {/* Cover */}
       <div className="relative h-48 overflow-hidden bg-lenz-card">
         {p.coverPhoto

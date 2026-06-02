@@ -200,7 +200,7 @@ export default function Settings() {
   )
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <div className="min-h-screen bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/profile')} className="p-2 -ml-2">

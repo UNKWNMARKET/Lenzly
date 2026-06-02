@@ -25,7 +25,7 @@ export default function GoPro() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24 safe-top">
+    <div className="min-h-screen bg-lenz-bg pb-8">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/settings')} className="p-1 -ml-1">
           <ChevronLeft size={22} className="text-white/70" />
