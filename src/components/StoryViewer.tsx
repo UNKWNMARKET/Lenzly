@@ -256,24 +256,27 @@ export default function StoryViewer({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-45% to-black/85 pointer-events-none" />
 
-      {/* ── Progress bars ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex gap-[3px] px-3 pt-14 safe-top pointer-events-none">
-        {stories.map((s, i) => (
-          <div key={s.id} className="flex-1 h-[2px] bg-white/25 rounded-full overflow-hidden">
-            {i < index && <div className="h-full w-full bg-white rounded-full" />}
-            {i === index && (
-              <div
-                key={barKey}
-                className={`story-bar-fill h-full bg-white rounded-full${paused || !imgLoaded ? ' paused' : ''}`}
-                style={{ animationDuration: `${storyDuration(story)}ms` }}
-              />
-            )}
-          </div>
-        ))}
+      {/* ── Top area: progress bars + header stacked, safe-top applied once ── */}
+      <div className="absolute top-0 left-0 right-0 z-30 px-3 pt-2 safe-top">
+        {/* Progress bars */}
+        <div className="flex gap-[3px] pointer-events-none">
+          {stories.map((s, i) => (
+            <div key={s.id} className="flex-1 h-[2px] bg-white/25 rounded-full overflow-hidden">
+              {i < index && <div className="h-full w-full bg-white rounded-full" />}
+              {i === index && (
+                <div
+                  key={barKey}
+                  className={`story-bar-fill h-full bg-white rounded-full${paused || !imgLoaded ? ' paused' : ''}`}
+                  style={{ animationDuration: `${storyDuration(story)}ms` }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Header: avatar + actions ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-20 pb-2 flex items-center justify-between safe-top pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-30 px-3 pt-8 safe-top pb-2 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2.5 pointer-events-auto">
           <div className="w-9 h-9 rounded-full overflow-hidden border border-white/25 bg-lenz-card shrink-0">
             {story.profiles?.avatar_url
@@ -322,7 +325,7 @@ export default function StoryViewer({
 
       {/* ── Caption ── */}
       {story.caption && (
-        <div className="absolute bottom-28 left-0 right-0 z-20 px-5 pointer-events-none">
+        <div className="absolute bottom-32 left-0 right-0 z-20 px-5 pointer-events-none">
           <p className="text-white text-[14px] leading-snug drop-shadow-md">{story.caption}</p>
         </div>
       )}

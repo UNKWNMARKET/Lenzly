@@ -130,12 +130,10 @@ export default function EditProfile() {
       updateData.username_changed_at = new Date().toISOString()
     }
 
-    const { id: _id, ...fieldsToUpdate } = updateData
-
+    // upsert handles both new users (no row yet) and existing users
     const { error } = await supabase
       .from('profiles')
-      .update(fieldsToUpdate)
-      .eq('id', user.id)
+      .upsert(updateData, { onConflict: 'id' })
 
     if (error) {
       toast.error(error.message)
