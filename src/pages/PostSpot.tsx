@@ -18,6 +18,7 @@ export default function PostSpot() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
   const [locationName, setLocationName] = useState('')
+  const [storyDuration, setStoryDuration] = useState(10)
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
 
@@ -63,16 +64,14 @@ export default function PostSpot() {
 
     setUploading(true)
     try {
-      // Enforce 5-story daily limit
-      const startOfDay = new Date()
-      startOfDay.setHours(0, 0, 0, 0)
-      const { count } = await supabase
+      // Enforce 1 active story at a time
+      const { count: activeCount } = await supabase
         .from('spot_stories')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('created_at', startOfDay.toISOString())
-      if ((count ?? 0) >= 5) {
-        toast.error("You've reached the 5 story limit for today. Come back tomorrow!")
+        .gt('expires_at', new Date().toISOString())
+      if ((activeCount ?? 0) >= 1) {
+        toast.error('You already have an active story. Delete it first or wait for it to expire.')
         setUploading(false)
         return
       }
@@ -93,6 +92,7 @@ export default function PostSpot() {
         caption: caption.trim() || null,
         location_name: locationName.trim(),
         expires_at: expiresAt,
+        display_seconds: storyDuration,
       })
       if (insertError) throw insertError
 
@@ -195,6 +195,26 @@ export default function PostSpot() {
             maxLength={200}
             className="w-full bg-transparent text-white text-sm placeholder-white/30 outline-none"
           />
+        </div>
+
+        {/* Duration picker */}
+        <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3">
+          <p className="text-[10px] text-white/35 font-bold tracking-[0.15em] uppercase mb-2">Story Duration</p>
+          <div className="flex gap-2">
+            {[5, 10, 15].map(s => (
+              <button
+                key={s}
+                onClick={() => setStoryDuration(s)}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                  storyDuration === s
+                    ? 'bg-gold text-lenz-bg'
+                    : 'bg-white/8 text-white/50 border border-white/10'
+                }`}
+              >
+                {s}s
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Share button */}

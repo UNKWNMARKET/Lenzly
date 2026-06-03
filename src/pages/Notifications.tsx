@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -35,8 +35,11 @@ const typeIcon = (type: string) => {
     case 'comment': return <MessageCircle size={14} className="text-blue-400" />
     case 'follow':  return <UserPlus size={14} className="text-green-400" />
     case 'mention':      return <Aperture size={14} className="text-gold" />
-    case 'story_share':  return <Clapperboard size={14} className="text-amber-400" />
-    default:             return <Bell size={14} className="text-white/50" />
+    case 'story_share':    return <Clapperboard size={14} className="text-amber-400" />
+    case 'follow_request': return <Lock size={14} className="text-amber-400" />
+    case 'follow_accepted':return <UserCheck size={14} className="text-green-400" />
+    case 'follow_declined':return <XIcon size={14} className="text-rose-400" />
+    default:               return <Bell size={14} className="text-white/50" />
   }
 }
 
@@ -47,8 +50,11 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'comment': return `${name} commented on your photo`
     case 'follow':  return `${name} started following you`
     case 'mention':      return `${name} mentioned you in a comment`
-    case 'story_share':  return `${name} shared your photo to their story`
-    default:             return 'New notification'
+    case 'story_share':     return `${name} shared your photo to their story`
+    case 'follow_request':  return `${name} wants to follow you`
+    case 'follow_accepted': return `${name} accepted your follow request`
+    case 'follow_declined': return `${name} declined your follow request`
+    default:                return 'New notification'
   }
 }
 
@@ -98,6 +104,14 @@ export default function Notifications() {
       { follower_id: n.actor_id, following_id: user.id, status: 'accepted' },
       { onConflict: 'follower_id,following_id' }
     )
+    // Notify the requester that they were accepted
+    await supabase.from('notifications').insert({
+      user_id: n.actor_id,
+      actor_id: user.id,
+      type: 'follow_accepted',
+      message: 'accepted your follow request',
+      read: false,
+    })
     setRequestDone(prev => new Set(prev).add(n.id))
     toast.success(`${n.actor?.username ?? 'User'} can now follow you`)
     markRead(n.id)
@@ -106,6 +120,14 @@ export default function Notifications() {
   const handleDenyFollow = async (n: Notif) => {
     if (!n.actor_id || !user) return
     await supabase.from('follows').delete().eq('follower_id', n.actor_id).eq('following_id', user.id)
+    // Notify the requester that they were declined
+    await supabase.from('notifications').insert({
+      user_id: n.actor_id,
+      actor_id: user.id,
+      type: 'follow_declined',
+      message: 'declined your follow request',
+      read: false,
+    })
     setRequestDone(prev => new Set(prev).add(n.id))
     toast.success('Request declined')
     markRead(n.id)
@@ -214,7 +236,7 @@ export default function Notifications() {
               )}
             </div>
 
-            {n.type === 'follow' && !requestDone.has(n.id) && (
+            {(n.type === 'follow' || n.type === 'follow_request') && !requestDone.has(n.id) && (
               <div className="flex gap-2 mt-2 ml-14">
                 {n.follow_status === 'pending' ? (
                   <>

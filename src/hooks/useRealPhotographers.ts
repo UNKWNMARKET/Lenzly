@@ -5,7 +5,7 @@ import type { Photographer } from '@/data/mockData'
 
 // Real profiles use the same shape as mock photographers + an isReal flag,
 // so existing cards / profile UI render them identically.
-export type RealPhotographer = Photographer & { isReal: true }
+export type RealPhotographer = Photographer & { isReal: true; private_account: boolean }
 
 function mapProfile(p: any): RealPhotographer {
   return {
@@ -34,6 +34,7 @@ function mapProfile(p: any): RealPhotographer {
     available: true,
     priceRange: '',
     isReal: true,
+    private_account: p.private_account ?? false,
   }
 }
 

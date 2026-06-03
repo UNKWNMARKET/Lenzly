@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useLocation } from 'wouter'
 import {
   ChevronLeft, Star, MapPin, Camera,
   MessageCircle, Share2, X, Globe, AtSign, UserPlus, UserCheck,
-  MoreVertical, Ban, ShieldOff, Flag
+  MoreVertical, Ban, ShieldOff, Flag, Lock, ChevronRight
 } from 'lucide-react'
 import { formatCount } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -16,12 +16,93 @@ import ReportSheet from '@/components/ReportSheet'
 
 type HireStep = 'idle' | 'form' | 'sent'
 
+function PhotoViewer({ photos, startIndex, onClose }: { photos: string[]; startIndex: number; onClose: () => void }) {
+  const [idx, setIdx] = useState(startIndex)
+  const touchStartX = useRef(0)
+
+  const prev = () => setIdx(i => Math.max(0, i - 1))
+  const next = () => { if (idx < photos.length - 1) setIdx(i => i + 1); else onClose() }
+
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    if (dx < -40) next()
+    else if (dx > 40) prev()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black flex flex-col animate-slide-up"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 safe-top shrink-0">
+        <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:bg-white/20">
+          <X size={18} className="text-white" />
+        </button>
+        <span className="text-white/50 text-sm font-medium">{idx + 1} / {photos.length}</span>
+        <div className="w-9" />
+      </div>
+
+      {/* Progress dots */}
+      {photos.length > 1 && (
+        <div className="flex justify-center gap-1.5 pb-2 shrink-0">
+          {photos.map((_, i) => (
+            <button key={i} onClick={() => setIdx(i)}
+              className={`rounded-full transition-all ${i === idx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/25'}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Photo */}
+      <div className="flex-1 flex items-center justify-center px-2 relative">
+        <img
+          key={idx}
+          src={photos[idx]}
+          alt=""
+          className="max-w-full max-h-full object-contain rounded-2xl transition-opacity duration-200"
+        />
+
+        {/* Tap zones */}
+        {idx > 0 && (
+          <button onClick={prev} className="absolute left-0 top-0 bottom-0 w-1/4 flex items-center justify-start pl-3">
+            <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+              <ChevronLeft size={16} className="text-white" />
+            </div>
+          </button>
+        )}
+        {idx < photos.length - 1 && (
+          <button onClick={next} className="absolute right-0 top-0 bottom-0 w-1/4 flex items-center justify-end pr-3">
+            <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+              <ChevronRight size={16} className="text-white" />
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Thumbnail strip */}
+      {photos.length > 1 && (
+        <div className="flex gap-1.5 px-4 pb-6 safe-bottom overflow-x-auto no-scrollbar shrink-0 pt-3">
+          {photos.map((photo, i) => (
+            <button key={i} onClick={() => setIdx(i)} className={`shrink-0 rounded-lg overflow-hidden transition-all ${i === idx ? 'ring-2 ring-gold opacity-100' : 'opacity-40'}`}>
+              <img src={photo} alt="" className="w-14 h-14 object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PhotographerProfile() {
   const { id } = useParams<{ id: string }>()
   const [, navigate] = useLocation()
   const { user } = useAuth()
   const [hireStep, setHireStep] = useState<HireStep>('idle')
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  const [followRequested, setFollowRequested] = useState(false)
   const [hireForm, setHireForm] = useState({
     projectType: '',
     date: '',
@@ -55,16 +136,19 @@ export default function PhotographerProfile() {
       })
   }, [id])
 
-  // Check if the current user already follows this photographer
+  // Check follow state (accepted = following, pending = requested)
   useEffect(() => {
     if (!user || !id) return
     supabase
       .from('follows')
-      .select('id')
+      .select('id, status')
       .eq('follower_id', user.id)
       .eq('following_id', id)
       .maybeSingle()
-      .then(({ data }) => setIsFollowing(!!data))
+      .then(({ data }) => {
+        if (data?.status === 'accepted') setIsFollowing(true)
+        else if (data?.status === 'pending') setFollowRequested(true)
+      })
   }, [user, id])
 
   // Check if the current user has blocked this person
@@ -131,6 +215,27 @@ export default function PhotographerProfile() {
     setFollowLoading(false)
   }
 
+  const requestFollow = async () => {
+    if (!user || !id) return
+    haptics.medium()
+    const { error } = await supabase.from('follows').insert({
+      follower_id: user.id,
+      following_id: id,
+      status: 'pending',
+    })
+    if (error) { toast.error('Could not send request'); return }
+    await supabase.from('notifications').insert({
+      user_id: id,
+      actor_id: user.id,
+      type: 'follow_request',
+      message: 'wants to follow you',
+      read: false,
+    })
+    setFollowRequested(true)
+    haptics.success()
+    toast.success('Follow request sent')
+  }
+
   // Real signed-up users only — no fabricated sample profiles
   const { photographer: realP, loading: realLoading } = useRealPhotographer(id)
   const p = realP
@@ -185,10 +290,56 @@ export default function PhotographerProfile() {
   const handleHireSend = async () => {
     if (!hireForm.projectType.trim()) { toast.error('Project type is required'); return }
     setSending(true)
-    await new Promise(r => setTimeout(r, 900)) // simulate send
+    await new Promise(r => setTimeout(r, 900))
     setSending(false)
     setHireStep('sent')
     toast.success(`Hire request sent to ${p.name.split(' ')[0]}!`)
+  }
+
+  const gridPhotos = realPosts.length > 0 ? realPosts : p.photos
+
+  // ── Private profile gate ────────────────────────────────────────────────────
+  if (p.private_account && !isFollowing && !isSelf) {
+    return (
+      <div className="min-h-screen bg-lenz-bg pb-8">
+        <div className="relative h-56 overflow-hidden bg-lenz-card">
+          {p.coverPhoto
+            ? <img src={p.coverPhoto} alt="cover" className="w-full h-full object-cover opacity-40 blur-sm" />
+            : <div className="w-full h-full bg-gradient-to-br from-[#1c1608] via-[#0d0d0d] to-[#080808]" />}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-lenz-bg" />
+          <div className="absolute top-4 left-4 safe-top">
+            <button onClick={() => navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+              <ChevronLeft size={20} className="text-white" />
+            </button>
+          </div>
+        </div>
+        <div className="px-4 -mt-16 relative z-10 flex flex-col items-center text-center">
+          <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+            <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+          </div>
+          <h1 className="text-[17px] font-bold text-white mt-3">{p.name}</h1>
+          <p className="text-[13px] text-white/40">@{p.username}</p>
+          {p.bio && <p className="text-[13px] text-white/55 mt-2 leading-relaxed max-w-xs">{p.bio}</p>}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+              <Lock size={20} className="text-white/40" />
+            </div>
+            <p className="text-[13px] font-semibold text-white/60">This account is private</p>
+            <p className="text-[12px] text-white/30">Follow to see their photos and stories</p>
+          </div>
+          <button
+            onClick={followRequested ? undefined : requestFollow}
+            className={`mt-5 px-8 py-3 rounded-full font-bold text-[14px] transition-all active:scale-95 ${
+              followRequested
+                ? 'bg-lenz-card border border-white/20 text-white/50'
+                : 'bg-gold text-lenz-bg shadow-[0_0_16px_rgba(201,168,76,0.35)]'
+            }`}
+          >
+            {followRequested ? 'Requested' : 'Request to Follow'}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -356,51 +507,41 @@ export default function PhotographerProfile() {
         </div>
       </div>
 
-      {/* ── Divider before portfolio ── */}
-      {/* Photo grid — real uploads take priority, fall back to portfolio */}
-      {(() => { const gridPhotos = realPosts.length > 0 ? realPosts : p.photos; return gridPhotos.length > 0 && (
-        <div className="mt-1">
-          <div className="px-4 py-3">
+      {/* Photo grid */}
+      {gridPhotos.length > 0 && (
+        <div className="mt-2">
+          <div className="px-4 py-3 flex items-center gap-2">
             <p className="text-xs font-semibold text-white/30 tracking-wider uppercase">Portfolio</p>
+            <span className="text-[10px] text-white/20">{gridPhotos.length} photos</span>
           </div>
-          <div className="grid grid-cols-3 gap-0.5">
+          <div className="grid grid-cols-3 gap-px">
             {gridPhotos.map((photo, i) => (
               <button
                 key={i}
-                onClick={() => setSelectedPhoto(photo)}
-                className="relative group overflow-hidden"
+                onClick={() => setViewerIndex(i)}
+                className="relative overflow-hidden active:opacity-80 transition-opacity"
               >
                 <img
                   src={photo}
                   alt=""
                   loading="lazy"
-                  className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full aspect-square object-cover"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               </button>
             ))}
           </div>
         </div>
-      ) })()}
+      )}
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
 
-      {/* Photo viewer */}
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={() => setSelectedPhoto(null)}>
-          <button
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-            onClick={() => setSelectedPhoto(null)}
-          >
-            <X size={20} className="text-white" />
-          </button>
-          <img
-            src={selectedPhoto.replace('w=400', 'w=800')}
-            alt=""
-            className="max-w-full max-h-full object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+      {/* Swipeable photo viewer */}
+      {viewerIndex !== null && gridPhotos.length > 0 && (
+        <PhotoViewer
+          photos={gridPhotos}
+          startIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
       )}
 
       {/* Hire modal */}

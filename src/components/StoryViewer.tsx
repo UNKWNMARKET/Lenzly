@@ -12,11 +12,15 @@ export type SpotStory = {
   location_name: string
   expires_at: string
   created_at: string
+  display_seconds?: number | null
   profiles?: { username: string; avatar_url: string | null; private_account?: boolean } | null
 }
 
-const STORY_DURATION = 6000
 export const DELETED_SENTINEL = '2000-01-01T00:00:00.000Z'
+
+function storyDuration(s: SpotStory) {
+  return (s.display_seconds ?? 6) * 1000
+}
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -73,8 +77,8 @@ export default function StoryViewer({
     autoTimer.current = setTimeout(() => {
       if (index < stories.length - 1) setIndex(i => i + 1)
       else onClose()
-    }, STORY_DURATION)
-  }, [index, stories.length, onClose])
+    }, storyDuration(story))
+  }, [index, stories.length, onClose, story])
 
   useEffect(() => {
     if (!paused && imgLoaded) scheduleAdvance()
@@ -119,13 +123,14 @@ export default function StoryViewer({
   }
 
   const handleDelete = async () => {
-    const { error } = await supabase
-      .from('spot_stories')
-      .update({ expires_at: DELETED_SENTINEL })
-      .eq('id', story.id)
+    // Hard-delete the row and its storage file
+    const { error } = await supabase.from('spot_stories').delete().eq('id', story.id)
     if (error) { toast.error('Could not delete'); return }
+    // Best-effort: remove the storage object (ignore errors — public CDN cache clears on expiry)
+    const path = story.image_url.split('/photos/')[1]
+    if (path) supabase.storage.from('photos').remove([path])
     onDelete(story.id)
-    onClose()
+    if (index < stories.length - 1) setIndex(i => i + 1); else onClose()
   }
 
   return (
@@ -154,7 +159,7 @@ export default function StoryViewer({
               <div
                 key={barKey}
                 className={`story-bar-fill h-full bg-white rounded-full${paused || !imgLoaded ? ' paused' : ''}`}
-                style={{ animationDuration: `${STORY_DURATION}ms` }}
+                style={{ animationDuration: `${storyDuration(story)}ms` }}
               />
             )}
           </div>
@@ -216,28 +221,30 @@ export default function StoryViewer({
 
       {showMenu && (
         <div
-          className="absolute inset-0 z-40"
+          className="fixed inset-0 z-[70]"
           onTouchStart={e => e.stopPropagation()}
           onTouchEnd={e => e.stopPropagation()}
           onClick={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
         >
+          {/* Dimmed backdrop */}
+          <div className="absolute inset-0 bg-black/40" />
           <div
-            className="absolute bottom-0 left-0 right-0 bg-lenz-card rounded-t-[28px] px-5 pt-3 pb-10 animate-slide-up"
+            className="absolute bottom-0 left-0 right-0 bg-[#111] rounded-t-[28px] px-5 pt-3 pb-8 safe-bottom animate-slide-up"
             onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-6" />
+            <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5" />
             {!confirmDelete ? (
               <div className="space-y-2">
                 <button
-                  className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl active:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:bg-white/5 transition-colors"
                   onTouchStart={e => e.stopPropagation()}
                   onTouchEnd={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); setConfirmDelete(true) }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
-                    <X size={16} className="text-red-400" />
+                  <div className="w-9 h-9 rounded-full bg-red-500/15 flex items-center justify-center shrink-0">
+                    <X size={15} className="text-red-400" />
                   </div>
                   <div className="text-left">
                     <p className="text-red-400 font-semibold text-[15px]">Delete Story</p>
@@ -245,7 +252,7 @@ export default function StoryViewer({
                   </div>
                 </button>
                 <button
-                  className="w-full py-4 rounded-2xl bg-white/5 text-white/50 font-semibold text-[15px] active:bg-white/10"
+                  className="w-full py-3.5 rounded-2xl bg-white/5 text-white/50 font-semibold text-[15px] active:bg-white/10"
                   onTouchStart={e => e.stopPropagation()}
                   onTouchEnd={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); setShowMenu(false) }}
@@ -254,11 +261,11 @@ export default function StoryViewer({
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-white font-bold text-[17px] text-center mb-1">Delete this spot?</p>
-                <p className="text-white/35 text-sm text-center mb-5">It will be removed for all viewers immediately.</p>
+              <div className="space-y-2.5">
+                <p className="text-white font-bold text-[17px] text-center">Delete this spot?</p>
+                <p className="text-white/35 text-sm text-center pb-3">It will be removed immediately for everyone.</p>
                 <button
-                  className="w-full py-4 rounded-2xl bg-red-500 text-white font-bold text-[15px] active:bg-red-600 transition-colors"
+                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-[15px] active:bg-red-600 transition-colors"
                   onTouchStart={e => e.stopPropagation()}
                   onTouchEnd={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); handleDelete() }}
@@ -266,7 +273,7 @@ export default function StoryViewer({
                   Yes, Delete
                 </button>
                 <button
-                  className="w-full py-4 rounded-2xl bg-white/6 text-white/55 font-semibold text-[15px] active:bg-white/10"
+                  className="w-full py-3.5 rounded-2xl bg-white/6 text-white/55 font-semibold text-[15px] active:bg-white/10"
                   onTouchStart={e => e.stopPropagation()}
                   onTouchEnd={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}
