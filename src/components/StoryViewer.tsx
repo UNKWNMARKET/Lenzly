@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MapPin, X, MoreHorizontal, Heart, Send } from 'lucide-react'
+import { MapPin, X, Trash2, Heart, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { img } from '@/lib/image'
@@ -48,9 +48,10 @@ export default function StoryViewer({
   const [index, setIndex] = useState(startIndex)
   const [paused, setPaused] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [barKey, setBarKey] = useState(0)
+  // Use JS viewport height to work around dvh not being supported in WKWebView
+  const [vh, setVh] = useState(window.innerHeight)
 
   // Like state
   const [liked, setLiked] = useState(false)
@@ -71,27 +72,33 @@ export default function StoryViewer({
   const story = stories[index]
   const isOwn = story?.user_id === userId
 
-  // ── Hide bottom nav while open ─────────────────────────────────────────────
+  // Keep vh in sync (orientation changes, keyboard)
+  useEffect(() => {
+    const update = () => setVh(window.innerHeight)
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  // Hide bottom nav
   useEffect(() => {
     document.body.classList.add('story-open')
     return () => { document.body.classList.remove('story-open') }
   }, [])
 
-  // ── Reset per-story state ──────────────────────────────────────────────────
+  // Reset per-story state
   useEffect(() => {
     if (!story) return
     onViewed(story.id)
     setImgLoaded(false)
-    setShowMenu(false)
     setConfirmDelete(false)
     setCommentOpen(false)
     setCommentText('')
     setBarKey(k => k + 1)
   }, [index, story?.id])
 
-  // ── Load like status for current story ────────────────────────────────────
+  // Load like status
   useEffect(() => {
-    if (!story) return
+    if (!story || isOwn) return
     supabase
       .from('story_likes')
       .select('user_id', { count: 'exact' })
@@ -100,9 +107,9 @@ export default function StoryViewer({
         setLikeCount(count ?? 0)
         setLiked((data ?? []).some((l: any) => l.user_id === userId))
       })
-  }, [story?.id, userId])
+  }, [story?.id, userId, isOwn])
 
-  // ── Pause while comment box is open ───────────────────────────────────────
+  // Pause while comment box is open
   useEffect(() => {
     if (commentOpen) {
       setPaused(true)
@@ -110,7 +117,7 @@ export default function StoryViewer({
     }
   }, [commentOpen])
 
-  // ── Progress-bar auto-advance ──────────────────────────────────────────────
+  // Auto-advance
   const scheduleAdvance = useCallback(() => {
     if (autoTimer.current) clearTimeout(autoTimer.current)
     autoTimer.current = setTimeout(() => {
@@ -127,7 +134,7 @@ export default function StoryViewer({
 
   if (!story) return null
 
-  // ── Touch navigation ───────────────────────────────────────────────────────
+  // Touch handlers
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -140,9 +147,10 @@ export default function StoryViewer({
     const dy = e.changedTouches[0].clientY - touchStartY.current
 
     if (paused && !commentOpen) { setPaused(false); return }
-    if (showMenu || confirmDelete) { setShowMenu(false); setConfirmDelete(false); return }
-    // Swipe DOWN to close (standard story UX)
-    if (Math.abs(dy) > 60 && dy > 0 && Math.abs(dx) < 40) { onClose(); return }
+    if (confirmDelete) { setConfirmDelete(false); return }
+
+    // Swipe DOWN to close (matches Instagram/standard UX)
+    if (dy > 80 && Math.abs(dx) < 50) { onClose(); return }
 
     if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
       if (dx < 0) {
@@ -163,7 +171,7 @@ export default function StoryViewer({
     }
   }
 
-  // ── Like / Unlike ─────────────────────────────────────────────────────────
+  // Like / Unlike
   const handleLike = async () => {
     if (isOwn) return
     if (liked) {
@@ -177,7 +185,6 @@ export default function StoryViewer({
       setLikeAnim(true)
       setTimeout(() => setLikeAnim(false), 400)
       haptics.light?.()
-      // Notify owner
       await supabase.from('notifications').insert({
         user_id: story.user_id,
         actor_id: userId,
@@ -188,7 +195,7 @@ export default function StoryViewer({
     }
   }
 
-  // ── Send comment ──────────────────────────────────────────────────────────
+  // Send comment
   const handleComment = async () => {
     const text = commentText.trim()
     if (!text || sending) return
@@ -198,12 +205,7 @@ export default function StoryViewer({
       user_id: userId,
       text,
     })
-    if (error) {
-      toast.error('Could not send reply')
-      setSending(false)
-      return
-    }
-    // Notify owner (not self)
+    if (error) { toast.error('Could not send reply'); setSending(false); return }
     if (story.user_id !== userId) {
       await supabase.from('notifications').insert({
         user_id: story.user_id,
@@ -220,7 +222,7 @@ export default function StoryViewer({
     setSending(false)
   }
 
-  // ── Delete (own story) ────────────────────────────────────────────────────
+  // Delete own story
   const handleDelete = async () => {
     const { error } = await supabase.from('spot_stories').delete().eq('id', story.id)
     if (error) { toast.error('Could not delete'); return }
@@ -230,25 +232,29 @@ export default function StoryViewer({
     if (index < stories.length - 1) setIndex(i => i + 1); else onClose()
   }
 
+  const stopTouch = (e: React.TouchEvent) => e.stopPropagation()
+
   return (
+    // Use JS window.innerHeight so the container fills the real screen on WKWebView
+    // regardless of dvh/vh support issues in Capacitor
     <div
-      className="fixed top-0 left-0 w-full h-[100dvh] z-[60] bg-black select-none flex flex-col"
+      className="fixed top-0 left-0 w-full z-[60] bg-black select-none"
+      style={{ height: vh }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); if (!commentOpen) setPaused(false) }}
     >
-      {/* ── Story image ── */}
-      <div className="absolute inset-0">
-        <img
-          key={story.id}
-          src={img.feed(story.image_url)}
-          alt=""
-          onLoad={() => setImgLoaded(true)}
-          className={`story-image w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-        />
-        {/* Gradient: top for controls, bottom for caption + actions */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-45% to-black/80 pointer-events-none" />
-      </div>
+      {/* Story image — fills container 100% */}
+      <img
+        key={story.id}
+        src={img.feed(story.image_url)}
+        alt=""
+        onLoad={() => setImgLoaded(true)}
+        className={`story-image absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-45% to-black/85 pointer-events-none" />
 
       {/* ── Progress bars ── */}
       <div className="absolute top-0 left-0 right-0 z-30 flex gap-[3px] px-3 pt-14 safe-top pointer-events-none">
@@ -266,7 +272,7 @@ export default function StoryViewer({
         ))}
       </div>
 
-      {/* ── Header: avatar + close ── */}
+      {/* ── Header: avatar + actions ── */}
       <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-20 pb-2 flex items-center justify-between safe-top pointer-events-none">
         <div className="flex items-center gap-2.5 pointer-events-auto">
           <div className="w-9 h-9 rounded-full overflow-hidden border border-white/25 bg-lenz-card shrink-0">
@@ -291,21 +297,22 @@ export default function StoryViewer({
           </div>
         </div>
 
-        <div className="flex items-center pointer-events-auto">
+        <div className="flex items-center gap-1 pointer-events-auto">
+          {/* Delete button — only on own stories, one tap opens confirm */}
           {isOwn && (
             <button
               className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
-              onTouchStart={e => e.stopPropagation()}
-              onTouchEnd={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); setShowMenu(true) }}
+              onTouchStart={stopTouch}
+              onTouchEnd={stopTouch}
+              onClick={e => { e.stopPropagation(); setConfirmDelete(true); setPaused(true) }}
             >
-              <MoreHorizontal size={20} className="text-white" />
+              <Trash2 size={18} className="text-white/80" />
             </button>
           )}
           <button
             className="w-10 h-10 flex items-center justify-center rounded-full active:bg-white/10"
-            onTouchStart={e => e.stopPropagation()}
-            onTouchEnd={e => e.stopPropagation()}
+            onTouchStart={stopTouch}
+            onTouchEnd={stopTouch}
             onClick={e => { e.stopPropagation(); onClose() }}
           >
             <X size={20} className="text-white" />
@@ -320,17 +327,16 @@ export default function StoryViewer({
         </div>
       )}
 
-      {/* ── Bottom actions: comment bar + heart ── */}
+      {/* ── Bottom: heart + comment (other people's stories only) ── */}
       {!isOwn && (
         <div
           className="absolute bottom-0 left-0 right-0 z-40 px-4"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' }}
-          onTouchStart={e => e.stopPropagation()}
-          onTouchEnd={e => e.stopPropagation()}
+          style={{ paddingBottom: `max(env(safe-area-inset-bottom, 16px), 20px)` }}
+          onTouchStart={stopTouch}
+          onTouchEnd={stopTouch}
           onClick={e => e.stopPropagation()}
         >
           {commentOpen ? (
-            /* ── Comment input ── */
             <div className="flex items-center gap-2">
               <input
                 ref={commentInputRef}
@@ -357,15 +363,13 @@ export default function StoryViewer({
               </button>
             </div>
           ) : (
-            /* ── Default bar ── */
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setCommentOpen(true)}
-                className="flex-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-4 py-3 text-left active:bg-white/25"
+                className="flex-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-4 py-3 text-left active:bg-white/25 transition-colors"
               >
-                <span className="text-white/70 text-[14px]">Reply to story…</span>
+                <span className="text-white/75 text-[14px]">Reply to story…</span>
               </button>
-
               <button
                 onClick={handleLike}
                 className="flex flex-col items-center gap-1 active:scale-90 transition-transform min-w-[44px]"
@@ -386,69 +390,37 @@ export default function StoryViewer({
         </div>
       )}
 
-      {/* ── Delete menu (own story) ── */}
-      {showMenu && (
+      {/* ── Delete confirmation overlay ── */}
+      {confirmDelete && (
         <div
-          className="fixed inset-0 z-[70]"
-          onTouchStart={e => e.stopPropagation()}
-          onTouchEnd={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
+          className="fixed inset-0 z-[70] flex items-end"
+          onTouchStart={stopTouch}
+          onTouchEnd={stopTouch}
+          onClick={e => e.stopPropagation()}
         >
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-[#111] rounded-t-[28px] px-5 pt-3 pb-8 safe-bottom animate-slide-up"
-            onTouchStart={e => e.stopPropagation()}
-            onTouchEnd={e => e.stopPropagation()}
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setConfirmDelete(false); setPaused(false) }} />
+          <div className="relative w-full bg-[#111] rounded-t-[28px] px-5 pt-4 pb-10 safe-bottom animate-slide-up">
             <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5" />
-            {!confirmDelete ? (
-              <div className="space-y-2">
-                <button
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:bg-white/5 transition-colors"
-                  onTouchStart={e => e.stopPropagation()}
-                  onTouchEnd={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); setConfirmDelete(true) }}
-                >
-                  <div className="w-9 h-9 rounded-full bg-red-500/15 flex items-center justify-center shrink-0">
-                    <X size={15} className="text-red-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-red-400 font-semibold text-[15px]">Delete Story</p>
-                    <p className="text-white/30 text-xs mt-0.5">Removes it immediately for everyone</p>
-                  </div>
-                </button>
-                <button
-                  className="w-full py-3.5 rounded-2xl bg-white/5 text-white/50 font-semibold text-[15px] active:bg-white/10"
-                  onTouchStart={e => e.stopPropagation()}
-                  onTouchEnd={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); setShowMenu(false) }}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                <p className="text-white font-bold text-[17px] text-center">Delete this spot?</p>
-                <p className="text-white/35 text-sm text-center pb-3">It will be removed immediately for everyone.</p>
-                <button
-                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold text-[15px] active:bg-red-600 transition-colors"
-                  onTouchStart={e => e.stopPropagation()}
-                  onTouchEnd={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); handleDelete() }}
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  className="w-full py-3.5 rounded-2xl bg-white/6 text-white/55 font-semibold text-[15px] active:bg-white/10"
-                  onTouchStart={e => e.stopPropagation()}
-                  onTouchEnd={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}
-                >
-                  Keep It
-                </button>
-              </div>
-            )}
+            <p className="text-white font-bold text-[17px] text-center mb-1">Delete this story?</p>
+            <p className="text-white/35 text-sm text-center mb-5">It will be removed immediately for everyone.</p>
+            <div className="space-y-2.5">
+              <button
+                className="w-full py-4 rounded-2xl bg-red-500 text-white font-bold text-[15px] active:bg-red-600 transition-colors"
+                onTouchStart={stopTouch}
+                onTouchEnd={stopTouch}
+                onClick={e => { e.stopPropagation(); handleDelete() }}
+              >
+                Yes, Delete
+              </button>
+              <button
+                className="w-full py-4 rounded-2xl bg-white/8 text-white/55 font-semibold text-[15px] active:bg-white/15"
+                onTouchStart={stopTouch}
+                onTouchEnd={stopTouch}
+                onClick={e => { e.stopPropagation(); setConfirmDelete(false); setPaused(false) }}
+              >
+                Keep It
+              </button>
+            </div>
           </div>
         </div>
       )}
