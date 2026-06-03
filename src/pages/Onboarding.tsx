@@ -16,7 +16,10 @@ export default function Onboarding() {
   const [finishing, setFinishing] = useState(false)
 
   // Don't suggest the user themselves; show the most-followed real accounts
-  const suggestions = photographers.filter(p => p.id !== user?.id).slice(0, 12)
+  const suggestions = photographers
+    .filter(p => p.id !== user?.id)
+    .sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0))
+    .slice(0, 12)
 
   const toggleFollow = async (id: string) => {
     if (!user) return
