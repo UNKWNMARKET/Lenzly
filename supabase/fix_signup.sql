@@ -19,16 +19,18 @@ BEGIN
     NULLIF(SPLIT_PART(NEW.email, '@', 1), ''),
     'user_' || SUBSTR(NEW.id::text, 1, 8)
   );
-  v_name := COALESCE(
-    NULLIF(TRIM(NEW.raw_user_meta_data->>'name'), ''),
-    NULLIF(TRIM(NEW.raw_user_meta_data->>'full_name'), ''),
-    v_username
-  );
+  -- Only use a real name from metadata; do NOT fall back to username.
+  -- New users with no name will be prompted to set one in the profile setup screen.
+  v_name := NULLIF(TRIM(COALESCE(
+    NEW.raw_user_meta_data->>'name',
+    NEW.raw_user_meta_data->>'full_name',
+    ''
+  )), '');
   INSERT INTO public.profiles (id, username, name)
   VALUES (v_uid, v_username, v_name)
   ON CONFLICT (id) DO UPDATE SET
     username = EXCLUDED.username,
-    name = EXCLUDED.name;
+    name = COALESCE(profiles.name, EXCLUDED.name);
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RETURN NEW;

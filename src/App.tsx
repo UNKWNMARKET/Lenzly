@@ -76,9 +76,13 @@ function ProtectedRoute({ component: Component, skipOnboarding }: { component: R
     navigate('/auth/login')
     return null
   }
-  // Send brand-new users through onboarding before they reach the app.
-  // (profile === null means it's still loading — don't redirect yet.)
-  if (!skipOnboarding && profile && profile.onboarded === false && location !== '/onboarding') {
+  // New users who haven't set their display name yet → profile setup first.
+  if (!skipOnboarding && profile && !profile.name && location !== '/profile/edit') {
+    navigate('/profile/edit')
+    return null
+  }
+  // Then send through onboarding (follow suggestions etc.).
+  if (!skipOnboarding && profile && profile.name && profile.onboarded === false && location !== '/onboarding') {
     navigate('/onboarding')
     return null
   }
@@ -105,7 +109,7 @@ function Router() {
       <Route path="/find">{() => <ProtectedRoute component={FindPhotographer} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
       <Route path="/upload">{() => <ProtectedRoute component={UploadPost} />}</Route>
-      <Route path="/profile/edit">{() => <ProtectedRoute component={EditProfile} />}</Route>
+      <Route path="/profile/edit">{() => <ProtectedRoute component={EditProfile} skipOnboarding />}</Route>
       <Route path="/settings">{() => <ProtectedRoute component={Settings} />}</Route>
       <Route path="/pro">{() => <ProtectedRoute component={GoPro} />}</Route>
       <Route path="/pro/checkout">{() => <ProtectedRoute component={ProCheckout} />}</Route>
