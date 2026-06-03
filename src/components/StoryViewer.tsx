@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MapPin, X, MoreHorizontal } from 'lucide-react'
+import { MapPin, X, MoreHorizontal, Heart, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { img } from '@/lib/image'
+import { haptics } from '@/lib/haptics'
 
 export type SpotStory = {
   id: string
@@ -50,6 +51,18 @@ export default function StoryViewer({
   const [showMenu, setShowMenu] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [barKey, setBarKey] = useState(0)
+
+  // Like state
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [likeAnim, setLikeAnim] = useState(false)
+
+  // Comment state
+  const [commentText, setCommentText] = useState('')
+  const [commentOpen, setCommentOpen] = useState(false)
+  const [sending, setSending] = useState(false)
+  const commentInputRef = useRef<HTMLInputElement>(null)
+
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -58,20 +71,46 @@ export default function StoryViewer({
   const story = stories[index]
   const isOwn = story?.user_id === userId
 
+  // ── Hide bottom nav while open ─────────────────────────────────────────────
   useEffect(() => {
     document.body.classList.add('story-open')
     return () => { document.body.classList.remove('story-open') }
   }, [])
 
+  // ── Reset per-story state ──────────────────────────────────────────────────
   useEffect(() => {
     if (!story) return
     onViewed(story.id)
     setImgLoaded(false)
     setShowMenu(false)
     setConfirmDelete(false)
+    setCommentOpen(false)
+    setCommentText('')
     setBarKey(k => k + 1)
   }, [index, story?.id])
 
+  // ── Load like status for current story ────────────────────────────────────
+  useEffect(() => {
+    if (!story) return
+    supabase
+      .from('story_likes')
+      .select('user_id', { count: 'exact' })
+      .eq('story_id', story.id)
+      .then(({ data, count }) => {
+        setLikeCount(count ?? 0)
+        setLiked((data ?? []).some((l: any) => l.user_id === userId))
+      })
+  }, [story?.id, userId])
+
+  // ── Pause while comment box is open ───────────────────────────────────────
+  useEffect(() => {
+    if (commentOpen) {
+      setPaused(true)
+      setTimeout(() => commentInputRef.current?.focus(), 80)
+    }
+  }, [commentOpen])
+
+  // ── Progress-bar auto-advance ──────────────────────────────────────────────
   const scheduleAdvance = useCallback(() => {
     if (autoTimer.current) clearTimeout(autoTimer.current)
     autoTimer.current = setTimeout(() => {
@@ -88,6 +127,7 @@ export default function StoryViewer({
 
   if (!story) return null
 
+  // ── Touch navigation ───────────────────────────────────────────────────────
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -99,7 +139,7 @@ export default function StoryViewer({
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
 
-    if (paused) { setPaused(false); return }
+    if (paused && !commentOpen) { setPaused(false); return }
     if (showMenu || confirmDelete) { setShowMenu(false); setConfirmDelete(false); return }
     if (Math.abs(dy) > 60 && dy < 0) { onClose(); return }
 
@@ -122,11 +162,67 @@ export default function StoryViewer({
     }
   }
 
+  // ── Like / Unlike ─────────────────────────────────────────────────────────
+  const handleLike = async () => {
+    if (isOwn) return
+    if (liked) {
+      await supabase.from('story_likes').delete().eq('story_id', story.id).eq('user_id', userId)
+      setLiked(false)
+      setLikeCount(c => Math.max(0, c - 1))
+    } else {
+      await supabase.from('story_likes').insert({ story_id: story.id, user_id: userId })
+      setLiked(true)
+      setLikeCount(c => c + 1)
+      setLikeAnim(true)
+      setTimeout(() => setLikeAnim(false), 400)
+      haptics.light?.()
+      // Notify owner
+      await supabase.from('notifications').insert({
+        user_id: story.user_id,
+        actor_id: userId,
+        type: 'story_like',
+        message: 'liked your story',
+        read: false,
+      })
+    }
+  }
+
+  // ── Send comment ──────────────────────────────────────────────────────────
+  const handleComment = async () => {
+    const text = commentText.trim()
+    if (!text || sending) return
+    setSending(true)
+    const { error } = await supabase.from('story_comments').insert({
+      story_id: story.id,
+      user_id: userId,
+      text,
+    })
+    if (error) {
+      toast.error('Could not send reply')
+      setSending(false)
+      return
+    }
+    // Notify owner (not self)
+    if (story.user_id !== userId) {
+      await supabase.from('notifications').insert({
+        user_id: story.user_id,
+        actor_id: userId,
+        type: 'story_comment',
+        message: `replied to your story: "${text.length > 60 ? text.slice(0, 60) + '…' : text}"`,
+        read: false,
+      })
+    }
+    toast.success('Reply sent!')
+    setCommentText('')
+    setCommentOpen(false)
+    setPaused(false)
+    setSending(false)
+  }
+
+  // ── Delete (own story) ────────────────────────────────────────────────────
   const handleDelete = async () => {
-    // Hard-delete the row and its storage file
     const { error } = await supabase.from('spot_stories').delete().eq('id', story.id)
     if (error) { toast.error('Could not delete'); return }
-    // Best-effort: remove the storage object (ignore errors — public CDN cache clears on expiry)
     const path = story.image_url.split('/photos/')[1]
     if (path) supabase.storage.from('photos').remove([path])
     onDelete(story.id)
@@ -135,25 +231,28 @@ export default function StoryViewer({
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black select-none"
+      className="fixed top-0 left-0 w-full h-[100dvh] z-[60] bg-black select-none flex flex-col"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); setPaused(false) }}
+      onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); if (!commentOpen) setPaused(false) }}
     >
-      <img
-        key={story.id}
-        src={img.feed(story.image_url)}
-        alt=""
-        onLoad={() => setImgLoaded(true)}
-        className={`story-image absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-      />
+      {/* ── Story image ── */}
+      <div className="absolute inset-0">
+        <img
+          key={story.id}
+          src={img.feed(story.image_url)}
+          alt=""
+          onLoad={() => setImgLoaded(true)}
+          className={`story-image w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+        />
+        {/* Gradient: top for controls, bottom for caption + actions */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-45% to-black/80 pointer-events-none" />
+      </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent via-50% to-black/70 pointer-events-none" />
-
-      {/* Progress bars */}
+      {/* ── Progress bars ── */}
       <div className="absolute top-0 left-0 right-0 z-30 flex gap-[3px] px-3 pt-14 safe-top pointer-events-none">
         {stories.map((s, i) => (
-          <div key={s.id} className="flex-1 h-[2px] bg-white/20 rounded-full overflow-hidden">
+          <div key={s.id} className="flex-1 h-[2px] bg-white/25 rounded-full overflow-hidden">
             {i < index && <div className="h-full w-full bg-white rounded-full" />}
             {i === index && (
               <div
@@ -166,7 +265,7 @@ export default function StoryViewer({
         ))}
       </div>
 
-      {/* Header */}
+      {/* ── Header: avatar + close ── */}
       <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-20 pb-2 flex items-center justify-between safe-top pointer-events-none">
         <div className="flex items-center gap-2.5 pointer-events-auto">
           <div className="w-9 h-9 rounded-full overflow-hidden border border-white/25 bg-lenz-card shrink-0">
@@ -182,7 +281,7 @@ export default function StoryViewer({
               <p className="text-white text-[13px] font-semibold leading-none">
                 {story.profiles?.username ? `@${story.profiles.username}` : ''}
               </p>
-              <span className="text-white/35 text-[11px]">· {timeAgo(story.created_at)}</span>
+              <span className="text-white/40 text-[11px]">· {timeAgo(story.created_at)}</span>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
               <MapPin size={9} className="text-gold/80" />
@@ -213,12 +312,80 @@ export default function StoryViewer({
         </div>
       </div>
 
+      {/* ── Caption ── */}
       {story.caption && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-14 pointer-events-none">
+        <div className="absolute bottom-24 left-0 right-0 z-20 px-5 pointer-events-none">
           <p className="text-white text-[14px] leading-snug drop-shadow-md">{story.caption}</p>
         </div>
       )}
 
+      {/* ── Bottom actions: comment bar + heart ── */}
+      {!isOwn && (
+        <div
+          className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-10 safe-bottom"
+          onTouchStart={e => e.stopPropagation()}
+          onTouchEnd={e => e.stopPropagation()}
+        >
+          {commentOpen ? (
+            /* ── Comment input ── */
+            <div className="flex items-center gap-2">
+              <input
+                ref={commentInputRef}
+                type="text"
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="Reply to story…"
+                maxLength={500}
+                onKeyDown={e => { if (e.key === 'Enter') handleComment() }}
+                className="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-3 text-[14px] text-white placeholder-white/40 outline-none focus:border-white/40"
+              />
+              <button
+                onClick={handleComment}
+                disabled={!commentText.trim() || sending}
+                className="w-11 h-11 rounded-full bg-gold flex items-center justify-center shrink-0 disabled:opacity-40 active:scale-90 transition-transform"
+              >
+                <Send size={16} className="text-lenz-bg" />
+              </button>
+              <button
+                onClick={() => { setCommentOpen(false); setPaused(false) }}
+                className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20"
+              >
+                <X size={16} className="text-white" />
+              </button>
+            </div>
+          ) : (
+            /* ── Default bar ── */
+            <div className="flex items-center gap-3">
+              {/* Tap-to-type comment field */}
+              <button
+                onClick={() => setCommentOpen(true)}
+                className="flex-1 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-4 py-3 text-left"
+              >
+                <span className="text-white/45 text-[14px]">Reply to story…</span>
+              </button>
+
+              {/* Heart like button */}
+              <button
+                onClick={handleLike}
+                className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+              >
+                <div className={`transition-transform duration-200 ${likeAnim ? 'scale-150' : 'scale-100'}`}>
+                  <Heart
+                    size={28}
+                    className={liked ? 'fill-rose-500 text-rose-500' : 'text-white'}
+                    strokeWidth={liked ? 0 : 1.8}
+                  />
+                </div>
+                {likeCount > 0 && (
+                  <span className="text-white text-[11px] font-semibold leading-none">{likeCount}</span>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Delete menu (own story) ── */}
       {showMenu && (
         <div
           className="fixed inset-0 z-[70]"
@@ -226,7 +393,6 @@ export default function StoryViewer({
           onTouchEnd={e => e.stopPropagation()}
           onClick={e => { e.stopPropagation(); if (!confirmDelete) setShowMenu(false) }}
         >
-          {/* Dimmed backdrop */}
           <div className="absolute inset-0 bg-black/40" />
           <div
             className="absolute bottom-0 left-0 right-0 bg-[#111] rounded-t-[28px] px-5 pt-3 pb-8 safe-bottom animate-slide-up"

@@ -39,7 +39,9 @@ const typeIcon = (type: string) => {
     case 'follow_request': return <Lock size={14} className="text-amber-400" />
     case 'follow_accepted':return <UserCheck size={14} className="text-green-400" />
     case 'follow_declined':return <XIcon size={14} className="text-rose-400" />
-    case 'hire_request':   return <Camera size={14} className="text-gold" />
+    case 'hire_request':    return <Camera size={14} className="text-gold" />
+    case 'story_like':      return <Heart size={14} className="fill-rose-500 text-rose-500" />
+    case 'story_comment':   return <MessageCircle size={14} className="text-purple-400" />
     default:               return <Bell size={14} className="text-white/50" />
   }
 }
@@ -56,6 +58,8 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'follow_accepted': return `${name} accepted your follow request`
     case 'follow_declined': return `${name} declined your follow request`
     case 'hire_request':    return `${name} sent you a hire request`
+    case 'story_like':      return `${name} liked your story`
+    case 'story_comment':   return `${name} replied to your story`
     default:                return 'New notification'
   }
 }
