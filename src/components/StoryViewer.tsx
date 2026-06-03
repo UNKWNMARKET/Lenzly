@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useLocation } from 'wouter'
 import { MapPin, X, Trash2, Heart, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -69,8 +70,15 @@ export default function StoryViewer({
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [, navigate] = useLocation()
   const story = stories[index]
   const isOwn = story?.user_id === userId
+
+  const goToStoryOwner = () => {
+    onClose()
+    if (story.user_id === userId) navigate('/profile')
+    else navigate(`/photographer/${story.user_id}`)
+  }
 
   // Keep vh in sync (orientation changes, keyboard)
   useEffect(() => {
@@ -277,7 +285,11 @@ export default function StoryViewer({
 
       {/* ── Header: avatar + actions ── */}
       <div className="absolute top-0 left-0 right-0 z-30 px-3 pt-8 safe-top pb-2 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2.5 pointer-events-auto">
+        <button
+          className="flex items-center gap-2.5 pointer-events-auto active:opacity-70 transition-opacity"
+          onTouchStart={stopTouch} onTouchEnd={stopTouch}
+          onClick={e => { e.stopPropagation(); goToStoryOwner() }}
+        >
           <div className="w-9 h-9 rounded-full overflow-hidden border border-white/25 bg-lenz-card shrink-0">
             {story.profiles?.avatar_url
               ? <img src={img.avatar(story.profiles.avatar_url)} className="w-full h-full object-cover" />
@@ -298,7 +310,7 @@ export default function StoryViewer({
               <p className="text-white/55 text-[11px]">{story.location_name}</p>
             </div>
           </div>
-        </div>
+        </button>
 
         <div className="flex items-center gap-1 pointer-events-auto">
           {/* Delete button — only on own stories, one tap opens confirm */}

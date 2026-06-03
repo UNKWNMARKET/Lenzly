@@ -373,14 +373,20 @@ export default function FeedPostCard({
           )}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5">
+              <button
+                className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5 active:opacity-70 transition-opacity"
+                onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
+              >
                 {c.profiles?.avatar_url
                   ? <img src={img.avatar(c.profiles.avatar_url)} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/40 font-bold">{(c.profiles?.name || '?')[0].toUpperCase()}</div>}
-              </div>
+              </button>
               <div className="flex-1 min-w-0 bg-white/4 rounded-2xl px-3 py-2">
                 <p className="text-sm text-white leading-relaxed">
-                  <span className="font-bold">{c.profiles?.username || c.profiles?.name || 'User'}</span>{' '}
+                  <button
+                    className="font-bold hover:text-gold transition-colors"
+                    onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
+                  >{c.profiles?.username || c.profiles?.name || 'User'}</button>{' '}
                   <span className="text-white/75">{c.text}</span>
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5">{timeAgo(c.created_at)}</p>

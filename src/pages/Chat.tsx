@@ -36,7 +36,7 @@ type Message = {
   sent_at: string
 }
 
-type OtherUser = { username: string; avatar_url: string | null }
+type OtherUser = { id: string; username: string; avatar_url: string | null }
 
 // Track unsend window client-side
 type UnsendEntry = { sentAt: number }
@@ -89,7 +89,7 @@ export default function Chat() {
       .limit(1)
 
     if (parts?.[0]) {
-      const { data: prof } = await supabase.from('profiles').select('username, avatar_url').eq('id', parts[0].user_id).single()
+      const { data: prof } = await supabase.from('profiles').select('id, username, avatar_url').eq('id', parts[0].user_id).single()
       if (prof) setOtherUser(prof)
     }
 
@@ -197,19 +197,22 @@ export default function Chat() {
         <button onClick={() => navigate('/messages')} className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
           <ArrowLeft size={20} className="text-white/80" />
         </button>
-        <div className="w-9 h-9 rounded-full bg-lenz-card border border-white/10 overflow-hidden flex-shrink-0">
+        <button
+          className="w-9 h-9 rounded-full bg-lenz-card border border-white/10 overflow-hidden flex-shrink-0 active:opacity-70 transition-opacity"
+          onClick={() => otherUser && navigate(`/photographer/${otherUser.id}`)}
+        >
           {otherUser?.avatar_url
             ? <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-white/30 font-bold text-sm">
                 {otherUser?.username?.[0]?.toUpperCase() ?? '?'}
               </div>
           }
-        </div>
-        <div className="flex-1 min-w-0">
+        </button>
+        <button className="flex-1 min-w-0 text-left" onClick={() => otherUser && navigate(`/photographer/${otherUser.id}`)}>
           <p className="text-sm font-semibold text-white/90 truncate">
             {otherUser ? `@${otherUser.username}` : 'Loading…'}
           </p>
-        </div>
+        </button>
         <button
           onClick={() => setShowBgPicker(true)}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"

@@ -271,7 +271,7 @@ export default function PhotographerProfile() {
       <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center gap-4">
         <Camera size={40} className="text-white/10" />
         <p className="text-white/30 text-sm">Photographer not found</p>
-        <button onClick={() => navigate('/find')} className="btn-ghost text-sm px-4 py-2">← Back to Find</button>
+        <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/find')} className="btn-ghost text-sm px-4 py-2">← Back to Find</button>
       </div>
     )
   }
@@ -301,8 +301,29 @@ export default function PhotographerProfile() {
 
   const handleMessageStart = async () => {
     if (!user) { navigate('/auth/login'); return }
-    toast.info('Starting conversation…')
-    navigate('/messages')
+    // Find existing conversation or create one, then open chat directly
+    const { data: myParts } = await supabase
+      .from('conversation_participants').select('conversation_id').eq('user_id', user.id)
+    const myIds = (myParts ?? []).map((r: any) => r.conversation_id)
+    let convId: string | null = null
+    if (myIds.length > 0) {
+      const { data: shared } = await supabase
+        .from('conversation_participants').select('conversation_id')
+        .eq('user_id', p.id).in('conversation_id', myIds).limit(1)
+      if (shared && shared[0]) convId = shared[0].conversation_id
+    }
+    if (!convId) {
+      const { data: newConv } = await supabase.from('conversations').insert({ created_by: user.id, bg: '#0A0804' }).select('id').single()
+      if (newConv) {
+        convId = newConv.id
+        await supabase.from('conversation_participants').insert([
+          { conversation_id: convId, user_id: user.id },
+          { conversation_id: convId, user_id: p.id },
+        ])
+      }
+    }
+    if (convId) navigate(`/chat/${convId}`)
+    else { toast.error('Could not start conversation'); navigate('/messages') }
   }
 
   const handleHireSend = async () => {
@@ -359,8 +380,9 @@ export default function PhotographerProfile() {
         await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_id: user.id,
-          text: messageText,
+          content: messageText,
         })
+        await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
       }
 
       setSending(false)
@@ -385,7 +407,7 @@ export default function PhotographerProfile() {
             : <div className="w-full h-full bg-gradient-to-br from-[#1c1608] via-[#0d0d0d] to-[#080808]" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-lenz-bg" />
           <div className="absolute top-4 left-4 safe-top">
-            <button onClick={() => navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+            <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
               <ChevronLeft size={20} className="text-white" />
             </button>
           </div>
@@ -432,7 +454,7 @@ export default function PhotographerProfile() {
 
         {/* Back */}
         <div className="absolute top-4 left-4 safe-top">
-          <button onClick={() => navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
+          <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/find')} className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center">
             <ChevronLeft size={20} className="text-white" />
           </button>
         </div>
