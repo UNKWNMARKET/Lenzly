@@ -41,6 +41,7 @@ const typeIcon = (type: string) => {
     case 'hire_request':    return <Camera size={14} className="text-gold" />
     case 'story_like':      return <Heart size={14} className="fill-rose-500 text-rose-500" />
     case 'story_comment':   return <MessageCircle size={14} className="text-purple-400" />
+    case 'message':         return <MessageCircle size={14} className="text-blue-400" />
     default:               return <Bell size={14} className="text-white/50" />
   }
 }
@@ -59,6 +60,7 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'hire_request':    return `${name} sent you a hire request`
     case 'story_like':      return `${name} liked your story`
     case 'story_comment':   return `${name} replied to your story`
+    case 'message':         return `${name} sent you a message`
     default:                return 'New notification'
   }
 }
@@ -191,6 +193,8 @@ export default function Notifications() {
       navigate(`/photographer/${n.actor_id}`)
     } else if (n.actor_id && ['story_like', 'story_comment', 'story_share'].includes(n.type)) {
       navigate(`/photographer/${n.actor_id}`)
+    } else if (n.type === 'message') {
+      navigate('/messages')
     }
     // follow_request stays on the page so user can confirm/deny
   }

@@ -172,9 +172,9 @@ export default function Profile() {
     hired:       hasRealProfile ? 0  : currentUser.hired,
     rating:      hasRealProfile ? 0  : currentUser.rating,
     verified:    hasRealProfile ? false : currentUser.verified,
-    secondShooter: hasRealProfile ? false : currentUser.secondShooter,
-    available:   hasRealProfile ? false : currentUser.available,
-    priceRange:  hasRealProfile ? ''  : currentUser.priceRange,
+    secondShooter: profile?.second_shooter ?? (hasRealProfile ? false : currentUser.secondShooter),
+    available:   profile?.available ?? (hasRealProfile ? false : currentUser.available),
+    priceRange:  profile?.price_range ?? (hasRealProfile ? '' : currentUser.priceRange),
   }
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [

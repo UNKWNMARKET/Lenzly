@@ -22,6 +22,9 @@ export default function EditProfile() {
   const [location, setLocation] = useState(profile?.location ?? '')
   const [website, setWebsite] = useState(profile?.website ?? '')
   const [specialties, setSpecialties] = useState<string[]>(profile?.specialty ?? [])
+  const [available, setAvailable] = useState<boolean>(profile?.available ?? false)
+  const [secondShooter, setSecondShooter] = useState<boolean>(profile?.second_shooter ?? false)
+  const [priceRange, setPriceRange] = useState<string>(profile?.price_range ?? '')
   const [saving, setSaving] = useState(false)
 
   // ── Photo upload ─────────────────────────────────────────────────────────────
@@ -62,6 +65,9 @@ export default function EditProfile() {
       setLocation(profile.location ?? '')
       setWebsite(profile.website ?? '')
       setSpecialties(profile.specialty ?? [])
+      setAvailable(profile.available ?? false)
+      setSecondShooter(profile.second_shooter ?? false)
+      setPriceRange(profile.price_range ?? '')
     }
   }, [profile?.id])
 
@@ -120,7 +126,10 @@ export default function EditProfile() {
       bio:       bio.trim() || null,
       location:  location.trim() || null,
       website:   website.trim() || null,
-      specialty: specialties,
+      specialty:      specialties,
+      available:      available,
+      second_shooter: secondShooter,
+      price_range:    priceRange.trim() || null,
     }
 
     if (newAvatarUrl) updateData.avatar_url = newAvatarUrl
@@ -342,6 +351,52 @@ export default function EditProfile() {
               )
             })}
           </div>
+        </div>
+
+        {/* Availability & Rate */}
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase">
+            For Hire
+          </label>
+
+          {/* Available toggle */}
+          <div className="flex items-center justify-between p-3.5 bg-lenz-card rounded-xl border border-lenz-border">
+            <div>
+              <p className="text-sm font-medium text-white/80">Available for hire</p>
+              <p className="text-[11px] text-white/30 mt-0.5">Show clients you're open to bookings</p>
+            </div>
+            <button
+              onClick={() => setAvailable(v => !v)}
+              className={`w-12 h-6.5 rounded-full transition-colors relative flex-shrink-0 ${available ? 'bg-gold' : 'bg-white/15'}`}
+              style={{ height: '26px', width: '46px' }}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Second shooter toggle */}
+          <div className="flex items-center justify-between p-3.5 bg-lenz-card rounded-xl border border-lenz-border">
+            <div>
+              <p className="text-sm font-medium text-white/80">Available as second shooter</p>
+              <p className="text-[11px] text-white/30 mt-0.5">For weddings and large events</p>
+            </div>
+            <button
+              onClick={() => setSecondShooter(v => !v)}
+              className={`relative flex-shrink-0 rounded-full transition-colors`}
+              style={{ height: '26px', width: '46px', background: secondShooter ? 'var(--gold, #C9A84C)' : 'rgba(255,255,255,0.15)' }}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${secondShooter ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Price range */}
+          <input
+            type="text"
+            value={priceRange}
+            onChange={e => setPriceRange(e.target.value)}
+            placeholder="e.g. $500–$2,000/day"
+            className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+          />
         </div>
 
         {/* Save button */}

@@ -153,6 +153,15 @@ export default function Chat() {
       setUnsendMap(prev => new Map(prev).set(data.id, { sentAt: Date.now() }))
       // Update conversation updated_at
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId)
+      // Notify the recipient (fire and forget)
+      if (otherUser?.id) {
+        supabase.from('notifications').insert({
+          user_id: otherUser.id,
+          actor_id: user.id,
+          type: 'message',
+          read: false,
+        })
+      }
     }
     setSending(false)
     inputRef.current?.focus()
@@ -194,7 +203,7 @@ export default function Chat() {
         className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)' }}
       >
-        <button onClick={() => navigate('/messages')} className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
+        <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/messages')} className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
           <ArrowLeft size={20} className="text-white/80" />
         </button>
         <button

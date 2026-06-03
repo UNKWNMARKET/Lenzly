@@ -32,6 +32,9 @@ export type Profile = {
   created_at: string
   username_changed_at: string | null
   onboarded?: boolean
+  available: boolean
+  second_shooter: boolean
+  price_range: string | null
 }
 
 export type Post = {

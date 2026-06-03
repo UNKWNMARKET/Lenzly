@@ -87,7 +87,7 @@ export default function Messages() {
 
       const { data: lastMsgs } = await supabase
         .from('messages')
-        .select('content, unsent, sent_at')
+        .select('content, unsent, sent_at, sender_id')
         .eq('conversation_id', c.id)
         .order('sent_at', { ascending: false })
         .limit(1)
@@ -95,7 +95,10 @@ export default function Messages() {
       const lm = lastMsgs?.[0]
       const lastMessage = lm ? (lm.unsent ? '🚫 Message unsent' : lm.content) : null
 
-      return { id: c.id, bg: c.bg, updated_at: c.updated_at, other_user: other, last_message: lastMessage, unread: false } as Conversation
+      // Unread = last message exists, was not sent by me, and is newer than last seen
+      const unread = !!(lm && lm.sender_id !== user.id && !lm.unsent)
+
+      return { id: c.id, bg: c.bg, updated_at: c.updated_at, other_user: other, last_message: lastMessage, unread } as Conversation
     }))
 
     setConversations(enriched)
@@ -108,6 +111,17 @@ export default function Messages() {
     fetchConversations()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  // Live updates — refresh list when any message is inserted
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase
+      .channel('messages_list_live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => fetchConversations())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user, fetchConversations])
 
   // User search
   useEffect(() => {
@@ -228,10 +242,18 @@ export default function Messages() {
             <div key={c.id} className="relative group">
               <button
                 onClick={() => navigate(`/chat/${c.id}`)}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all w-full text-left"
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-2xl transition-all w-full text-left',
+                  c.unread ? 'bg-white/5 hover:bg-white/8' : 'hover:bg-white/5'
+                )}
               >
                 {/* Avatar */}
-                <div className="w-12 h-12 rounded-full bg-lenz-card border border-lenz-border flex-shrink-0 overflow-hidden">
+                <div className={cn(
+                  'w-12 h-12 rounded-full flex-shrink-0 overflow-hidden',
+                  c.unread
+                    ? 'ring-2 ring-gold/60 bg-lenz-card'
+                    : 'bg-lenz-card border border-lenz-border'
+                )}>
                   {c.other_user?.avatar_url
                     ? <img src={c.other_user.avatar_url} alt="" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-white/30 text-lg font-bold">
@@ -242,16 +264,19 @@ export default function Messages() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white/90 truncate">
+                    <p className={cn('text-sm font-semibold truncate', c.unread ? 'text-white' : 'text-white/90')}>
                       {c.other_user?.name || c.other_user?.username || 'Unknown'}
                     </p>
                     <span className="text-[10px] text-white/25 flex-shrink-0 ml-2">{timeAgo(c.updated_at)}</span>
                   </div>
-                  <p className="text-xs text-white/35 truncate mt-0.5">
+                  <p className={cn('text-xs truncate mt-0.5', c.unread ? 'text-white/60 font-medium' : 'text-white/35')}>
                     {c.last_message ?? 'Start the conversation…'}
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-white/15 flex-shrink-0" />
+                {c.unread
+                  ? <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />
+                  : <ChevronRight size={14} className="text-white/15 flex-shrink-0" />
+                }
               </button>
 
               {/* Delete button on hover */}
