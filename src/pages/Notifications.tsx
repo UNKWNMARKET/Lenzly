@@ -182,6 +182,19 @@ export default function Notifications() {
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
   }
 
+  const handleTap = (n: Notif) => {
+    markRead(n.id)
+    // Navigate to the relevant content
+    if (n.post_id && ['like', 'comment', 'mention'].includes(n.type)) {
+      navigate(`/post/${n.post_id}`)
+    } else if (n.actor_id && ['follow', 'follow_request', 'follow_accepted', 'follow_declined', 'hire_request'].includes(n.type)) {
+      navigate(`/photographer/${n.actor_id}`)
+    } else if (n.actor_id && ['story_like', 'story_comment', 'story_share'].includes(n.type)) {
+      navigate(`/photographer/${n.actor_id}`)
+    }
+    // follow_request stays on the page so user can confirm/deny
+  }
+
   const unread = notifs.filter(n => !n.read).length
 
   return (
@@ -233,7 +246,7 @@ export default function Notifications() {
             <div
               key={n.id}
               role="button"
-              onClick={() => markRead(n.id)}
+              onClick={() => handleTap(n)}
               className={cn(
                 'flex flex-col p-3 rounded-2xl transition-all cursor-pointer',
                 n.read ? 'bg-transparent hover:bg-white/5' : 'bg-white/5 hover:bg-white/7'

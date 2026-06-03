@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useLocation } from 'wouter'
 import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -48,6 +49,11 @@ export default function FeedPostCard({
   hasStory?: boolean
   onDeleted?: (id: string) => void
 }) {
+  const [, navigate] = useLocation()
+  const goToProfile = () => {
+    if (post.user_id === currentUserId) navigate('/profile')
+    else navigate(`/photographer/${post.user_id}`)
+  }
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(post.likes_count ?? 0)
   const [saved, setSaved] = useState(false)
@@ -214,7 +220,7 @@ export default function FeedPostCard({
 
   const handleAvatarClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!hasStory) return
+    if (!hasStory) { goToProfile(); return }
     haptics.light()
     if (profileStories) { setStoryViewerOpen(true); return }
     const { data } = await supabase
@@ -257,7 +263,7 @@ export default function FeedPostCard({
             }
           </div>
         </button>
-        <div className="flex-1 min-w-0">
+        <button className="flex-1 min-w-0 text-left" onClick={e => { e.stopPropagation(); goToProfile() }}>
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-bold text-white truncate">{profile?.username || profile?.name || 'Photographer'}</p>
             {profile?.is_pro && <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
@@ -268,7 +274,7 @@ export default function FeedPostCard({
               <p className="text-[11px] text-white/40 truncate">{post.location_name}</p>
             </div>
           )}
-        </div>
+        </button>
         <div className="relative">
           <button onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
             <MoreVertical size={17} className="text-white/50" />

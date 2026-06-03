@@ -7,8 +7,9 @@ import FeedPostCard, { FeedPost } from '@/components/FeedPostCard'
 
 export default function PostDetail() {
   const [, params] = useRoute('/post/:id')
-  const [, navigate] = useLocation()
+  const [location, navigate] = useLocation()
   const { user } = useAuth()
+  const goBack = () => window.history.length > 1 ? window.history.back() : navigate('/')
   const postId = params?.id
 
   const [posts, setPosts] = useState<FeedPost[]>([])
@@ -68,7 +69,7 @@ export default function PostDetail() {
   if (posts.length === 0) return (
     <div className="min-h-screen bg-lenz-bg">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
-        <button onClick={() => navigate('/profile')} className="p-2 -ml-2">
+        <button onClick={goBack} className="p-2 -ml-2">
           <ArrowLeft size={20} className="text-white/70" />
         </button>
         <span className="text-sm font-bold tracking-widest uppercase text-white">Photos</span>
@@ -83,7 +84,7 @@ export default function PostDetail() {
     <div className="min-h-screen bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
-        <button onClick={() => navigate('/profile')} className="p-2 -ml-2">
+        <button onClick={goBack} className="p-2 -ml-2">
           <ArrowLeft size={20} className="text-white/70" />
         </button>
         <span className="text-sm font-bold tracking-widest uppercase text-white">Photos</span>
