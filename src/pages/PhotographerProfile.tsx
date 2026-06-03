@@ -216,6 +216,13 @@ export default function PhotographerProfile() {
         setIsFollowing(true)
         haptics.success()
         toast.success(`Following ${p?.name.split(' ')[0] ?? ''}`)
+        // Notify the person being followed
+        supabase.from('notifications').insert({
+          user_id: id,
+          actor_id: user.id,
+          type: 'follow',
+          read: false,
+        })
       } else {
         haptics.error()
         toast.error('Could not follow. Try again.')

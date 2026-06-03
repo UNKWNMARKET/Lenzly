@@ -107,10 +107,20 @@ export default function FeedPostCard({
     if (next) {
       const { error } = await supabase.from('post_likes').insert({ post_id: post.id, user_id: currentUserId })
       if (error) { setLiked(!next); setLikesCount(c => next ? c - 1 : c + 1); toast.error('Could not like post'); return }
+      // Notify post owner (not self-likes)
+      if (post.user_id !== currentUserId) {
+        supabase.from('notifications').insert({
+          user_id: post.user_id,
+          actor_id: currentUserId,
+          type: 'like',
+          post_id: post.id,
+          read: false,
+        })
+      }
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
     }
-  }, [currentUserId, liked, post.id])
+  }, [currentUserId, liked, post.id, post.user_id])
 
   const toggleLike = () => triggerLike()
 
@@ -195,6 +205,16 @@ export default function FeedPostCard({
       .eq('id', currentUserId)
       .maybeSingle()
 
+    // Notify post owner (not self-comments)
+    if (post.user_id !== currentUserId) {
+      supabase.from('notifications').insert({
+        user_id: post.user_id,
+        actor_id: currentUserId,
+        type: 'comment',
+        post_id: post.id,
+        read: false,
+      })
+    }
     // comments_count on posts is maintained by the on_comment_insert DB
     // trigger — we only insert the comment and optimistically bump local state.
     setComments(prev => [...prev, { ...data, profiles: prof ?? null } as unknown as Comment])
