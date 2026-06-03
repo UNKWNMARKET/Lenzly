@@ -13,23 +13,22 @@ DECLARE
   v_username text;
   v_name text;
 BEGIN
-  v_uid := (row_to_json(NEW)->>'id')::uuid;
+  v_uid := NEW.id;
   v_username := COALESCE(
     NULLIF(TRIM(NEW.raw_user_meta_data->>'username'), ''),
     NULLIF(SPLIT_PART(NEW.email, '@', 1), ''),
-    'user_' || SUBSTR(row_to_json(NEW)->>'id', 1, 8)
+    'user_' || SUBSTR(NEW.id::text, 1, 8)
   );
   v_name := COALESCE(
     NULLIF(TRIM(NEW.raw_user_meta_data->>'name'), ''),
     NULLIF(TRIM(NEW.raw_user_meta_data->>'full_name'), ''),
     v_username
   );
-  INSERT INTO public.profiles (id, username, name, updated_at)
-  VALUES (v_uid, v_username, v_name, NOW())
+  INSERT INTO public.profiles (id, username, name)
+  VALUES (v_uid, v_username, v_name)
   ON CONFLICT (id) DO UPDATE SET
     username = EXCLUDED.username,
-    name = EXCLUDED.name,
-    updated_at = NOW();
+    name = EXCLUDED.name;
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RETURN NEW;
