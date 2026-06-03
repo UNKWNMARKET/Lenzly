@@ -32,12 +32,13 @@ export default function Search() {
     const term = q.trim()
     if (term.length < 1) { setUsers([]); setSearched(false); return }
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, username, name, avatar_url, location, is_pro, followers_count')
       .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
       .order('followers_count', { ascending: false })
       .limit(30)
+    if (error) console.error('[Search]', error.message, error.code, error.details)
     const rows = (data ?? []).filter(u => u.id !== user?.id && !blockedIds.has(u.id))
     setUsers(rows as UserResult[])
     setLoading(false)
