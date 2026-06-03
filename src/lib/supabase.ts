@@ -35,6 +35,8 @@ export type Profile = {
   available: boolean
   second_shooter: boolean
   price_range: string | null
+  private_account?: boolean
+  show_location?: boolean
 }
 
 export type Post = {

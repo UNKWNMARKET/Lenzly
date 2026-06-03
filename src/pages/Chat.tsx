@@ -108,6 +108,15 @@ export default function Chat() {
     fetchConv()
   }, [fetchConv])
 
+  // Mark conversation as read when opened
+  useEffect(() => {
+    if (!convId || !user) return
+    supabase.from('conversation_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('conversation_id', convId)
+      .eq('user_id', user.id)
+  }, [convId, user])
+
   // Real-time new messages
   useEffect(() => {
     if (!convId) return
@@ -117,6 +126,13 @@ export default function Chat() {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
         payload => {
           setMessages(prev => [...prev, payload.new as Message])
+          // Mark as read since the user is actively viewing
+          if (user) {
+            supabase.from('conversation_participants')
+              .update({ last_read_at: new Date().toISOString() })
+              .eq('conversation_id', convId)
+              .eq('user_id', user.id)
+          }
         }
       )
       .on('postgres_changes',

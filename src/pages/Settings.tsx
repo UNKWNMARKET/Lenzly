@@ -145,8 +145,8 @@ export default function Settings() {
   const [likesNotif, setLikesNotif] = useState(true)
   const [followNotif, setFollowNotif] = useState(true)
   const [hireNotif, setHireNotif] = useState(true)
-  const [privateAccount, setPrivateAccount] = useState(() => (profile as any)?.private_account ?? false)
-  const [showLocation, setShowLocation] = useState(() => (profile as any)?.show_location ?? true)
+  const [privateAccount, setPrivateAccount] = useState(() => profile?.private_account ?? false)
+  const [showLocation, setShowLocation] = useState(() => profile?.show_location ?? true)
 
   const togglePrivateAccount = async () => {
     if (!user) return
