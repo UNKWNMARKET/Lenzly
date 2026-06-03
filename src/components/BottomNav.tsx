@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Home, Compass, MapPin, User, PlusSquare, Image, X } from 'lucide-react'
+import { Home, Compass, MapPin, User, PlusSquare } from 'lucide-react'
 import { useLocation, Link } from 'wouter'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +12,6 @@ const tabs = [
 
 export default function BottomNav() {
   const [location, navigate] = useLocation()
-  const [showUploadSheet, setShowUploadSheet] = useState(false)
 
   return (
     <>
@@ -28,7 +26,7 @@ export default function BottomNav() {
 
               if (isUpload) {
                 return (
-                  <button key={path} onClick={() => setShowUploadSheet(true)} className="flex flex-col items-center py-1 px-3 group">
+                  <button key={path} onClick={() => navigate('/upload')} className="flex flex-col items-center py-1 px-3 group">
                     <div className="w-12 h-12 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-gold/30 active:scale-95 transition-transform">
                       <Icon size={22} strokeWidth={2.2} className="text-lenz-bg" />
                     </div>
@@ -64,51 +62,6 @@ export default function BottomNav() {
         </div>
       </nav>
 
-      {/* Upload action sheet */}
-      {showUploadSheet && (
-        <div
-          className="fixed inset-0 z-[80] flex items-end bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowUploadSheet(false)}
-        >
-          <div
-            className="w-full max-w-[430px] md:max-w-[600px] mx-auto pb-6 safe-bottom px-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="bg-lenz-card border border-lenz-border rounded-2xl overflow-hidden mb-3">
-              <button
-                onClick={() => { setShowUploadSheet(false); navigate('/upload') }}
-                className="flex items-center gap-4 w-full px-5 py-4 hover:bg-white/5 active:bg-white/10 transition-colors border-b border-lenz-border"
-              >
-                <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center shrink-0">
-                  <Image size={18} className="text-gold" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-white">Share a Photo</p>
-                  <p className="text-xs text-white/40 mt-0.5">Post a photo to your feed</p>
-                </div>
-              </button>
-              <button
-                onClick={() => { setShowUploadSheet(false); navigate('/post-spot') }}
-                className="flex items-center gap-4 w-full px-5 py-4 hover:bg-white/5 active:bg-white/10 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center shrink-0">
-                  <MapPin size={18} className="text-gold" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-white">Share a Spot</p>
-                  <p className="text-xs text-white/40 mt-0.5">Add a photo location to the map</p>
-                </div>
-              </button>
-            </div>
-            <button
-              onClick={() => setShowUploadSheet(false)}
-              className="w-full py-4 rounded-2xl bg-lenz-card border border-lenz-border text-white/70 font-semibold text-sm active:scale-95 transition-transform"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </>
   )
 }
