@@ -20,6 +20,7 @@
     color: #f5f5f5;
     min-height: 100svh;
     overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   #root {
@@ -29,6 +30,12 @@
     background: #080808;
     position: relative;
     overflow-x: hidden;
+  }
+
+  /* Smooth momentum scroll on all scrollable containers on iOS */
+  [class*="overflow-y-auto"], [class*="overflow-y-scroll"] {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 
   /* iPad and larger: expand beyond phone width, offset for sidebar */
