@@ -502,7 +502,7 @@ export default function PhotographerProfile() {
           </button>
           <button onClick={() => setHireStep('form')}
             className="flex-1 h-10 flex items-center justify-center rounded-full text-[13px] font-bold bg-gold text-lenz-bg shadow-[0_0_16px_rgba(201,168,76,0.35)] active:scale-95 transition-transform">
-            Hire {p.name.split(' ')[0]}
+            Hire
           </button>
         </div>
       </div>
