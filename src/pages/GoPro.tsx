@@ -74,6 +74,31 @@ export default function GoPro() {
               ))}
             </div>
 
+            {/* Free vs Pro comparison table */}
+            <div className="mb-6 rounded-2xl border border-lenz-border overflow-hidden">
+              <div className="grid grid-cols-3 bg-lenz-card px-4 py-2.5 text-[10px] font-bold tracking-widest uppercase text-white/40">
+                <span>Feature</span>
+                <span className="text-center">Free</span>
+                <span className="text-center text-gold">Pro</span>
+              </div>
+              {[
+                ['Photo uploads', '✓', '✓'],
+                ['Follow photographers', '✓', '✓'],
+                ['Hire & message', '✓', '✓'],
+                ['Verified badge', '—', '✓'],
+                ['Brand discovery', '—', '✓'],
+                ['Priority in search', '—', '✓'],
+                ['Featured on map', '—', '✓'],
+                ['Unlimited spots', '5/day', '✓'],
+              ].map(([feat, free, pro]) => (
+                <div key={feat} className="grid grid-cols-3 px-4 py-3 border-t border-lenz-border/50 text-sm">
+                  <span className="text-white/60 text-xs">{feat}</span>
+                  <span className="text-center text-white/30 text-xs">{free}</span>
+                  <span className="text-center text-gold text-xs font-semibold">{pro}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Price + CTA */}
             <div className="text-center mb-3">
               <p className="text-3xl font-bold text-white">$4.99<span className="text-base font-medium text-white/40">/month</span></p>

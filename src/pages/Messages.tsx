@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
-type Participant = { username: string; avatar_url: string | null }
+type Participant = { username: string; name: string | null; avatar_url: string | null }
 
 type Conversation = {
   id: string
@@ -19,7 +19,7 @@ type Conversation = {
   unread: boolean
 }
 
-type ProfileRow = { id: string; username: string; avatar_url: string | null }
+type ProfileRow = { id: string; username: string; name: string | null; avatar_url: string | null }
 
 function timeAgo(ts: string) {
   const diff = Date.now() - new Date(ts).getTime()
@@ -79,7 +79,7 @@ export default function Messages() {
       if (parts && parts[0]) {
         const { data: prof } = await supabase
           .from('profiles')
-          .select('username, avatar_url')
+          .select('username, name, avatar_url')
           .eq('id', parts[0].user_id)
           .single()
         if (prof) other = prof
@@ -116,7 +116,7 @@ export default function Messages() {
       setSearching(true)
       const { data } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, name, avatar_url')
         .ilike('username', `%${searchQuery}%`)
         .neq('id', user?.id ?? '')
         .limit(8)
@@ -243,7 +243,7 @@ export default function Messages() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-white/90 truncate">
-                      {c.other_user?.username ?? 'Unknown'}
+                      {c.other_user?.name || c.other_user?.username || 'Unknown'}
                     </p>
                     <span className="text-[10px] text-white/25 flex-shrink-0 ml-2">{timeAgo(c.updated_at)}</span>
                   </div>
@@ -330,7 +330,8 @@ export default function Messages() {
                     }
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-white/90">@{u.username}</p>
+                    <p className="text-sm font-semibold text-white/90">{u.name || `@${u.username}`}</p>
+                    {u.name && <p className="text-xs text-white/40">@{u.username}</p>}
                   </div>
                   <ChevronRight size={14} className="text-white/20" />
                 </button>

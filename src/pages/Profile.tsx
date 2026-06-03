@@ -223,7 +223,7 @@ export default function Profile() {
       <div className="relative h-48 overflow-hidden bg-lenz-card">
         {u.coverPhoto
           ? <img src={img.hero(u.coverPhoto)} alt="cover" className="w-full h-full object-cover" />
-          : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#0a0804]" />
+          : <div className="w-full h-full bg-gradient-to-br from-[#1a1408] via-[#0e0e0e] to-[#0a0a0a]" />
         }
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-lenz-bg" />
 

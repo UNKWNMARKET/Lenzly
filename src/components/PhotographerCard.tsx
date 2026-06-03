@@ -87,29 +87,46 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
         {!compact && (
           <>
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-lenz-border">
-              <div className="text-center">
-                <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+            {(p as any).isReal ? (
+              <div className="flex gap-6 mt-4 pt-3 border-t border-lenz-border">
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{(p as any).posts ?? 0}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Posts</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-white">{p.hired}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Hired</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-lenz-border">
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{p.hired}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Hired</p>
+                </div>
+                {p.priceRange && (
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-gold">{p.priceRange.split('–')[0]}</p>
+                    <p className="text-[10px] text-white/30 mt-0.5">Starting</p>
+                  </div>
+                )}
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-gold">{p.priceRange.split('–')[0]}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Starting</p>
-              </div>
-            </div>
+            )}
 
             {/* Mini photo grid */}
-            <div className="grid grid-cols-3 gap-1 mt-3">
-              {p.photos.slice(0, 3).map((photo, i) => (
-                <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
-                  <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-            </div>
+            {p.photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-1 mt-3">
+                {p.photos.slice(0, 3).map((photo, i) => (
+                  <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
+                    <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2 mt-3">
@@ -168,7 +185,9 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                     <p className="text-sm font-semibold text-white">{p.name}</p>
                     <div className="flex items-center gap-1">
                       <Star size={10} className="text-gold fill-gold" />
-                      <span className="text-xs text-white/40">{p.rating} · {p.priceRange}</span>
+                      <span className="text-xs text-white/40">
+                        {(p as any).rating > 0 ? `${(p as any).rating} · ` : ''}{(p as any).priceRange || 'Rate on request'}
+                      </span>
                     </div>
                   </div>
                 </div>

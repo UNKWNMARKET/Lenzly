@@ -240,15 +240,24 @@ export default function PhotographerProfile() {
   const { photographer: realP, loading: realLoading } = useRealPhotographer(id)
   const p = realP
 
-  if (!p) {
-    // Still loading a real profile lookup
-    if (realLoading) {
-      return (
-        <div className="min-h-screen bg-lenz-bg flex items-center justify-center">
-          <Camera size={32} className="text-white/10 animate-pulse" />
+  if (realLoading) return (
+    <div className="min-h-screen bg-lenz-bg">
+      <div className="h-56 bg-lenz-card animate-pulse" />
+      <div className="px-4 pt-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-20 h-20 rounded-full bg-lenz-card animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-32 bg-lenz-card rounded animate-pulse" />
+            <div className="h-3 w-24 bg-lenz-card rounded animate-pulse" />
+          </div>
         </div>
-      )
-    }
+        <div className="h-3 w-full bg-lenz-card rounded animate-pulse" />
+        <div className="h-3 w-3/4 bg-lenz-card rounded animate-pulse" />
+      </div>
+    </div>
+  )
+
+  if (!p) {
     return (
       <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center gap-4">
         <Camera size={40} className="text-white/10" />
@@ -611,7 +620,7 @@ export default function PhotographerProfile() {
       {/* Hire modal */}
       {(hireStep === 'form' || hireStep === 'sent') && (
         <div className="fixed inset-0 z-[70] flex items-end bg-black/70 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setHireStep('idle')}>
-          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">
                 {hireStep === 'sent' ? '✓ Request Sent!' : 'Hire'}
@@ -646,7 +655,9 @@ export default function PhotographerProfile() {
                     <p className="text-sm font-semibold text-white">{p.name}</p>
                     <div className="flex items-center gap-1">
                       <Star size={10} className="text-gold fill-gold" />
-                      <span className="text-xs text-white/40">{p.rating} · {p.priceRange}</span>
+                      <span className="text-xs text-white/40">
+                        {(p as any).rating > 0 ? `${(p as any).rating} · ` : ''}{(p as any).priceRange || 'Rate on request'}
+                      </span>
                     </div>
                   </div>
                 </div>
