@@ -18,26 +18,47 @@ type HireStep = 'idle' | 'form' | 'sent'
 
 function PhotoViewer({ photos, startIndex, onClose }: { photos: string[]; startIndex: number; onClose: () => void }) {
   const [idx, setIdx] = useState(startIndex)
+  const [imgLoaded, setImgLoaded] = useState(false)
   const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const stripRef = useRef<HTMLDivElement>(null)
 
-  const prev = () => setIdx(i => Math.max(0, i - 1))
-  const next = () => { if (idx < photos.length - 1) setIdx(i => i + 1); else onClose() }
+  const prev = () => { setImgLoaded(false); setIdx(i => Math.max(0, i - 1)) }
+  const next = () => { if (idx < photos.length - 1) { setImgLoaded(false); setIdx(i => i + 1) } else onClose() }
 
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX }
+  useEffect(() => {
+    setImgLoaded(false)
+  }, [idx])
+
+  useEffect(() => {
+    // Keep active thumbnail visible in strip
+    if (stripRef.current) {
+      const btn = stripRef.current.children[idx] as HTMLElement
+      if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [idx])
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
   const onTouchEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current
-    if (dx < -40) next()
-    else if (dx > 40) prev()
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    if (Math.abs(dy) > 80 && dy > 0) { onClose(); return }
+    if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
+      if (dx < 0) next(); else prev()
+    }
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black flex flex-col animate-slide-up"
+      className="fixed inset-0 z-[60] bg-black flex flex-col"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2 safe-top shrink-0">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 safe-top shrink-0 z-10">
         <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:bg-white/20">
           <X size={18} className="text-white" />
         </button>
@@ -45,49 +66,37 @@ function PhotoViewer({ photos, startIndex, onClose }: { photos: string[]; startI
         <div className="w-9" />
       </div>
 
-      {/* Progress dots */}
-      {photos.length > 1 && (
-        <div className="flex justify-center gap-1.5 pb-2 shrink-0">
-          {photos.map((_, i) => (
-            <button key={i} onClick={() => setIdx(i)}
-              className={`rounded-full transition-all ${i === idx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/25'}`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Photo */}
-      <div className="flex-1 flex items-center justify-center px-2 relative">
+      {/* Photo — fills remaining space */}
+      <div className="flex-1 relative overflow-hidden">
+        {!imgLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+          </div>
+        )}
         <img
           key={idx}
           src={photos[idx]}
           alt=""
-          className="max-w-full max-h-full object-contain rounded-2xl transition-opacity duration-200"
+          onLoad={() => setImgLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-200 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
 
         {/* Tap zones */}
         {idx > 0 && (
-          <button onClick={prev} className="absolute left-0 top-0 bottom-0 w-1/4 flex items-center justify-start pl-3">
-            <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
-              <ChevronLeft size={16} className="text-white" />
-            </div>
-          </button>
+          <button onClick={prev} className="absolute left-0 top-0 bottom-0 w-1/3" />
         )}
         {idx < photos.length - 1 && (
-          <button onClick={next} className="absolute right-0 top-0 bottom-0 w-1/4 flex items-center justify-end pr-3">
-            <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
-              <ChevronRight size={16} className="text-white" />
-            </div>
-          </button>
+          <button onClick={next} className="absolute right-0 top-0 bottom-0 w-1/3" />
         )}
       </div>
 
       {/* Thumbnail strip */}
       {photos.length > 1 && (
-        <div className="flex gap-1.5 px-4 pb-6 safe-bottom overflow-x-auto no-scrollbar shrink-0 pt-3">
+        <div ref={stripRef} className="flex gap-2 px-4 pb-8 safe-bottom overflow-x-auto no-scrollbar shrink-0 pt-3">
           {photos.map((photo, i) => (
-            <button key={i} onClick={() => setIdx(i)} className={`shrink-0 rounded-lg overflow-hidden transition-all ${i === idx ? 'ring-2 ring-gold opacity-100' : 'opacity-40'}`}>
-              <img src={photo} alt="" className="w-14 h-14 object-cover" />
+            <button key={i} onClick={() => setIdx(i)}
+              className={`shrink-0 rounded-xl overflow-hidden transition-all duration-200 ${i === idx ? 'ring-2 ring-gold scale-105 opacity-100' : 'opacity-35 scale-100'}`}>
+              <img src={photo} alt="" className="w-16 h-16 object-cover" />
             </button>
           ))}
         </div>
@@ -592,7 +601,7 @@ export default function PhotographerProfile() {
               <button
                 key={i}
                 onClick={() => setViewerIndex(i)}
-                className="relative overflow-hidden active:opacity-80 transition-opacity"
+                className="relative overflow-hidden active:opacity-75 active:scale-95 transition-all duration-100"
               >
                 <img
                   src={photo}

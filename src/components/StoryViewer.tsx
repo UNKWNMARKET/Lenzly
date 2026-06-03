@@ -145,7 +145,7 @@ export default function StoryViewer({
         src={img.feed(story.image_url)}
         alt=""
         onLoad={() => setImgLoaded(true)}
-        className={`story-image absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`story-image absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent via-50% to-black/70 pointer-events-none" />
