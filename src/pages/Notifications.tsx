@@ -72,29 +72,57 @@ export default function Notifications() {
   const [requestDone, setRequestDone] = useState<Set<string>>(new Set())
 
   const fetchNotifs = useCallback(async () => {
-    if (!user) return
-    const { data } = await supabase
+    if (!user) { setLoading(false); return }
+    const { data: rows, error } = await supabase
       .from('notifications')
-      .select('*, actor:actor_id(username, avatar_url)')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(60)
-    if (data) setNotifs(data as Notif[])
+
+    if (error) {
+      toast.error('Notifications error: ' + error.message)
+      setLoading(false)
+      return
+    }
+
+    const safeRows = rows ?? []
+
+    // Batch-fetch actor profiles
+    const actorIds = [...new Set(safeRows.map((r: any) => r.actor_id).filter(Boolean))]
+    const profileMap: Record<string, { username: string; avatar_url: string | null }> = {}
+    if (actorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', actorIds)
+      if (profiles) {
+        for (const p of profiles) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url }
+      }
+    }
+
+    const merged = safeRows.map((r: any) => ({
+      ...r,
+      actor: r.actor_id ? (profileMap[r.actor_id] ?? null) : null,
+    }))
+    setNotifs(merged as Notif[])
     setLoading(false)
   }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchNotifs })
 
   useEffect(() => {
+    if (!user) { setLoading(false); return }
     fetchNotifs()
     const ch = supabase
       .channel('notifs_live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications',
-        filter: `user_id=eq.${user?.id}` }, () => fetchNotifs())
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => fetchNotifs())
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, fetchNotifs])
 
   const markAllRead = async () => {
     if (!user) return
