@@ -16,7 +16,6 @@ type Notif = {
   message: string | null
   read: boolean
   created_at: string
-  follow_status?: string | null
   actor?: { username: string; avatar_url: string | null } | null
 }
 
@@ -76,7 +75,7 @@ export default function Notifications() {
     if (!user) return
     const { data } = await supabase
       .from('notifications')
-      .select('*, actor:actor_id(username, avatar_url), follow_status')
+      .select('*, actor:actor_id(username, avatar_url)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(60)
@@ -244,7 +243,7 @@ export default function Notifications() {
 
             {(n.type === 'follow' || n.type === 'follow_request') && !requestDone.has(n.id) && (
               <div className="flex gap-2 mt-2 ml-14">
-                {n.follow_status === 'pending' ? (
+                {n.type === 'follow_request' ? (
                   <>
                     <button onClick={e => { e.stopPropagation(); handleConfirmFollow(n) }}
                       className="px-3 py-1 rounded-xl bg-gold text-lenz-bg text-xs font-bold active:scale-95 transition-transform">
