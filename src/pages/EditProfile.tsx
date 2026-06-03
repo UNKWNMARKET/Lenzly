@@ -126,7 +126,9 @@ export default function EditProfile() {
     if (newAvatarUrl) updateData.avatar_url = newAvatarUrl
     if (newCoverUrl)  updateData.cover_url  = newCoverUrl
 
-    if (!isFirstSave && usernameChanged && canChangeUsername()) {
+    // Lock the username after first profile setup, or when they change it later
+    const isSetup = !profile?.name
+    if (isSetup || (!isFirstSave && usernameChanged && canChangeUsername())) {
       updateData.username_changed_at = new Date().toISOString()
     }
 
@@ -141,10 +143,11 @@ export default function EditProfile() {
       return
     }
 
+    const wasSetup = !profile?.name
     await refreshProfile()
-    toast.success('Profile updated!')
+    toast.success(wasSetup ? 'Profile created!' : 'Profile updated!')
     setSaving(false)
-    navigate('/profile')
+    navigate(wasSetup ? '/onboarding' : '/profile')
   }
 
   // ── Derived display values ────────────────────────────────────────────────────

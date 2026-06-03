@@ -153,8 +153,8 @@ export default function Profile() {
   const u = {
     // Static mock fields used only as shape — real values override everything below
     ...currentUser,
-    name:        profile?.name       ?? currentUser.name,
-    username:    profile?.username   ?? currentUser.username,
+    name:        profile?.name       ?? (hasRealProfile ? '' : currentUser.name),
+    username:    profile?.username   ?? (hasRealProfile ? '' : currentUser.username),
     bio:         profile?.bio        ?? (hasRealProfile ? '' : currentUser.bio),
     location:    profile?.location   ?? (hasRealProfile ? null : currentUser.location),
     website:     profile?.website    ?? null,
