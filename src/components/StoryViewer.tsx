@@ -141,7 +141,8 @@ export default function StoryViewer({
 
     if (paused && !commentOpen) { setPaused(false); return }
     if (showMenu || confirmDelete) { setShowMenu(false); setConfirmDelete(false); return }
-    if (Math.abs(dy) > 60 && dy < 0) { onClose(); return }
+    // Swipe DOWN to close (standard story UX)
+    if (Math.abs(dy) > 60 && dy > 0 && Math.abs(dx) < 40) { onClose(); return }
 
     if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
       if (dx < 0) {
@@ -314,7 +315,7 @@ export default function StoryViewer({
 
       {/* ── Caption ── */}
       {story.caption && (
-        <div className="absolute bottom-24 left-0 right-0 z-20 px-5 pointer-events-none">
+        <div className="absolute bottom-28 left-0 right-0 z-20 px-5 pointer-events-none">
           <p className="text-white text-[14px] leading-snug drop-shadow-md">{story.caption}</p>
         </div>
       )}
@@ -322,9 +323,11 @@ export default function StoryViewer({
       {/* ── Bottom actions: comment bar + heart ── */}
       {!isOwn && (
         <div
-          className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-10 safe-bottom"
+          className="absolute bottom-0 left-0 right-0 z-40 px-4"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' }}
           onTouchStart={e => e.stopPropagation()}
           onTouchEnd={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {commentOpen ? (
             /* ── Comment input ── */
@@ -337,7 +340,7 @@ export default function StoryViewer({
                 placeholder="Reply to story…"
                 maxLength={500}
                 onKeyDown={e => { if (e.key === 'Enter') handleComment() }}
-                className="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-3 text-[14px] text-white placeholder-white/40 outline-none focus:border-white/40"
+                className="flex-1 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-4 py-3 text-[14px] text-white placeholder-white/50 outline-none focus:border-white/60"
               />
               <button
                 onClick={handleComment}
@@ -348,7 +351,7 @@ export default function StoryViewer({
               </button>
               <button
                 onClick={() => { setCommentOpen(false); setPaused(false) }}
-                className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20"
+                className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 active:bg-white/30"
               >
                 <X size={16} className="text-white" />
               </button>
@@ -356,28 +359,26 @@ export default function StoryViewer({
           ) : (
             /* ── Default bar ── */
             <div className="flex items-center gap-3">
-              {/* Tap-to-type comment field */}
               <button
                 onClick={() => setCommentOpen(true)}
-                className="flex-1 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-4 py-3 text-left"
+                className="flex-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-4 py-3 text-left active:bg-white/25"
               >
-                <span className="text-white/45 text-[14px]">Reply to story…</span>
+                <span className="text-white/70 text-[14px]">Reply to story…</span>
               </button>
 
-              {/* Heart like button */}
               <button
                 onClick={handleLike}
-                className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+                className="flex flex-col items-center gap-1 active:scale-90 transition-transform min-w-[44px]"
               >
                 <div className={`transition-transform duration-200 ${likeAnim ? 'scale-150' : 'scale-100'}`}>
                   <Heart
-                    size={28}
-                    className={liked ? 'fill-rose-500 text-rose-500' : 'text-white'}
-                    strokeWidth={liked ? 0 : 1.8}
+                    size={30}
+                    className={liked ? 'fill-rose-500 text-rose-500' : 'text-white drop-shadow-md'}
+                    strokeWidth={liked ? 0 : 2}
                   />
                 </div>
                 {likeCount > 0 && (
-                  <span className="text-white text-[11px] font-semibold leading-none">{likeCount}</span>
+                  <span className="text-white text-[11px] font-bold leading-none drop-shadow-md">{likeCount}</span>
                 )}
               </button>
             </div>
