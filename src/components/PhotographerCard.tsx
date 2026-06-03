@@ -26,7 +26,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
     await new Promise(r => setTimeout(r, 800))
     setSending(false)
     setSent(true)
-    toast.success(`Hire request sent to ${p.name.split(' ')[0]}!`)
+    toast.success(`Hire request sent to ${p.name}!`)
   }
 
   return (
@@ -56,9 +56,6 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                 {p.verified && <VerifiedBadge size={12} />}
                 {p.pro && (
                   <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-                )}
-                {!(p as any).isReal && (
-                  <span className="text-[8px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-1.5 py-0.5 rounded-full shrink-0">SAMPLE</span>
                 )}
               </button>
               <div className="flex items-center gap-0.5 shrink-0">
@@ -120,7 +117,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                 onClick={() => setShowHire(true)}
                 className="flex-1 btn-primary text-xs py-2"
               >
-                Hire {p.name.split(' ')[0]}
+                Hire
               </button>
               <button
                 onClick={() => navigate(`/photographer/${p.id}`)}
@@ -142,7 +139,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
           <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">
-                {sent ? '✓ Request Sent!' : `Hire ${p.name.split(' ')[0]}`}
+                {sent ? '✓ Request Sent!' : 'Hire'}
               </h2>
               <button onClick={() => { setShowHire(false); setSent(false) }} className="p-1.5 rounded-full bg-white/5">
                 <X size={16} className="text-white/50" />

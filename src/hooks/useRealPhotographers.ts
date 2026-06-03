@@ -39,11 +39,12 @@ function mapProfile(p: any): RealPhotographer {
 }
 
 // Fetch all real user profiles to display as photographers.
-export function useRealPhotographers() {
+export function useRealPhotographers(options?: { refreshKey?: number }) {
   const [photographers, setPhotographers] = useState<RealPhotographer[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     supabase
       .from('profiles')
       .select('*')
@@ -54,7 +55,7 @@ export function useRealPhotographers() {
         if (data) setPhotographers(data.map(mapProfile))
         setLoading(false)
       })
-  }, [])
+  }, [options?.refreshKey])
 
   return { photographers, loading }
 }

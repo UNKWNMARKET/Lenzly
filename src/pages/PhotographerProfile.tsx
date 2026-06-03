@@ -414,7 +414,7 @@ export default function PhotographerProfile() {
             {[
               { label: 'Posts',     value: formatCount(p.posts) },
               { label: 'Followers', value: formatCount(p.followers) },
-              { label: 'Hired',     value: String(p.hired) },
+              ...(p.hired > 0 ? [{ label: 'Hired', value: String(p.hired) }] : []),
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-[17px] font-bold text-white leading-none">{value}</p>
@@ -430,20 +430,25 @@ export default function PhotographerProfile() {
           {p.verified && <VerifiedBadge size={14} />}
           {p.pro && <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-[3px] rounded-full">PRO</span>}
           {p.secondShooter && <span className="text-[9px] font-bold tracking-widest text-gold border border-gold/40 bg-gold/10 px-2 py-[3px] rounded-full">2ND SHOOTER</span>}
-          {!realP && <span className="text-[9px] font-bold tracking-widest text-white/40 bg-white/8 border border-white/12 px-2 py-[3px] rounded-full">SAMPLE</span>}
         </div>
         <p className="text-[13px] text-white/40 mt-0.5">@{p.username}</p>
 
         {/* Rating + price inline */}
+        {(p.rating > 0 || p.hired > 0 || p.priceRange) && (
         <div className="flex items-center gap-2.5 mt-1.5">
-          <div className="flex items-center gap-0.5">
-            {[1,2,3,4,5].map(s => (
-              <Star key={s} size={11} className={s <= Math.round(p.rating) ? 'text-gold fill-gold' : 'text-white/15'} />
-            ))}
-          </div>
-          <span className="text-[12px] text-white/40">{p.rating} · {p.hired} bookings</span>
+          {p.rating > 0 && (
+            <div className="flex items-center gap-0.5">
+              {[1,2,3,4,5].map(s => (
+                <Star key={s} size={11} className={s <= Math.round(p.rating) ? 'text-gold fill-gold' : 'text-white/15'} />
+              ))}
+            </div>
+          )}
+          {(p.rating > 0 || p.hired > 0) && (
+            <span className="text-[12px] text-white/40">{p.rating > 0 ? `${p.rating} · ` : ''}{p.hired} bookings</span>
+          )}
           {p.priceRange && <span className="text-[12px] text-gold font-semibold">{p.priceRange}</span>}
         </div>
+        )}
 
         {/* Bio */}
         {p.bio && <p className="text-[13px] text-white/65 mt-2.5 leading-relaxed">{p.bio}</p>}

@@ -111,12 +111,14 @@ export default function FindPhotographer() {
   }, [view])
 
   // Only real signed-up users — no fabricated sample photographers
-  const { photographers: realPhotographers } = useRealPhotographers()
+  const [refreshKey, setRefreshKey] = useState(0)
+  const { photographers: realPhotographers } = useRealPhotographers({ refreshKey })
   const { blockedIds } = useBlockedUsers()
   const allPhotographers = realPhotographers.filter(p => !blockedIds.has(String(p.id)))
 
   const handleRefresh = useCallback(async () => {
-    await new Promise(r => setTimeout(r, 500))
+    setRefreshKey(k => k + 1)
+    await new Promise(r => setTimeout(r, 600))
   }, [])
   const ptr = usePullToRefresh({ onRefresh: handleRefresh })
 
@@ -325,9 +327,6 @@ export default function FindPhotographer() {
                     {p.verified && <VerifiedBadge size={11} />}
                     {p.pro && (
                       <span className="text-[8px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-                    )}
-                    {!(p as any).isReal && (
-                      <span className="text-[8px] font-bold tracking-widest text-white/50 bg-white/10 border border-white/15 px-1.5 py-0.5 rounded-full shrink-0">SAMPLE</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
