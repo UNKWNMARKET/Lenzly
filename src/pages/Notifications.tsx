@@ -73,13 +73,30 @@ export default function Notifications() {
 
   const fetchNotifs = useCallback(async () => {
     if (!user) return
-    const { data } = await supabase
+    // Fetch notifications first, then separately fetch actor profiles
+    const { data: rows, error } = await supabase
       .from('notifications')
-      .select('*, actor:actor_id(username, avatar_url)')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(60)
-    if (data) setNotifs(data as Notif[])
+    if (error || !rows) { setLoading(false); return }
+
+    // Collect unique actor ids and fetch their profiles
+    const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))]
+    let profileMap: Record<string, { username: string; avatar_url: string | null }> = {}
+    if (actorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', actorIds)
+      if (profiles) {
+        for (const p of profiles) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url }
+      }
+    }
+
+    const merged = rows.map(r => ({ ...r, actor: r.actor_id ? (profileMap[r.actor_id] ?? null) : null }))
+    setNotifs(merged as Notif[])
     setLoading(false)
   }, [user])
 
