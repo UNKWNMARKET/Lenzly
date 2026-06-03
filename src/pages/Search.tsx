@@ -148,10 +148,10 @@ export default function Search() {
         {!searched && !loading && (
           <div className="px-4 pt-10 text-center">
             <div className="w-14 h-14 rounded-2xl bg-lenz-card border border-lenz-border flex items-center justify-center mx-auto mb-3">
-              <MapPin size={24} className="text-white/25" />
+              <SearchIcon size={24} className="text-white/25" />
             </div>
-            <p className="text-white/40 text-sm">Find photographers and creatives</p>
-            <p className="text-white/25 text-xs mt-1.5">Search by name or @username</p>
+            <p className="text-white/40 text-sm">Search for people</p>
+            <p className="text-white/25 text-xs mt-1.5">Find by name or @username</p>
           </div>
         )}
       </div>

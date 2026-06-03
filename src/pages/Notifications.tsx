@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -39,6 +39,7 @@ const typeIcon = (type: string) => {
     case 'follow_request': return <Lock size={14} className="text-amber-400" />
     case 'follow_accepted':return <UserCheck size={14} className="text-green-400" />
     case 'follow_declined':return <XIcon size={14} className="text-rose-400" />
+    case 'hire_request':   return <Camera size={14} className="text-gold" />
     default:               return <Bell size={14} className="text-white/50" />
   }
 }
@@ -54,6 +55,7 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'follow_request':  return `${name} wants to follow you`
     case 'follow_accepted': return `${name} accepted your follow request`
     case 'follow_declined': return `${name} declined your follow request`
+    case 'hire_request':    return `${name} sent you a hire request`
     default:                return 'New notification'
   }
 }

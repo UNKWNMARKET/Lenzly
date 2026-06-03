@@ -289,11 +289,70 @@ export default function PhotographerProfile() {
 
   const handleHireSend = async () => {
     if (!hireForm.projectType.trim()) { toast.error('Project type is required'); return }
+    if (!user) { toast.error('Sign in to send hire requests'); return }
     setSending(true)
-    await new Promise(r => setTimeout(r, 900))
-    setSending(false)
-    setHireStep('sent')
-    toast.success(`Hire request sent to ${p.name.split(' ')[0]}!`)
+    try {
+      // Insert notification to photographer
+      await supabase.from('notifications').insert({
+        user_id: p.id,
+        actor_id: user.id,
+        type: 'hire_request',
+        message: `sent you a hire request: ${hireForm.projectType}${hireForm.date ? ' · ' + hireForm.date : ''}${hireForm.details ? ' — ' + hireForm.details.slice(0, 80) : ''}`,
+        read: false,
+      })
+
+      // Find or create conversation
+      const { data: myParts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id)
+
+      const myConvIds = (myParts ?? []).map((r: any) => r.conversation_id)
+
+      let conversationId: string | null = null
+      if (myConvIds.length > 0) {
+        const { data: theirParts } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', p.id)
+          .in('conversation_id', myConvIds)
+        if (theirParts && theirParts.length > 0) {
+          conversationId = theirParts[0].conversation_id
+        }
+      }
+
+      if (!conversationId) {
+        const { data: newConv } = await supabase
+          .from('conversations')
+          .insert({})
+          .select('id')
+          .single()
+        if (newConv) {
+          conversationId = newConv.id
+          await supabase.from('conversation_participants').insert([
+            { conversation_id: conversationId, user_id: user.id },
+            { conversation_id: conversationId, user_id: p.id },
+          ])
+        }
+      }
+
+      if (conversationId) {
+        const messageText = `Hi! I'd like to hire you for: ${hireForm.projectType}${hireForm.date ? '\nDate: ' + hireForm.date : ''}${hireForm.details ? '\n\n' + hireForm.details : ''}`
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          text: messageText,
+        })
+      }
+
+      setSending(false)
+      setHireStep('sent')
+      toast.success(`Hire request sent to ${p.name}!`)
+    } catch (err) {
+      console.error('[handleHireSend]', err)
+      setSending(false)
+      toast.error('Could not send hire request. Try again.')
+    }
   }
 
   const gridPhotos = realPosts.length > 0 ? realPosts : p.photos
@@ -555,7 +614,7 @@ export default function PhotographerProfile() {
           <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">
-                {hireStep === 'sent' ? '✓ Request Sent!' : `Hire ${p.name.split(' ')[0]}`}
+                {hireStep === 'sent' ? '✓ Request Sent!' : 'Hire'}
               </h2>
               <button onClick={() => setHireStep('idle')} className="p-1.5 rounded-full bg-white/5 hover:bg-white/10">
                 <X size={16} className="text-white/50" />

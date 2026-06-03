@@ -139,14 +139,40 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
 
 export default function Settings() {
   const [, navigate] = useLocation()
-  const { signOut } = useAuth()
+  const { signOut, user, profile } = useAuth()
   const [pushEnabled, setPushEnabled] = useState(true)
   const [emailEnabled, setEmailEnabled] = useState(true)
   const [likesNotif, setLikesNotif] = useState(true)
   const [followNotif, setFollowNotif] = useState(true)
   const [hireNotif, setHireNotif] = useState(true)
-  const [privateAccount, setPrivateAccount] = useState(false)
-  const [showLocation, setShowLocation] = useState(true)
+  const [privateAccount, setPrivateAccount] = useState(() => (profile as any)?.private_account ?? false)
+  const [showLocation, setShowLocation] = useState(() => (profile as any)?.show_location ?? true)
+
+  const togglePrivateAccount = async () => {
+    if (!user) return
+    const next = !privateAccount
+    setPrivateAccount(next)
+    const { error } = await supabase.from('profiles').update({ private_account: next }).eq('id', user.id)
+    if (error) {
+      setPrivateAccount(!next)
+      toast.error('Could not save setting')
+    } else {
+      toast.success(next ? 'Account is now private' : 'Account is now public')
+    }
+  }
+
+  const toggleShowLocation = async () => {
+    if (!user) return
+    const next = !showLocation
+    setShowLocation(next)
+    const { error } = await supabase.from('profiles').update({ show_location: next }).eq('id', user.id)
+    if (error) {
+      setShowLocation(!next)
+      toast.error('Could not save setting')
+    } else {
+      toast.success(next ? 'Location shown on posts' : 'Location hidden from posts')
+    }
+  }
   const [expanded, setExpanded] = useState<SectionKey>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
@@ -277,14 +303,14 @@ export default function Settings() {
             icon={Lock}
             label="Private Account"
             sublabel="Only approved followers can see your posts"
-            onPress={() => setPrivateAccount(!privateAccount)}
-            right={<Toggle value={privateAccount} onChange={() => setPrivateAccount(!privateAccount)} />}
+            onPress={togglePrivateAccount}
+            right={<Toggle value={privateAccount} onChange={togglePrivateAccount} />}
           />
           <Row
             icon={Eye}
             label="Show Location on Posts"
-            onPress={() => setShowLocation(!showLocation)}
-            right={<Toggle value={showLocation} onChange={() => setShowLocation(!showLocation)} />}
+            onPress={toggleShowLocation}
+            right={<Toggle value={showLocation} onChange={toggleShowLocation} />}
           />
           <Row
             icon={Globe}

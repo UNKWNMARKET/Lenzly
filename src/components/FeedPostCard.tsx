@@ -362,6 +362,9 @@ export default function FeedPostCard({
       {/* Inline comments */}
       {showComments && (
         <div className="px-4 pb-4 -mt-1 space-y-3 border-t border-lenz-border/30 pt-3">
+          {comments.length === 0 && (
+            <p className="text-center text-xs text-white/25 py-2">No comments yet. Be the first!</p>
+          )}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5">
               <div className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5">
