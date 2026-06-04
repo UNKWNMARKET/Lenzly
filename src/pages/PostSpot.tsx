@@ -109,13 +109,16 @@ function LayoutIcon({ layout, size = 36 }: { layout: LayoutDef; size?: number })
   )
 }
 
+type SlotTransform = { x: number; y: number; scale: number }
+
 type StoryItem = {
-  files: (File | null)[]      // one per slot; null = empty
-  previews: (string | null)[] // one per slot
+  files: (File | null)[]
+  previews: (string | null)[]
   caption: string
   locationName: string
   filterIndex: number
   layoutId: string
+  transforms: SlotTransform[]
 }
 
 function makeItem(layoutId = 'full'): StoryItem {
@@ -127,15 +130,17 @@ function makeItem(layoutId = 'full'): StoryItem {
     locationName: '',
     filterIndex: 0,
     layoutId,
+    transforms: Array(layout.slots.length).fill(null).map(() => ({ x: 0, y: 0, scale: 1 })),
   }
 }
 
-// Draw a single image into a canvas slot with object-cover behaviour
+// Draw a single image into a canvas slot with object-cover + user transform
 function drawSlot(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   sx: number, sy: number, sw: number, sh: number,
-  filterCss: string
+  filterCss: string,
+  tf: SlotTransform = { x: 0, y: 0, scale: 1 }
 ) {
   ctx.save()
   ctx.beginPath()
@@ -145,8 +150,8 @@ function drawSlot(
   const ia = img.naturalWidth / img.naturalHeight
   const sa = sw / sh
   let dw, dh, dx, dy
-  if (ia > sa) { dh = sh; dw = sh * ia; dx = sx + (sw - dw) / 2; dy = sy }
-  else          { dw = sw; dh = sw / ia; dx = sx; dy = sy + (sh - dh) / 2 }
+  if (ia > sa) { dh = sh * tf.scale; dw = dh * ia; dx = sx + (sw - dw) / 2 + tf.x; dy = sy + (sh - dh) / 2 + tf.y }
+  else          { dw = sw * tf.scale; dh = dw / ia; dx = sx + (sw - dw) / 2 + tf.x; dy = sy + (sh - dh) / 2 + tf.y }
   ctx.drawImage(img, dx, dy, dw, dh)
   ctx.restore()
 }
@@ -177,7 +182,7 @@ async function composeStory(item: StoryItem): Promise<File> {
       img.onload = () => {
         drawSlot(ctx, img,
           slot.x * W, slot.y * H, slot.w * W, slot.h * H,
-          filterCss)
+          filterCss, item.transforms?.[i])
         res()
       }
       img.onerror = rej
@@ -211,6 +216,11 @@ export default function PostSpot() {
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
   const [cameraReady, setCameraReady] = useState(false)
   const [capturing, setCapturing] = useState(false)
+  const [cropSlot, setCropSlot] = useState<number | null>(null) // index of slot being cropped
+
+  // Gesture tracking refs for drag-to-crop
+  const dragStart = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null)
+  const pinchStart = useRef<{ dist: number; scale: number } | null>(null)
 
   const activeItem = items[activeIndex] ?? null
 
@@ -357,10 +367,10 @@ export default function PostSpot() {
     const layout = LAYOUTS.find(l => l.id === layoutId)!
     const cur = items[activeIndex]
     if (!cur) return
-    // Preserve existing slot data, expand/trim to new slot count
     const files = Array(layout.slots.length).fill(null).map((_, i) => cur.files[i] ?? null)
     const previews = Array(layout.slots.length).fill(null).map((_, i) => cur.previews[i] ?? null)
-    updateActive({ layoutId, files, previews })
+    const transforms = Array(layout.slots.length).fill(null).map((_, i) => cur.transforms?.[i] ?? { x: 0, y: 0, scale: 1 })
+    updateActive({ layoutId, files, previews, transforms })
   }
 
   const removeItem = (idx: number) => {
@@ -488,6 +498,9 @@ export default function PostSpot() {
       <div className="absolute inset-0">
         {activeLayout.slots.map((slot, i) => {
           const preview = activeItem.previews[i]
+          const tf = activeItem.transforms?.[i] ?? { x: 0, y: 0, scale: 1 }
+          const isCropping = cropSlot === i
+
           return (
             <div
               key={i}
@@ -497,14 +510,63 @@ export default function PostSpot() {
                 top: `${slot.y * 100}%`,
                 width: `${slot.w * 100}%`,
                 height: `${slot.h * 100}%`,
+                outline: isCropping ? '2px solid rgba(201,168,76,0.8)' : 'none',
+              }}
+              onTouchStart={preview ? (e) => {
+                if (e.touches.length === 1) {
+                  setCropSlot(i)
+                  dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx: tf.x, ty: tf.y }
+                } else if (e.touches.length === 2) {
+                  const dx = e.touches[0].clientX - e.touches[1].clientX
+                  const dy = e.touches[0].clientY - e.touches[1].clientY
+                  pinchStart.current = { dist: Math.hypot(dx, dy), scale: tf.scale }
+                }
+              } : undefined}
+              onTouchMove={preview ? (e) => {
+                e.preventDefault()
+                const cur = activeItem.transforms?.[i] ?? { x: 0, y: 0, scale: 1 }
+                if (e.touches.length === 1 && dragStart.current) {
+                  const nx = dragStart.current.tx + (e.touches[0].clientX - dragStart.current.x)
+                  const ny = dragStart.current.ty + (e.touches[0].clientY - dragStart.current.y)
+                  const newTf = { ...cur, x: nx, y: ny }
+                  setItems(prev => prev.map((it, idx) => {
+                    if (idx !== activeIndex) return it
+                    const ts = [...(it.transforms ?? [])]
+                    ts[i] = newTf
+                    return { ...it, transforms: ts }
+                  }))
+                } else if (e.touches.length === 2 && pinchStart.current) {
+                  const dx = e.touches[0].clientX - e.touches[1].clientX
+                  const dy = e.touches[0].clientY - e.touches[1].clientY
+                  const dist = Math.hypot(dx, dy)
+                  const newScale = Math.min(4, Math.max(1, pinchStart.current.scale * (dist / pinchStart.current.dist)))
+                  const newTf = { ...cur, scale: newScale }
+                  setItems(prev => prev.map((it, idx) => {
+                    if (idx !== activeIndex) return it
+                    const ts = [...(it.transforms ?? [])]
+                    ts[i] = newTf
+                    return { ...it, transforms: ts }
+                  }))
+                }
+              } : undefined}
+              onTouchEnd={() => {
+                dragStart.current = null
+                pinchStart.current = null
               }}
             >
               {preview ? (
                 <img
                   src={preview}
                   alt=""
-                  className="w-full h-full object-cover"
-                  style={{ filter: activeFilter.css === 'none' ? undefined : activeFilter.css }}
+                  className="w-full h-full object-cover select-none"
+                  draggable={false}
+                  style={{
+                    filter: activeFilter.css === 'none' ? undefined : activeFilter.css,
+                    transform: `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`,
+                    transformOrigin: 'center center',
+                    objectFit: 'cover',
+                    touchAction: 'none',
+                  }}
                 />
               ) : (
                 <button
@@ -521,13 +583,27 @@ export default function PostSpot() {
             </div>
           )
         })}
-        {/* Subtle top gradient for back button */}
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
-        {/* Subtle bottom gradient */}
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        {/* Top gradient */}
+        {cropSlot === null && <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />}
+        {/* Bottom gradient */}
+        {cropSlot === null && <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />}
       </div>
 
+      {/* ── Crop mode: tap anywhere outside to exit, show Done ──────────── */}
+      {cropSlot !== null && (
+        <button
+          className="absolute top-0 inset-x-0 z-30 flex items-center justify-center"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 12px)' }}
+          onClick={() => setCropSlot(null)}
+        >
+          <span className="px-5 py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-sm font-bold tracking-wide">
+            Done
+          </span>
+        </button>
+      )}
+
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      {cropSlot === null && (
       <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 8px)' }}>
         <button onClick={() => { setItems([]); setStep('photo') }}
@@ -543,9 +619,10 @@ export default function PostSpot() {
           <Plus size={18} className="text-white" />
         </button>
       </div>
+      )}
 
       {/* ── Thumbnail strip (top, when multi) ───────────────────────────── */}
-      {items.length > 1 && (
+      {items.length > 1 && cropSlot === null && (
         <div className="absolute inset-x-0 z-20 flex gap-2 px-4 overflow-x-auto no-scrollbar"
           style={{ top: 'calc(env(safe-area-inset-top, 44px) + 60px)' }}>
           {items.map((it, i) => (
@@ -571,7 +648,7 @@ export default function PostSpot() {
       )}
 
       {/* ── Right-side bubble buttons (Filters + Layout) ────────────────── */}
-      <div className="absolute right-4 z-20 flex flex-col gap-2.5"
+      {cropSlot === null && <div className="absolute right-4 z-20 flex flex-col gap-2.5"
         style={{ top: '50%', transform: 'translateY(-50%)' }}>
         <button
           onClick={() => setEditTab(t => t === 'filters' ? 'layout' : 'filters')}
@@ -602,10 +679,10 @@ export default function PostSpot() {
           <LayoutIcon layout={activeLayout} size={20} />
           <span className="text-[8px] font-bold tracking-wide leading-none">Grid</span>
         </button>
-      </div>
+      </div>}
 
       {/* ── Edit strip (floats over photo, above bottom bubbles) ─────────── */}
-      {editTab === 'filters' && (
+      {cropSlot === null && editTab === 'filters' && (
         <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
           {FILTERS.map((f, i) => (
@@ -626,7 +703,7 @@ export default function PostSpot() {
         </div>
       )}
 
-      {editTab === 'layout' && (
+      {cropSlot === null && editTab === 'layout' && (
         <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
           {LAYOUTS.map(layout => {
@@ -663,7 +740,7 @@ export default function PostSpot() {
       )}
 
       {/* ── Bottom floating bubbles ──────────────────────────────────────── */}
-      <div className="absolute inset-x-0 z-20 flex flex-col gap-2.5 px-4"
+      {cropSlot === null && <div className="absolute inset-x-0 z-20 flex flex-col gap-2.5 px-4"
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 16px)' }}>
 
         {/* Caption pill */}
@@ -713,7 +790,7 @@ export default function PostSpot() {
             ? <span className="animate-pulse">Sharing…</span>
             : <><Send size={16} /> {items.length > 1 ? `Share ${items.length} Spots` : 'Share Spot'}</>}
         </button>
-      </div>
+      </div>}
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
     </div>
