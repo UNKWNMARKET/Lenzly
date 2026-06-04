@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { MapPin, X, Camera, ChevronLeft, ImagePlus, Send } from 'lucide-react'
+import { MapPin, X, Camera, ChevronLeft, ImagePlus, Send, Plus, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -9,18 +9,25 @@ import LocationAutocomplete, { type LocationSuggestion } from '@/components/Loca
 
 const BUCKET = 'photos'
 
+type StoryItem = {
+  file: File
+  preview: string
+  caption: string
+  locationName: string
+}
+
 export default function PostSpot() {
   const [, navigate] = useLocation()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [caption, setCaption] = useState('')
-  const [locationName, setLocationName] = useState('')
+  const [items, setItems] = useState<StoryItem[]>([])
+  const [activeIndex, setActiveIndex] = useState(0)
   const [storyDuration, setStoryDuration] = useState(10)
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
+
+  const activeItem = items[activeIndex] ?? null
 
   const openCamera = async (source: CameraSource, fallback = true) => {
     try {
@@ -31,82 +38,98 @@ export default function PostSpot() {
         source,
       })
       if (photo.dataUrl) {
-        setImagePreview(photo.dataUrl)
         const res = await fetch(photo.dataUrl)
         const blob = await res.blob()
-        setImageFile(new File([blob], 'spot.jpg', { type: 'image/jpeg' }))
-        setStep('details')
+        const file = new File([blob], 'spot.jpg', { type: 'image/jpeg' })
+        addItem(file, photo.dataUrl)
       }
     } catch {
-      // Only fall back to file input when user explicitly taps Library button
       if (fallback && source === CameraSource.Camera) fileInputRef.current?.click()
     }
   }
 
-  // Auto-open camera on mount — no fallback if dismissed
+  const addItem = (file: File, preview: string) => {
+    setItems(prev => {
+      const next = [...prev, { file, preview, caption: '', locationName: '' }]
+      setActiveIndex(next.length - 1)
+      setStep('details')
+      return next
+    })
+  }
+
+  // Auto-open camera on mount
   useEffect(() => { openCamera(CameraSource.Camera, false) }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string)
-      setStep('details')
-    }
-    reader.readAsDataURL(file)
+    const files = Array.from(e.target.files ?? [])
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onloadend = () => addItem(file, reader.result as string)
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+
+  const updateActive = (patch: Partial<StoryItem>) => {
+    setItems(prev => prev.map((it, i) => i === activeIndex ? { ...it, ...patch } : it))
+  }
+
+  const removeItem = (idx: number) => {
+    setItems(prev => {
+      const next = prev.filter((_, i) => i !== idx)
+      if (next.length === 0) { setStep('photo'); setActiveIndex(0) }
+      else setActiveIndex(Math.min(idx, next.length - 1))
+      return next
+    })
   }
 
   const handlePost = async () => {
-    if (!imageFile || !user) return
-    if (!locationName.trim()) { toast.error('Tag a location to share your spot'); return }
+    if (!user || items.length === 0) return
+    const untagged = items.findIndex(it => !it.locationName.trim())
+    if (untagged !== -1) {
+      setActiveIndex(untagged)
+      toast.error('Tag a location for every spot')
+      return
+    }
 
     setUploading(true)
-    try {
-      // Enforce 1 active story at a time
-      const { count: activeCount } = await supabase
-        .from('spot_stories')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gt('expires_at', new Date().toISOString())
-      if ((activeCount ?? 0) >= 1) {
-        toast.error('You already have an active story. Delete it first or wait for it to expire.')
-        setUploading(false)
-        return
+    let failed = 0
+    for (const item of items) {
+      try {
+        const ext = item.file.name.split('.').pop() || 'jpg'
+        const filePath = `${user.id}/spot_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from(BUCKET)
+          .upload(filePath, item.file, { contentType: item.file.type })
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        const { error: insertError } = await supabase.from('spot_stories').insert({
+          user_id: user.id,
+          image_url: publicUrl,
+          caption: item.caption.trim() || null,
+          location_name: item.locationName.trim(),
+          expires_at: expiresAt,
+          display_seconds: storyDuration,
+        })
+        if (insertError) throw insertError
+      } catch {
+        failed++
       }
-      const ext = imageFile.name.split('.').pop() || 'jpg'
-      // Path structured as user_id/filename so storage policies match
-      const filePath = `${user.id}/spot_${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(filePath, imageFile, { contentType: imageFile.type })
-      if (uploadError) throw uploadError
+    }
 
-      const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
-
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      const { error: insertError } = await supabase.from('spot_stories').insert({
-        user_id: user.id,
-        image_url: publicUrl,
-        caption: caption.trim() || null,
-        location_name: locationName.trim(),
-        expires_at: expiresAt,
-        display_seconds: storyDuration,
-      })
-      if (insertError) throw insertError
-
-      toast.success('Spot shared!')
+    setUploading(false)
+    if (failed === 0) {
+      toast.success(items.length > 1 ? `${items.length} spots shared!` : 'Spot shared!')
       navigate('/')
-    } catch (err: any) {
-      toast.error(err.message ?? 'Something went wrong')
-    } finally {
-      setUploading(false)
+    } else {
+      toast.error(`${failed} of ${items.length} spots failed to upload`)
     }
   }
 
-  // ── Step 1: No photo yet — full screen picker ────────────────────────────
-  if (step === 'photo' || !imagePreview) {
+  // ── Step 1: No photo yet ─────────────────────────────────────────────────
+  if (step === 'photo' || items.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col safe-top safe-bottom">
         <button
@@ -132,7 +155,7 @@ export default function PostSpot() {
               <Camera size={18} /> Open Camera
             </button>
             <button
-              onClick={() => openCamera(CameraSource.Photos)}
+              onClick={() => { fileInputRef.current?.click() }}
               className="w-full py-4 rounded-2xl bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               <ImagePlus size={18} /> Choose from Library
@@ -140,18 +163,17 @@ export default function PostSpot() {
           </div>
         </div>
 
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
       </div>
     )
   }
 
-  // ── Step 2: Photo selected — full screen preview + bottom sheet ──────────
+  // ── Step 2: Photos selected ──────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black flex flex-col safe-top safe-bottom">
       {/* Full screen photo */}
       <div className="absolute inset-0">
-        <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
-        {/* Dark gradient at top and bottom */}
+        <img src={activeItem.preview} alt="preview" className="w-full h-full object-cover" />
         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-black/95 via-black/60 to-transparent" />
       </div>
@@ -159,28 +181,62 @@ export default function PostSpot() {
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-3">
         <button
-          onClick={() => { setImageFile(null); setImagePreview(null); setStep('photo') }}
+          onClick={() => { setItems([]); setStep('photo') }}
           className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
         >
           <ChevronLeft size={20} className="text-white" />
         </button>
-        <span className="text-white text-sm font-bold tracking-widest uppercase opacity-80">Your Spot</span>
+        <span className="text-white text-sm font-bold tracking-widest uppercase opacity-80">
+          {items.length > 1 ? `Spot ${activeIndex + 1} of ${items.length}` : 'Your Spot'}
+        </span>
         <button
-          onClick={() => openCamera(CameraSource.Photos)}
+          onClick={() => fileInputRef.current?.click()}
           className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
         >
-          <ImagePlus size={18} className="text-white" />
+          <Plus size={18} className="text-white" />
         </button>
       </div>
 
-      {/* Bottom sheet — inputs over the photo */}
+      {/* Thumbnail strip — only show if more than 1 */}
+      {items.length > 1 && (
+        <div className="relative z-10 flex gap-2 px-4 mt-3 overflow-x-auto">
+          {items.map((it, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
+                i === activeIndex ? 'border-gold' : 'border-white/20'
+              }`}
+            >
+              <img src={it.preview} className="w-full h-full object-cover" />
+              <button
+                onClick={e => { e.stopPropagation(); removeItem(i) }}
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center"
+              >
+                <X size={10} className="text-white" />
+              </button>
+              {!it.locationName && (
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-rose-500/80" />
+              )}
+            </button>
+          ))}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-shrink-0 w-14 h-14 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center"
+          >
+            <Plus size={18} className="text-white/40" />
+          </button>
+        </div>
+      )}
+
+      {/* Bottom sheet */}
       <div className="absolute inset-x-0 bottom-0 px-4 pb-8 space-y-3" style={{ zIndex: 20 }}>
-        {/* Location — wrapper must not create a stacking context so the dropdown can escape */}
+        {/* Location */}
         <div className="[&_input]:bg-transparent [&_input]:border-0 [&_input]:backdrop-blur-none bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl">
           <LocationAutocomplete
-            value={locationName}
-            onChange={setLocationName}
-            onSelect={(s: LocationSuggestion) => setLocationName(s.display)}
+            value={activeItem.locationName}
+            onChange={v => updateActive({ locationName: v })}
+            onSelect={(s: LocationSuggestion) => updateActive({ locationName: s.display })}
             placeholder="Tag your location…"
             dropUp
           />
@@ -189,8 +245,8 @@ export default function PostSpot() {
         {/* Caption */}
         <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3">
           <input
-            value={caption}
-            onChange={e => setCaption(e.target.value)}
+            value={activeItem.caption}
+            onChange={e => updateActive({ caption: e.target.value })}
             placeholder="Add a caption… (optional)"
             maxLength={200}
             className="w-full bg-transparent text-white text-sm placeholder-white/30 outline-none"
@@ -220,12 +276,12 @@ export default function PostSpot() {
         {/* Share button */}
         <button
           onClick={handlePost}
-          disabled={!locationName.trim() || uploading}
+          disabled={uploading}
           className="w-full py-4 rounded-2xl bg-gold text-lenz-bg font-bold text-base flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 transition-all"
         >
           {uploading
             ? <span className="animate-pulse">Sharing…</span>
-            : <><Send size={17} /> Share Spot</>}
+            : <><Send size={17} /> {items.length > 1 ? `Share ${items.length} Spots` : 'Share Spot'}</>}
         </button>
 
         <p className="text-center text-[11px] text-white/25 tracking-wide">
@@ -233,7 +289,7 @@ export default function PostSpot() {
         </p>
       </div>
 
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
     </div>
   )
 }
