@@ -69,6 +69,7 @@ export default function StoryViewer({
   const touchStartY = useRef(0)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [, navigate] = useLocation()
   const story = stories[index]
@@ -87,18 +88,32 @@ export default function StoryViewer({
     return () => window.removeEventListener('resize', update)
   }, [])
 
-  // Lock body scroll and hide bottom nav while story is open
+  // Lock body scroll and prevent ALL touch scrolling on the container
   useEffect(() => {
     document.body.classList.add('story-open')
-    const prev = document.body.style.overflow
+    const prevOverflow = document.body.style.overflow
+    const prevPosition = document.body.style.position
+    const prevWidth = document.body.style.width
+    const prevTop = document.body.style.top
+    const scrollY = window.scrollY
     document.body.style.overflow = 'hidden'
     document.body.style.position = 'fixed'
     document.body.style.width = '100%'
+    document.body.style.top = `-${scrollY}px`
+
+    // Non-passive touchmove prevents WKWebView rubber-band scroll
+    const block = (e: TouchEvent) => e.preventDefault()
+    const el = containerRef.current
+    el?.addEventListener('touchmove', block, { passive: false })
+
     return () => {
+      el?.removeEventListener('touchmove', block)
       document.body.classList.remove('story-open')
-      document.body.style.overflow = prev
-      document.body.style.position = ''
-      document.body.style.width = ''
+      document.body.style.overflow = prevOverflow
+      document.body.style.position = prevPosition
+      document.body.style.width = prevWidth
+      document.body.style.top = prevTop
+      window.scrollTo(0, scrollY)
     }
   }, [])
 
@@ -255,6 +270,7 @@ export default function StoryViewer({
     // Use JS window.innerHeight so the container fills the real screen on WKWebView
     // regardless of dvh/vh support issues in Capacitor
     <div
+      ref={containerRef}
       className="fixed top-0 left-0 w-full z-[60] bg-black select-none overflow-hidden"
       style={{ height: vh, touchAction: 'none' }}
       onTouchStart={onTouchStart}
