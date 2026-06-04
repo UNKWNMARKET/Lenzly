@@ -348,16 +348,7 @@ export default function PhotographerProfile() {
     if (!user) { toast.error('Sign in to send hire requests'); return }
     setSending(true)
     try {
-      // Insert notification to photographer
-      await supabase.from('notifications').insert({
-        user_id: p.id,
-        actor_id: user.id,
-        type: 'hire_request',
-        message: `sent you a hire request: ${hireForm.projectType}${hireForm.date ? ' · ' + hireForm.date : ''}${hireForm.details ? ' — ' + hireForm.details.slice(0, 80) : ''}`,
-        read: false,
-      })
-
-      // Find or create conversation
+      // Find or create conversation FIRST so notification includes conversation_id
       const { data: myParts } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -401,6 +392,16 @@ export default function PhotographerProfile() {
         })
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
       }
+
+      // Insert notification WITH conversation_id so recipient can tap directly into chat
+      await supabase.from('notifications').insert({
+        user_id: p.id,
+        actor_id: user.id,
+        type: 'hire_request',
+        message: `sent you a hire request: ${hireForm.projectType}${hireForm.date ? ' · ' + hireForm.date : ''}${hireForm.details ? ' — ' + hireForm.details.slice(0, 80) : ''}`,
+        conversation_id: conversationId,
+        read: false,
+      })
 
       setSending(false)
       setHireStep('sent')

@@ -13,6 +13,7 @@ type Notif = {
   type: string
   actor_id: string | null
   post_id: string | null
+  conversation_id: string | null
   message: string | null
   read: boolean
   created_at: string
@@ -189,7 +190,11 @@ export default function Notifications() {
     // Navigate to the relevant content
     if (n.post_id && ['like', 'comment', 'mention'].includes(n.type)) {
       navigate(`/post/${n.post_id}`)
-    } else if (n.actor_id && ['follow', 'follow_request', 'follow_accepted', 'follow_declined', 'hire_request'].includes(n.type)) {
+    } else if (n.type === 'hire_request') {
+      // Go directly to the conversation if we have it, otherwise messages list
+      if (n.conversation_id) navigate(`/chat/${n.conversation_id}`)
+      else navigate('/messages')
+    } else if (n.actor_id && ['follow', 'follow_request', 'follow_accepted', 'follow_declined'].includes(n.type)) {
       navigate(`/photographer/${n.actor_id}`)
     } else if (n.actor_id && ['story_like', 'story_comment', 'story_share'].includes(n.type)) {
       navigate(`/photographer/${n.actor_id}`)
