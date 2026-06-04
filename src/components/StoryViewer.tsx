@@ -292,7 +292,7 @@ export default function StoryViewer({
       {/* ── Top overlay: progress bars + header, one safe-area offset ── */}
       <div
         className="absolute top-0 left-0 right-0 z-30 flex flex-col px-3"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 8px, 14px)' }}
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 44px) + 8px, 52px)' }}
       >
         {/* Progress bars */}
         <div className="flex gap-[3px] pointer-events-none mb-2">

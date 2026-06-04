@@ -460,7 +460,8 @@ export default function PhotographerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none bg-lenz-bg">
+    <div className="min-h-full pb-8">
       {/* ── Hero cover — taller, stronger gradient fade into page bg ── */}
       <div className="relative h-56 overflow-hidden bg-lenz-card">
         {p.coverPhoto
@@ -783,6 +784,7 @@ export default function PhotographerProfile() {
       {reportOpen && id && (
         <ReportSheet targetType="user" targetId={id} onClose={() => setReportOpen(false)} />
       )}
+    </div>
     </div>
   )
 }
