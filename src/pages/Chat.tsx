@@ -219,14 +219,17 @@ export default function Chat() {
     }
   }
 
-  const handleLongPressStart = (msgId: string) => {
+  const handleLongPressStart = (e: React.PointerEvent, msgId: string) => {
+    // Capture the pointer so we get pointerup even if finger drifts
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     longPressTimer.current = setTimeout(() => {
       haptics.medium()
       setReactionPickerMsgId(msgId)
-    }, 450)
+    }, 400)
   }
 
-  const handleLongPressEnd = () => {
+  const handleLongPressEnd = (e: React.PointerEvent) => {
+    ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
   }
 
@@ -279,7 +282,7 @@ export default function Chat() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3">
         {loading && (
           <div className="flex justify-center pt-12">
             <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
@@ -305,9 +308,10 @@ export default function Chat() {
                     : isMine ? 'px-4 py-2.5 bg-gold text-lenz-bg font-medium rounded-br-sm'
                     : 'px-4 py-2.5 bg-white/10 text-white/90 rounded-bl-sm backdrop-blur-sm'
                 )}
-                onTouchStart={() => !msg.unsent && handleLongPressStart(msg.id)}
-                onTouchEnd={handleLongPressEnd}
-                onTouchMove={handleLongPressEnd}
+                onPointerDown={e => !msg.unsent && handleLongPressStart(e, msg.id)}
+                onPointerUp={handleLongPressEnd}
+                onPointerCancel={handleLongPressEnd}
+                style={{ touchAction: 'manipulation', userSelect: 'none' }}
               >
                 {msg.unsent ? '🚫 Message unsent'
                   : msg.image_url ? (

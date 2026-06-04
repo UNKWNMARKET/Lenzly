@@ -265,7 +265,7 @@ export default function PhotographerProfile() {
   const p = realP
 
   if (realLoading) return (
-    <div className="min-h-screen bg-lenz-bg">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none bg-lenz-bg">
       <div className="h-56 bg-lenz-card animate-pulse" />
       <div className="px-4 pt-4 space-y-3">
         <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ export default function PhotographerProfile() {
 
   if (!p) {
     return (
-      <div className="min-h-screen bg-lenz-bg flex flex-col items-center justify-center gap-4">
+      <div className="fixed inset-0 overflow-y-auto overscroll-none bg-lenz-bg flex flex-col items-center justify-center gap-4">
         <Camera size={40} className="text-white/10" />
         <p className="text-white/30 text-sm">Photographer not found</p>
         <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/find')} className="btn-ghost text-sm px-4 py-2">← Back to Find</button>
@@ -460,8 +460,8 @@ export default function PhotographerProfile() {
   }
 
   return (
-    <div className="fixed inset-0 overflow-y-auto overscroll-none bg-lenz-bg">
-    <div className="min-h-full pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none bg-lenz-bg" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="min-h-full pb-24">
       {/* ── Hero cover — taller, stronger gradient fade into page bg ── */}
       <div className="relative h-56 overflow-hidden bg-lenz-card">
         {p.coverPhoto

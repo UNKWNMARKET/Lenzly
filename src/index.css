@@ -46,6 +46,25 @@
     overscroll-behavior: none;
   }
 
+  /* GPU-composite all interactive elements to avoid paint during transitions */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+    transform: translateZ(0);
+  }
+
+  /* Prevent text selection flashing on long-press targets */
+  [data-no-select] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Promote images to their own compositor layer to avoid jank */
+  img {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
   /* iPad and larger: expand beyond phone width, offset for sidebar */
   @media (min-width: 768px) {
     #root {
@@ -157,7 +176,8 @@
   }
 
   .animate-slide-up {
-    animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    animation: slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    will-change: transform;
   }
 
   /* Story viewer progress bar — CSS animation, no JS interval lag */
