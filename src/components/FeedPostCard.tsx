@@ -405,40 +405,28 @@ export default function FeedPostCard({
           alt={post.caption ?? ''}
           className="w-full h-full"
         />
-        {/* Double-tap camera burst — camera with heart cutout */}
+        {/* Double-tap camera burst — camera with heart inside lens */}
         {doubleTapHeart && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none heart-burst">
             <svg
               width="90" height="90" viewBox="0 0 90 90" fill="none"
               className="drop-shadow-[0_0_28px_rgba(255,255,255,0.9)]"
             >
-              <defs>
-                {/* Heart path centred in the camera lens area */}
-                <mask id="heart-cutout">
-                  <rect width="90" height="90" fill="white" />
-                  {/* Heart centred at ~45,48 inside the lens */}
-                  <path
-                    d="M45 57 C45 57 30 47 30 38 C30 32 35 28 40 28 C42.5 28 44.5 29.5 45 31 C45.5 29.5 47.5 28 50 28 C55 28 60 32 60 38 C60 47 45 57 45 57 Z"
-                    fill="black"
-                  />
-                </mask>
-              </defs>
-              {/* Camera body */}
+              {/* Camera body (solid white, no lens hole) */}
               <path
-                mask="url(#heart-cutout)"
                 fill="white"
-                d="
-                  M10 28 C10 24.7 12.7 22 16 22
-                  L28 22 L31 16 L59 16 L62 22
-                  L74 22 C77.3 22 80 24.7 80 28
-                  L80 66 C80 69.3 77.3 72 74 72
-                  L16 72 C12.7 72 10 69.3 10 66 Z
-                  M45 62 C52.7 62 59 55.7 59 48 C59 40.3 52.7 34 45 34 C37.3 34 31 40.3 31 48 C31 55.7 37.3 62 45 62 Z
-                "
-                fillRule="evenodd"
+                d="M10 28 C10 24.7 12.7 22 16 22 L28 22 L31 16 L59 16 L62 22 L74 22 C77.3 22 80 24.7 80 28 L80 66 C80 69.3 77.3 72 74 72 L16 72 C12.7 72 10 69.3 10 66 Z"
               />
-              {/* Tiny viewfinder circle top-left */}
-              <circle cx="22" cy="33" r="3.5" fill="white" opacity="0.7" mask="url(#heart-cutout)" />
+              {/* Lens ring — dark circle */}
+              <circle cx="45" cy="48" r="16" fill="rgba(0,0,0,0.18)" />
+              <circle cx="45" cy="48" r="16" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+              {/* Heart inside the lens — white, clean heart shape centered at 45,48 */}
+              <path
+                fill="white"
+                d="M45 58 C44 57 33 50 33 43 C33 38 37 35 41.5 35 C43.5 35 45 36.8 45 36.8 C45 36.8 46.5 35 48.5 35 C53 35 57 38 57 43 C57 50 46 57 45 58 Z"
+              />
+              {/* Viewfinder dot top-left */}
+              <circle cx="22" cy="33" r="3.5" fill="white" opacity="0.6" />
             </svg>
           </div>
         )}
