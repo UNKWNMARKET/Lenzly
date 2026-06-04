@@ -32,3 +32,11 @@ CREATE INDEX IF NOT EXISTS messages_conv_idx   ON public.messages(conversation_i
 ALTER TABLE public.conversations            DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversation_participants DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages                 DISABLE ROW LEVEL SECURITY;
+
+-- Step 3: Grant full access to authenticated users
+GRANT ALL ON public.conversations             TO authenticated;
+GRANT ALL ON public.conversation_participants TO authenticated;
+GRANT ALL ON public.messages                  TO authenticated;
+GRANT ALL ON public.conversations             TO anon;
+GRANT ALL ON public.conversation_participants TO anon;
+GRANT ALL ON public.messages                  TO anon;
