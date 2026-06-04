@@ -197,7 +197,7 @@ export default function Messages() {
     <div className="min-h-full pb-6">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
+          <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/')} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
             <ArrowLeft size={20} className="text-white/70" />
           </button>
           <h1 className="text-base font-bold text-white tracking-wide">Messages</h1>
