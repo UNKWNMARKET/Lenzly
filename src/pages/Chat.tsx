@@ -404,22 +404,38 @@ export default function Chat() {
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
 
-      {/* Reaction picker */}
+      {/* Reaction picker — frosted glass bubble */}
       {reactionPickerMsgId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={() => setReactionPickerMsgId(null)}>
-          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl px-4 py-3 flex gap-3 shadow-2xl shadow-black/60"
-            onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50"
+          style={{ touchAction: 'none' }}
+          onPointerDown={() => setReactionPickerMsgId(null)}
+        >
+          {/* Scrim */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+          {/* Frosted pill */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2.5 rounded-full shadow-2xl"
+            style={{
+              bottom: 'calc(env(safe-area-inset-bottom, 34px) + 80px)',
+              background: 'rgba(30,30,30,0.72)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+            }}
+            onPointerDown={e => e.stopPropagation()}
+          >
             {REACTION_EMOJIS.map(emoji => {
               const msg = messages.find(m => m.id === reactionPickerMsgId)
               const isActive = msg?.reactions?.some(r => r.emoji === emoji && r.mine)
+              const pid = reactionPickerMsgId
               return (
                 <button
                   key={emoji}
-                  onClick={() => handleReact(reactionPickerMsgId, emoji)}
+                  onPointerDown={e => { e.stopPropagation(); handleReact(pid, emoji) }}
                   className={cn(
-                    'text-2xl w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-75',
-                    isActive ? 'bg-gold/20 scale-110' : 'hover:bg-white/10'
+                    'text-2xl w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-75',
+                    isActive ? 'bg-gold/25 scale-110' : 'active:bg-white/10'
                   )}
                 >
                   {emoji}
