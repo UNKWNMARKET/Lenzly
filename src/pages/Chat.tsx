@@ -407,23 +407,21 @@ export default function Chat() {
       {/* Reaction picker — frosted glass bubble */}
       {reactionPickerMsgId && (
         <div
-          className="fixed inset-0 z-50"
-          style={{ touchAction: 'none' }}
-          onPointerDown={() => setReactionPickerMsgId(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={() => setReactionPickerMsgId(null)}
         >
           {/* Scrim */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-          {/* Frosted pill */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          {/* Frosted pill — centered on screen */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2.5 rounded-full shadow-2xl"
+            className="relative flex items-center gap-1 px-3 py-2.5 rounded-full shadow-2xl"
             style={{
-              bottom: 'calc(env(safe-area-inset-bottom, 34px) + 80px)',
-              background: 'rgba(30,30,30,0.72)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(28,28,28,0.85)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.14)',
             }}
-            onPointerDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             {REACTION_EMOJIS.map(emoji => {
               const msg = messages.find(m => m.id === reactionPickerMsgId)
@@ -432,7 +430,7 @@ export default function Chat() {
               return (
                 <button
                   key={emoji}
-                  onPointerDown={e => { e.stopPropagation(); handleReact(pid, emoji) }}
+                  onClick={e => { e.stopPropagation(); handleReact(pid, emoji) }}
                   className={cn(
                     'text-2xl w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-75',
                     isActive ? 'bg-gold/25 scale-110' : 'active:bg-white/10'
