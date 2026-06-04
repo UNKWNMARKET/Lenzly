@@ -1,9 +1,4 @@
--- Fix conversations — disable RLS so inserts always work
-ALTER TABLE public.conversations DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.conversation_participants DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;
-
--- Make sure the tables exist
+-- Step 1: Create tables if they don't exist yet
 CREATE TABLE IF NOT EXISTS public.conversations (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -32,3 +27,8 @@ CREATE TABLE IF NOT EXISTS public.messages (
 
 CREATE INDEX IF NOT EXISTS conv_parts_user_idx ON public.conversation_participants(user_id);
 CREATE INDEX IF NOT EXISTS messages_conv_idx   ON public.messages(conversation_id, sent_at DESC);
+
+-- Step 2: Now disable RLS (tables exist, so this won't fail)
+ALTER TABLE public.conversations            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.conversation_participants DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages                 DISABLE ROW LEVEL SECURITY;
