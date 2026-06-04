@@ -215,7 +215,7 @@ export default function Home() {
   const hasPosts = visiblePosts.length > 0
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     {/* Edge swipe detector — sits over the left edge only */}
     <div
       className="fixed left-0 top-0 h-full w-8 z-50"

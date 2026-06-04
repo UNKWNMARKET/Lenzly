@@ -259,7 +259,7 @@ export default function Chat() {
   const bgStyle: React.CSSProperties = isBg(bg) ? { background: bg } : { backgroundColor: bg }
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ ...bgStyle, height: '100dvh' }}>
+    <div className="flex flex-col overflow-hidden" style={{ ...bgStyle, height: '100%' }}>
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top flex-shrink-0"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)' }}>

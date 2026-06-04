@@ -207,7 +207,7 @@ export default function Notifications() {
   const unread = notifs.filter(n => !n.read).length
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-6">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">

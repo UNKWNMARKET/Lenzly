@@ -18,7 +18,8 @@ export default function BrandsPage() {
   const [activeTab, setActiveTab] = useState<'discover' | 'signup'>('discover')
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24 animate-fade-in">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-24 animate-fade-in">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-4 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/')} className="p-1 -ml-1 text-white/40 hover:text-white transition-colors">
@@ -201,6 +202,7 @@ export default function BrandsPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }

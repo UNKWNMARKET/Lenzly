@@ -217,7 +217,7 @@ export default function Profile() {
   const closeModal = () => setModal(null)
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-24 md:pb-8">
       {/* Cover photo */}
       <div className="relative h-48 overflow-hidden bg-lenz-card">

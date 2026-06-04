@@ -2537,7 +2537,8 @@ export default function Weddings() {
     : VENUES.filter(v => v.state === stateFilter)
 
   return (
-    <div className="min-h-[100dvh] bg-lenz-bg">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <div className="flex items-center gap-3">
@@ -2636,6 +2637,7 @@ export default function Weddings() {
 
       {/* Venue detail sheet */}
       {selected && <VenueSheet venue={selected} onClose={() => setSelected(null)} />}
+    </div>
     </div>
   )
 }

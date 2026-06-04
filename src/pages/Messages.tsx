@@ -193,9 +193,9 @@ export default function Messages() {
   }
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-6">
-      <header className="sticky top-0 z-40 glass-dark px-4 pb-3 flex items-center justify-between safe-top" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
+      <header className="sticky top-0 z-40 glass-dark px-4 pb-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
           <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/')} className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center">
             <ArrowLeft size={20} className="text-white/70" />

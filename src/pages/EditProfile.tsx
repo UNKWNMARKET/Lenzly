@@ -164,7 +164,8 @@ export default function EditProfile() {
   const displayCover  = coverPreview  ?? profile?.cover_url
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => navigate('/profile')} className="p-2 -ml-2">
@@ -409,6 +410,7 @@ export default function EditProfile() {
         </button>
 
       </div>
+    </div>
     </div>
   )
 }

@@ -55,7 +55,8 @@ export default function ProCheckout() {
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-8">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/pro')} className="p-1 -ml-1">
           <ChevronLeft size={22} className="text-white/70" />
@@ -136,6 +137,7 @@ export default function ProCheckout() {
           <span className="text-gold/60" onClick={() => navigate('/privacy')}>Privacy Policy</span>.
         </p>
       </div>
+    </div>
     </div>
   )
 }

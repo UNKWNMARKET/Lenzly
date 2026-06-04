@@ -149,7 +149,7 @@ function ArchiveViewer({
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent via-50% to-black/70 pointer-events-none" />
 
       {/* Progress bars */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex gap-[3px] px-3 pt-14 safe-top pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-30 flex gap-[3px] px-3 pointer-events-none" style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 8px)' }}>
         {stories.map((s, i) => (
           <div key={s.id} className="flex-1 h-[2px] bg-white/20 rounded-full overflow-hidden">
             {i < index && <div className="h-full w-full bg-white rounded-full" />}
@@ -165,7 +165,7 @@ function ArchiveViewer({
       </div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-20 pb-2 flex items-center justify-between safe-top pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-30 px-4 pb-2 flex items-center justify-between pointer-events-none" style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 16px)' }}>
         <div className="flex items-center gap-2 pointer-events-auto">
           {deleted && (
             <div className="flex items-center gap-1 bg-black/60 rounded-full px-2.5 py-1">
@@ -306,7 +306,8 @@ export default function StoryArchive() {
   const deleted = stories.filter(s => isDeleted(s.expires_at))
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-8">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/')} className="p-2 -ml-2">
           <ChevronLeft size={22} className="text-white/70" />
@@ -389,6 +390,7 @@ export default function StoryArchive() {
           onDelete={removeStory}
         />
       )}
+    </div>
     </div>
   )
 }

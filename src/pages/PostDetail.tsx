@@ -67,7 +67,8 @@ export default function PostDetail() {
   )
 
   if (posts.length === 0) return (
-    <div className="min-h-screen bg-lenz-bg">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={goBack} className="p-2 -ml-2">
           <ArrowLeft size={20} className="text-white/70" />
@@ -78,10 +79,12 @@ export default function PostDetail() {
         <p className="text-white/30 text-sm">Post not found</p>
       </div>
     </div>
+    </div>
   )
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-8">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center gap-3 safe-top">
         <button onClick={goBack} className="p-2 -ml-2">
@@ -102,6 +105,7 @@ export default function PostDetail() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   )
 }
