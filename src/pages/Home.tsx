@@ -102,8 +102,17 @@ export default function Home() {
     // Real-time subscription for new posts
     const channel = supabase
       .channel('posts')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-        setRealPosts(prev => [payload.new as Post, ...prev])
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async payload => {
+        // Fetch the full row with profiles join so FeedPostCard has all the data it needs
+        const { data } = await supabase
+          .from('posts')
+          .select('*, profiles(*)')
+          .eq('id', (payload.new as { id: string }).id)
+          .single()
+        if (data) setRealPosts(prev => {
+          if (prev.some(p => p.id === data.id)) return prev // de-dupe
+          return [data, ...prev]
+        })
       })
       .subscribe()
 
