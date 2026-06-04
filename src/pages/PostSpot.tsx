@@ -209,7 +209,6 @@ export default function PostSpot() {
 
   const [items, setItems] = useState<StoryItem[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
-  const [storyDuration, setStoryDuration] = useState(10)
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
   const [editTab, setEditTab] = useState<'filters' | 'layout'>('filters')
@@ -409,7 +408,7 @@ export default function PostSpot() {
           caption: item.caption.trim() || null,
           location_name: item.locationName.trim(),
           expires_at: expiresAt,
-          display_seconds: storyDuration,
+          display_seconds: 10,
         })
         if (insertError) throw insertError
       } catch {
@@ -743,44 +742,16 @@ export default function PostSpot() {
       {cropSlot === null && <div className="absolute inset-x-0 z-20 flex flex-col gap-2.5 px-4"
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 16px)' }}>
 
-        {/* Caption pill */}
-        <div className="bg-black/40 backdrop-blur-md border border-white/12 rounded-full px-4 py-2.5 flex items-center gap-2">
-          <input
-            value={activeItem.caption}
-            onChange={e => updateActive({ caption: e.target.value })}
-            placeholder="Add a caption… (optional)"
-            maxLength={200}
-            className="flex-1 bg-transparent text-white text-sm placeholder-white/30 outline-none"
+        {/* Location pill */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/12 rounded-full overflow-visible">
+          <LocationAutocomplete
+            value={activeItem.locationName}
+            onChange={v => updateActive({ locationName: v })}
+            onSelect={(s: LocationSuggestion) => updateActive({ locationName: s.display })}
+            placeholder="Tag location…"
+            dropUp
+            pill
           />
-        </div>
-
-        {/* Location + Duration row */}
-        <div className="flex gap-2 items-center">
-          {/* Location bubble */}
-          <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/12 rounded-full overflow-visible">
-            <LocationAutocomplete
-              value={activeItem.locationName}
-              onChange={v => updateActive({ locationName: v })}
-              onSelect={(s: LocationSuggestion) => updateActive({ locationName: s.display })}
-              placeholder="Tag location…"
-              dropUp
-              pill
-            />
-          </div>
-
-          {/* Duration bubbles */}
-          <div className="flex gap-1 flex-shrink-0">
-            {[5, 10, 15].map(s => (
-              <button key={s} onClick={() => setStoryDuration(s)}
-                className={`w-10 h-10 rounded-full text-xs font-bold transition-all active:scale-90 backdrop-blur-md border ${
-                  storyDuration === s
-                    ? 'bg-gold/90 border-gold text-lenz-bg'
-                    : 'bg-black/40 border-white/15 text-white/60'
-                }`}>
-                {s}s
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Share button */}
