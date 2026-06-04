@@ -172,7 +172,7 @@ export default function Messages() {
       .select()
       .single()
 
-    if (error || !conv) { toast.error('Could not start conversation'); return }
+    if (error || !conv) { toast.error(error?.message ?? 'conv null'); return }
 
     await supabase.from('conversation_participants').insert([
       { conversation_id: conv.id, user_id: user.id },

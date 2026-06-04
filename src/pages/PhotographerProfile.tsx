@@ -320,17 +320,19 @@ export default function PhotographerProfile() {
       if (shared && shared[0]) convId = shared[0].conversation_id
     }
     if (!convId) {
-      const { data: newConv } = await supabase.from('conversations').insert({ created_by: user.id, bg: '#0A0804' }).select('id').single()
+      const { data: newConv, error: convErr } = await supabase.from('conversations').insert({ created_by: user.id, bg: '#0A0804' }).select('id').single()
+      if (convErr) { toast.error(convErr.message); return }
       if (newConv) {
         convId = newConv.id
-        await supabase.from('conversation_participants').insert([
+        const { error: partErr } = await supabase.from('conversation_participants').insert([
           { conversation_id: convId, user_id: user.id },
           { conversation_id: convId, user_id: p.id },
         ])
+        if (partErr) { toast.error(partErr.message); return }
       }
     }
     if (convId) navigate(`/chat/${convId}`)
-    else { toast.error('Could not start conversation'); navigate('/messages') }
+    else { toast.error('No conv id'); navigate('/messages') }
   }
 
   const handleHireSend = async () => {
