@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReportSheet from '@/components/ReportSheet'
+import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 
 type HireStep = 'idle' | 'form' | 'sent'
 
@@ -121,7 +122,7 @@ export default function PhotographerProfile() {
   const [sending, setSending] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
-  const [realPosts, setRealPosts] = useState<string[]>([])
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [isBlocked, setIsBlocked] = useState(false)
   const [blockLoading, setBlockLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -130,18 +131,25 @@ export default function PhotographerProfile() {
   const isUuidId = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const isSelf = !!user && user.id === id
 
-  // Load this user's actual uploaded photos (real profiles only)
+  // Load this user's posts with full data for FeedPostCard
   useEffect(() => {
     if (!id) return
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
     if (!isUuid) return
     supabase
       .from('posts')
-      .select('image_url')
+      .select('*')
       .eq('user_id', id)
+      .eq('archived', false)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) setRealPosts(data.map(p => p.image_url).filter(Boolean))
+      .then(async ({ data }) => {
+        if (!data || data.length === 0) return
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('id, username, name, avatar_url, is_pro')
+          .eq('id', id)
+          .maybeSingle()
+        setFeedPosts(data.map(p => ({ ...p, profile: prof ?? null })) as FeedPost[])
       })
   }, [id])
 
@@ -404,7 +412,7 @@ export default function PhotographerProfile() {
     }
   }
 
-  const gridPhotos = realPosts.length > 0 ? realPosts : p.photos
+  const gridPhotos = feedPosts.length === 0 ? p.photos : []
 
   // ── Private profile gate ────────────────────────────────────────────────────
   if (p.private_account && !isFollowing && !isSelf) {
@@ -620,8 +628,26 @@ export default function PhotographerProfile() {
         </div>
       </div>
 
-      {/* Photo grid */}
-      {gridPhotos.length > 0 && (
+      {/* Feed posts with full interactions */}
+      {feedPosts.length > 0 && (
+        <div className="mt-2">
+          <div className="px-4 py-3 flex items-center gap-2">
+            <p className="text-xs font-semibold text-white/30 tracking-wider uppercase">Posts</p>
+            <span className="text-[10px] text-white/20">{feedPosts.length} photos</span>
+          </div>
+          {feedPosts.map(post => (
+            <FeedPostCard
+              key={post.id}
+              post={post}
+              currentUserId={user?.id ?? null}
+              onDeleted={id => setFeedPosts(prev => prev.filter(p => p.id !== id))}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Fallback static grid (mock data only) */}
+      {feedPosts.length === 0 && gridPhotos.length > 0 && (
         <div className="mt-2">
           <div className="px-4 py-3 flex items-center gap-2">
             <p className="text-xs font-semibold text-white/30 tracking-wider uppercase">Portfolio</p>
@@ -634,12 +660,7 @@ export default function PhotographerProfile() {
                 onClick={() => setViewerIndex(i)}
                 className="relative overflow-hidden active:opacity-75 active:scale-95 transition-all duration-100"
               >
-                <img
-                  src={photo}
-                  alt=""
-                  loading="lazy"
-                  className="w-full aspect-square object-cover"
-                />
+                <img src={photo} alt="" loading="lazy" className="w-full aspect-square object-cover" />
               </button>
             ))}
           </div>
@@ -648,7 +669,6 @@ export default function PhotographerProfile() {
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
 
-      {/* Swipeable photo viewer */}
       {viewerIndex !== null && gridPhotos.length > 0 && (
         <PhotoViewer
           photos={gridPhotos}
