@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { X, ChevronLeft, ImagePlus, Send, Plus } from 'lucide-react'
+import { X, ChevronLeft, ImagePlus, Send, Plus, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -199,6 +198,9 @@ export default function PostSpot() {
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const slotToFill = useRef<{ itemIdx: number; slotIdx: number } | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const [items, setItems] = useState<StoryItem[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
@@ -206,27 +208,80 @@ export default function PostSpot() {
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
   const [editTab, setEditTab] = useState<'filters' | 'layout'>('filters')
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
+  const [cameraReady, setCameraReady] = useState(false)
+  const [capturing, setCapturing] = useState(false)
 
   const activeItem = items[activeIndex] ?? null
 
-  // ── Camera / file helpers ────────────────────────────────────────────────
-  const openCamera = async (source: CameraSource, fallback = true) => {
+  // ── In-app camera ────────────────────────────────────────────────────────
+  const startCamera = useCallback(async (facing: 'environment' | 'user') => {
+    // Stop any existing stream
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    setCameraReady(false)
     try {
-      const photo = await CapCamera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source,
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
       })
-      if (photo.dataUrl) {
-        const res = await fetch(photo.dataUrl)
-        const blob = await res.blob()
-        const file = new File([blob], 'spot.jpg', { type: 'image/jpeg' })
-        fillSlotOrAddItem(file, photo.dataUrl)
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play()
+          setCameraReady(true)
+        }
       }
     } catch {
-      if (fallback && source === CameraSource.Camera) fileInputRef.current?.click()
+      // getUserMedia not available — fall back to file picker
+      setCameraReady(false)
     }
+  }, [])
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    setCameraReady(false)
+  }, [])
+
+  useEffect(() => {
+    if (step === 'photo') {
+      startCamera(facingMode)
+    } else {
+      stopCamera()
+    }
+    return () => stopCamera()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
+  const flipCamera = () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment'
+    setFacingMode(next)
+    startCamera(next)
+  }
+
+  const capturePhoto = async () => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || !cameraReady) return
+    setCapturing(true)
+
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')!
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(video, 0, 0)
+
+    canvas.toBlob(blob => {
+      if (!blob) { setCapturing(false); return }
+      const file = new File([blob], 'spot.jpg', { type: 'image/jpeg' })
+      const preview = canvas.toDataURL('image/jpeg', 0.92)
+      fillSlotOrAddItem(file, preview)
+      setCapturing(false)
+    }, 'image/jpeg', 0.92)
   }
 
   const fillSlotOrAddItem = (file: File, preview: string) => {
@@ -255,7 +310,6 @@ export default function PostSpot() {
     }
   }
 
-  useEffect(() => { openCamera(CameraSource.Camera, false) }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -362,53 +416,60 @@ export default function PostSpot() {
     }
   }
 
-  // ── Step 1: No photo yet ─────────────────────────────────────────────────
+  // ── Step 1: Full-screen camera viewfinder ───────────────────────────────
   if (step === 'photo' || items.length === 0) {
     return (
-      <div className="fixed inset-0 flex flex-col" style={{ background: 'linear-gradient(180deg,#1a0e04 0%,#0d0804 40%,#050302 100%)' }}>
-        {/* Full-screen dark canvas */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Subtle vignette */}
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
+      <div className="fixed inset-0 bg-black overflow-hidden">
+        {/* Live camera feed */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+        />
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Vignette overlay */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%)' }} />
+
+        {/* Top bar */}
+        <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-4"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 10px)' }}>
+          <button onClick={() => navigate('/')}
+            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+            <X size={19} className="text-white" />
+          </button>
+          <button onClick={flipCamera}
+            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+            <RefreshCw size={18} className="text-white" />
+          </button>
         </div>
 
-        {/* X close — top left, safe area */}
-        <button
-          onClick={() => navigate('/')}
-          className="absolute z-10 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform"
-          style={{ top: 'calc(env(safe-area-inset-top, 44px) + 12px)', left: '16px' }}
-        >
-          <X size={19} className="text-white" />
-        </button>
+        {/* Bottom controls */}
+        <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between px-8"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 24px)' }}>
+          {/* Library */}
+          <button onClick={() => fileInputRef.current?.click()}
+            className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md border border-white/15 flex flex-col items-center justify-center gap-1 active:scale-90 transition-transform">
+            <ImagePlus size={20} className="text-white/80" />
+            <span className="text-[9px] text-white/50 font-semibold tracking-wide">Library</span>
+          </button>
 
-        {/* Bottom action bar — matches reference layout */}
-        <div
-          className="absolute inset-x-0 bottom-0 px-5 flex flex-col gap-3"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 20px)' }}
-        >
-          {/* Camera shutter row */}
-          <div className="flex items-center justify-between">
-            {/* Library thumbnail pill */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md border border-white/12 rounded-full px-4 py-2.5 active:scale-95 transition-transform"
-            >
-              <ImagePlus size={18} className="text-white/80" />
-              <span className="text-white/80 text-sm font-semibold">Library</span>
-            </button>
+          {/* Shutter */}
+          <button
+            onClick={capturePhoto}
+            disabled={capturing}
+            className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '3px solid rgba(255,255,255,0.8)' }}
+          >
+            <div className={`rounded-full bg-white transition-all ${capturing ? 'w-10 h-10' : 'w-[60px] h-[60px]'}`} />
+          </button>
 
-            {/* Main shutter */}
-            <button
-              onClick={() => openCamera(CameraSource.Camera)}
-              className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '3px solid rgba(255,255,255,0.35)' }}
-            >
-              <div className="w-14 h-14 rounded-full bg-white/90" />
-            </button>
-
-            {/* Spacer to balance layout */}
-            <div className="w-[100px]" />
-          </div>
+          {/* Spacer */}
+          <div className="w-14 h-14" />
         </div>
 
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
