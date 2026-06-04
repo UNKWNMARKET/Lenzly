@@ -289,10 +289,13 @@ export default function StoryViewer({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-45% to-black/85 pointer-events-none" />
 
-      {/* ── Top area: progress bars + header stacked, safe-top applied once ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 px-3 pt-2 safe-top">
+      {/* ── Top overlay: progress bars + header, one safe-area offset ── */}
+      <div
+        className="absolute top-0 left-0 right-0 z-30 flex flex-col px-3"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 8px, 14px)' }}
+      >
         {/* Progress bars */}
-        <div className="flex gap-[3px] pointer-events-none">
+        <div className="flex gap-[3px] pointer-events-none mb-2">
           {stories.map((s, i) => (
             <div key={s.id} className="flex-1 h-[2px] bg-white/25 rounded-full overflow-hidden">
               {i < index && <div className="h-full w-full bg-white rounded-full" />}
@@ -306,10 +309,9 @@ export default function StoryViewer({
             </div>
           ))}
         </div>
-      </div>
 
-      {/* ── Header: avatar + actions ── */}
-      <div className="absolute top-0 left-0 right-0 z-30 px-3 pt-8 safe-top pb-2 flex items-center justify-between pointer-events-none">
+        {/* ── Header: avatar + actions ── */}
+        <div className="flex items-center justify-between pointer-events-none">
         <button
           className="flex items-center gap-2.5 pointer-events-auto active:opacity-70 transition-opacity"
           onTouchStart={stopTouch} onTouchEnd={stopTouch}
@@ -358,7 +360,8 @@ export default function StoryViewer({
             <X size={20} className="text-white" />
           </button>
         </div>
-      </div>
+        </div>{/* end header row */}
+      </div>{/* end top overlay */}
 
       {/* ── Caption ── */}
       {story.caption && (
