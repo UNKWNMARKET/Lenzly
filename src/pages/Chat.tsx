@@ -213,7 +213,7 @@ export default function Chat() {
     : { backgroundColor: bg }
 
   return (
-    <div className="flex flex-col min-h-screen" style={bgStyle}>
+    <div className="flex flex-col overflow-hidden" style={{ ...bgStyle, height: '100dvh' }}>
       {/* Header */}
       <header
         className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top"
@@ -248,7 +248,7 @@ export default function Chat() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
         {loading && (
           <div className="flex justify-center pt-12">
             <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
