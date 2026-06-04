@@ -571,7 +571,7 @@ function PeopleModal({ title, people, onClose }: {
             <X size={16} className="text-white/60" />
           </button>
         </div>
-        <div className="overflow-y-auto max-h-[60vh] pb-6">
+        <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
           {people.map(p => (
             <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 hover:bg-white/3 transition-colors">
               <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border">
@@ -640,7 +640,7 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
         </div>
 
         {/* Reviews list */}
-        <div className="overflow-y-auto max-h-[60vh] pb-6">
+        <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
           {mockReviews.map(r => (
             <div key={r.id} className="px-4 py-4 border-b border-lenz-border/50">
               <div className="flex items-start gap-3">
