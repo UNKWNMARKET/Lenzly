@@ -98,10 +98,19 @@ export default function PostSpot() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
-    files.forEach(file => {
+    if (!files.length) return
+    Promise.all(files.map(file => new Promise<{ file: File; preview: string }>(resolve => {
       const reader = new FileReader()
-      reader.onloadend = () => addItem(file, reader.result as string)
+      reader.onloadend = () => resolve({ file, preview: reader.result as string })
       reader.readAsDataURL(file)
+    }))).then(results => {
+      setItems(prev => {
+        const newItems = results.map(r => ({ file: r.file, preview: r.preview, caption: '', locationName: '', filterIndex: 0 }))
+        const next = [...prev, ...newItems]
+        setActiveIndex(next.length - 1)
+        setStep('details')
+        return next
+      })
     })
     e.target.value = ''
   }

@@ -529,7 +529,8 @@ export default function Profile() {
       {modal === 'followers' && (
         <PeopleModal
           title={`Followers · ${formatCount(u.followers)}`}
-          people={photographers.slice(0, 8)}
+          userId={user?.id ?? ''}
+          type="followers"
           onClose={closeModal}
         />
       )}
@@ -538,7 +539,8 @@ export default function Profile() {
       {modal === 'following' && (
         <PeopleModal
           title={`Following · ${u.following}`}
-          people={photographers.slice(0, 6)}
+          userId={user?.id ?? ''}
+          type="following"
           onClose={closeModal}
         />
       )}
@@ -553,18 +555,46 @@ export default function Profile() {
 }
 
 // ── People Modal ──────────────────────────────────────────────────────────────
-function PeopleModal({ title, people, onClose }: {
+type RealPerson = { id: string; username: string | null; name: string | null; avatar_url: string | null; is_pro?: boolean }
+
+function PeopleModal({ title, userId, type, onClose }: {
   title: string
-  people: typeof photographers
+  userId: string
+  type: 'followers' | 'following'
   onClose: () => void
 }) {
+  const [people, setPeople] = useState<RealPerson[]>([])
+  const [loading, setLoading] = useState(true)
+  const [, navigate] = useLocation()
+
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+      if (type === 'followers') {
+        // People who follow userId
+        const { data } = await supabase
+          .from('follows').select('follower_id').eq('following_id', userId).eq('status', 'accepted')
+        const ids = (data ?? []).map((r: any) => r.follower_id)
+        if (ids.length === 0) { setPeople([]); setLoading(false); return }
+        const { data: profiles } = await supabase.from('profiles').select('id, username, name, avatar_url, is_pro').in('id', ids)
+        setPeople((profiles ?? []) as RealPerson[])
+      } else {
+        // People userId follows
+        const { data } = await supabase
+          .from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted')
+        const ids = (data ?? []).map((r: any) => r.following_id)
+        if (ids.length === 0) { setPeople([]); setLoading(false); return }
+        const { data: profiles } = await supabase.from('profiles').select('id, username, name, avatar_url, is_pro').in('id', ids)
+        setPeople((profiles ?? []) as RealPerson[])
+      }
+      setLoading(false)
+    })()
+  }, [userId, type])
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
-      <div
-        className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Handle */}
+      <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-lenz-border">
           <h3 className="text-sm font-bold text-white tracking-wide">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
@@ -572,24 +602,29 @@ function PeopleModal({ title, people, onClose }: {
           </button>
         </div>
         <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
-          {people.map(p => (
-            <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 hover:bg-white/3 transition-colors">
-              <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border">
-                <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+            </div>
+          ) : people.length === 0 ? (
+            <p className="text-center text-white/30 text-sm py-10">No one here yet</p>
+          ) : people.map(p => (
+            <button key={p.id}
+              onClick={() => { onClose(); navigate(`/photographer/${p.id}`) }}
+              className="w-full flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 active:bg-white/5 transition-colors text-left">
+              <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border bg-lenz-card">
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-white/30 font-bold">{(p.name || p.username || '?')[0].toUpperCase()}</div>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold text-white truncate">{p.name}</p>
-                  {p.pro && (
-                    <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-                  )}
+                  <p className="text-sm font-semibold text-white truncate">{p.name || p.username}</p>
+                  {p.is_pro && <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
                 </div>
-                <p className="text-xs text-white/40 truncate">@{p.username} · {p.location}</p>
+                <p className="text-xs text-white/40 truncate">@{p.username}</p>
               </div>
-              <button className="text-xs font-semibold text-gold border border-gold/30 px-3 py-1.5 rounded-full hover:bg-gold/10 transition-colors shrink-0">
-                Follow
-              </button>
-            </div>
+            </button>
           ))}
         </div>
       </div>
