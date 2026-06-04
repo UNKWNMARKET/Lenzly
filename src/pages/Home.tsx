@@ -25,6 +25,7 @@ export default function Home() {
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
+  const [feedVisible, setFeedVisible] = useState(true)
   const [followingIds, setFollowingIds] = useState<string[]>([])
   const { blockedIds } = useBlockedUsers()
 
@@ -204,7 +205,11 @@ export default function Home() {
         {(['foryou', 'following'] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => setFeedTab(tab)}
+            onClick={() => {
+              if (tab === feedTab) return
+              setFeedVisible(false)
+              setTimeout(() => { setFeedTab(tab); setFeedVisible(true) }, 220)
+            }}
             className={`flex-1 py-3 text-xs font-semibold tracking-wider uppercase transition-colors relative ${
               feedTab === tab ? 'text-gold' : 'text-white/40'
             }`}
@@ -221,7 +226,10 @@ export default function Home() {
       <BusinessBanner />
 
       {/* Feed */}
-      <div className="mt-1 md:grid md:grid-cols-2 md:gap-0">
+      <div
+        className="mt-1 md:grid md:grid-cols-2 md:gap-0 transition-opacity duration-200"
+        style={{ opacity: feedVisible ? 1 : 0 }}
+      >
         {loading ? (
           // Skeleton loading
           [1, 2, 3].map(i => (
