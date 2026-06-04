@@ -87,10 +87,19 @@ export default function StoryViewer({
     return () => window.removeEventListener('resize', update)
   }, [])
 
-  // Hide bottom nav
+  // Lock body scroll and hide bottom nav while story is open
   useEffect(() => {
     document.body.classList.add('story-open')
-    return () => { document.body.classList.remove('story-open') }
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.width = '100%'
+    return () => {
+      document.body.classList.remove('story-open')
+      document.body.style.overflow = prev
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
   }, [])
 
   // Reset per-story state
@@ -246,8 +255,8 @@ export default function StoryViewer({
     // Use JS window.innerHeight so the container fills the real screen on WKWebView
     // regardless of dvh/vh support issues in Capacitor
     <div
-      className="fixed top-0 left-0 w-full z-[60] bg-black select-none"
-      style={{ height: vh }}
+      className="fixed top-0 left-0 w-full z-[60] bg-black select-none overflow-hidden"
+      style={{ height: vh, touchAction: 'none' }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); if (!commentOpen) setPaused(false) }}
