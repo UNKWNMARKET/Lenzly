@@ -365,30 +365,52 @@ export default function PostSpot() {
   // ── Step 1: No photo yet ─────────────────────────────────────────────────
   if (step === 'photo' || items.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col safe-top safe-bottom">
-        <button onClick={() => navigate('/')}
-          className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-          <X size={18} className="text-white" />
+      <div className="fixed inset-0 flex flex-col" style={{ background: 'linear-gradient(180deg,#1a0e04 0%,#0d0804 40%,#050302 100%)' }}>
+        {/* Full-screen dark canvas */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Subtle vignette */}
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
+        </div>
+
+        {/* X close — top left, safe area */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute z-10 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform"
+          style={{ top: 'calc(env(safe-area-inset-top, 44px) + 12px)', left: '16px' }}
+        >
+          <X size={19} className="text-white" />
         </button>
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
-          <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-2">
-            <Camera size={32} className="text-white/40" />
-          </div>
-          <div className="text-center">
-            <h2 className="text-white text-xl font-bold tracking-wide">Share a Spot</h2>
-            <p className="text-white/40 text-sm mt-1">Show photographers where you are</p>
-          </div>
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button onClick={() => openCamera(CameraSource.Camera)}
-              className="w-full py-4 rounded-2xl bg-gold text-lenz-bg font-bold text-base flex items-center justify-center gap-2 active:scale-95 transition-transform">
-              <Camera size={18} /> Open Camera
+
+        {/* Bottom action bar — matches reference layout */}
+        <div
+          className="absolute inset-x-0 bottom-0 px-5 flex flex-col gap-3"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 34px) + 20px)' }}
+        >
+          {/* Camera shutter row */}
+          <div className="flex items-center justify-between">
+            {/* Library thumbnail pill */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md border border-white/12 rounded-full px-4 py-2.5 active:scale-95 transition-transform"
+            >
+              <ImagePlus size={18} className="text-white/80" />
+              <span className="text-white/80 text-sm font-semibold">Library</span>
             </button>
-            <button onClick={() => fileInputRef.current?.click()}
-              className="w-full py-4 rounded-2xl bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 active:scale-95 transition-transform">
-              <ImagePlus size={18} /> Choose from Library
+
+            {/* Main shutter */}
+            <button
+              onClick={() => openCamera(CameraSource.Camera)}
+              className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '3px solid rgba(255,255,255,0.35)' }}
+            >
+              <div className="w-14 h-14 rounded-full bg-white/90" />
             </button>
+
+            {/* Spacer to balance layout */}
+            <div className="w-[100px]" />
           </div>
         </div>
+
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
       </div>
     )
