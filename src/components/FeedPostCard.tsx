@@ -405,28 +405,24 @@ export default function FeedPostCard({
           alt={post.caption ?? ''}
           className="w-full h-full"
         />
-        {/* Double-tap camera burst — camera with heart inside lens */}
+        {/* Double-tap camera burst — camera with heart-shaped cutout as lens */}
         {doubleTapHeart && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none heart-burst">
             <svg
               width="90" height="90" viewBox="0 0 90 90" fill="none"
               className="drop-shadow-[0_0_28px_rgba(255,255,255,0.9)]"
             >
-              {/* Camera body (solid white, no lens hole) */}
+              {/* Camera body with heart-shaped hole (evenodd cutout) */}
               <path
                 fill="white"
-                d="M10 28 C10 24.7 12.7 22 16 22 L28 22 L31 16 L59 16 L62 22 L74 22 C77.3 22 80 24.7 80 28 L80 66 C80 69.3 77.3 72 74 72 L16 72 C12.7 72 10 69.3 10 66 Z"
-              />
-              {/* Lens ring — dark circle */}
-              <circle cx="45" cy="48" r="16" fill="rgba(0,0,0,0.18)" />
-              <circle cx="45" cy="48" r="16" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-              {/* Heart inside the lens — white, clean heart shape centered at 45,48 */}
-              <path
-                fill="white"
-                d="M45 58 C44 57 33 50 33 43 C33 38 37 35 41.5 35 C43.5 35 45 36.8 45 36.8 C45 36.8 46.5 35 48.5 35 C53 35 57 38 57 43 C57 50 46 57 45 58 Z"
+                fillRule="evenodd"
+                d="
+                  M10 28 C10 24.7 12.7 22 16 22 L28 22 L31 16 L59 16 L62 22 L74 22 C77.3 22 80 24.7 80 28 L80 66 C80 69.3 77.3 72 74 72 L16 72 C12.7 72 10 69.3 10 66 Z
+                  M45 59 C44 58 32 50 32 42.5 C32 37.5 36 34 40.5 34 C42.8 34 44.5 35.5 45 37 C45.5 35.5 47.2 34 49.5 34 C54 34 58 37.5 58 42.5 C58 50 46 58 45 59 Z
+                "
               />
               {/* Viewfinder dot top-left */}
-              <circle cx="22" cy="33" r="3.5" fill="white" opacity="0.6" />
+              <circle cx="22" cy="33" r="3.5" fill="white" opacity="0.65" />
             </svg>
           </div>
         )}
