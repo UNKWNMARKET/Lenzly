@@ -13,29 +13,37 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
   }
 
   body {
     background: #050505;
     color: #f5f5f5;
-    min-height: 100svh;
+    height: 100%;
+    overflow: hidden;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    /* Prevent iOS rubber-band on the document itself */
+    position: fixed;
+    width: 100%;
   }
 
   #root {
     max-width: 430px;
     margin: 0 auto;
-    min-height: 100svh;
+    height: 100%;
     background: #080808;
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
-  /* Smooth momentum scroll on all scrollable containers on iOS */
+  /* Smooth momentum scroll, no rubber-band on any scrollable container */
   [class*="overflow-y-auto"], [class*="overflow-y-scroll"] {
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    overscroll-behavior: none;
   }
 
   /* iPad and larger: expand beyond phone width, offset for sidebar */
