@@ -505,10 +505,11 @@ export default function PostSpot() {
         </div>
       )}
 
-      {/* ── Edit tab switcher (Filters / Layout) ────────────────────────── */}
-      <div className="absolute left-0 right-0 z-20" style={{ bottom: '330px' }}>
-        {/* Tab pills */}
-        <div className="flex justify-center gap-1 mb-3 px-4">
+      {/* ── Bottom sheet ────────────────────────────────────────────────── */}
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-8 space-y-3" style={{ zIndex: 20 }}>
+
+        {/* ── Tab switcher ── */}
+        <div className="flex justify-center gap-1">
           <button
             onClick={() => setEditTab('filters')}
             className={`px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase transition-all ${
@@ -529,7 +530,7 @@ export default function PostSpot() {
 
         {/* Filter strip */}
         {editTab === 'filters' && (
-          <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
             {FILTERS.map((f, i) => (
               <button
                 key={f.name}
@@ -553,35 +554,55 @@ export default function PostSpot() {
           </div>
         )}
 
-        {/* Layout grid */}
+        {/* Layout grid — shows photo thumbnails with layout overlaid */}
         {editTab === 'layout' && (
-          <div className="px-4">
-            <div className="grid grid-cols-4 gap-2">
-              {LAYOUTS.map(layout => (
+          <div className="grid grid-cols-4 gap-2">
+            {LAYOUTS.map(layout => {
+              const firstPreview = activeItem.previews[0]
+              return (
                 <button
                   key={layout.id}
                   onClick={() => changeLayout(layout.id)}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border-2 transition-all active:scale-95 ${
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 overflow-hidden transition-all active:scale-95 ${
                     activeItem.layoutId === layout.id
-                      ? 'border-gold bg-gold/10 shadow-[0_0_10px_rgba(201,168,76,0.4)]'
-                      : 'border-white/15 bg-black/30'
+                      ? 'border-gold shadow-[0_0_10px_rgba(201,168,76,0.4)]'
+                      : 'border-white/15'
                   }`}
                 >
-                  <span className={activeItem.layoutId === layout.id ? 'text-gold' : 'text-white/60'}>
-                    <LayoutIcon layout={layout} size={38} />
-                  </span>
-                  <span className={`text-[10px] font-bold tracking-wide ${
+                  {/* Thumbnail: photo divided by layout slots */}
+                  <div className="relative w-full aspect-square bg-black/40">
+                    {layout.slots.map((slot, si) => (
+                      <div
+                        key={si}
+                        className="absolute overflow-hidden"
+                        style={{
+                          left: `${slot.x * 100}%`, top: `${slot.y * 100}%`,
+                          width: `calc(${slot.w * 100}% - 1px)`,
+                          height: `calc(${slot.h * 100}% - 1px)`,
+                          background: firstPreview ? undefined : 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        {firstPreview && (
+                          <img
+                            src={firstPreview}
+                            className="w-full h-full object-cover"
+                            style={{ filter: FILTERS[activeItem.filterIndex].css === 'none' ? undefined : FILTERS[activeItem.filterIndex].css }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {activeItem.layoutId === layout.id && (
+                      <div className="absolute inset-0 bg-gold/20" />
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-bold tracking-wide pb-1.5 ${
                     activeItem.layoutId === layout.id ? 'text-gold' : 'text-white/40'
                   }`}>{layout.label}</span>
                 </button>
-              ))}
-            </div>
+              )
+            })}
           </div>
         )}
-      </div>
-
-      {/* ── Bottom sheet ────────────────────────────────────────────────── */}
-      <div className="absolute inset-x-0 bottom-0 px-4 pb-8 space-y-3" style={{ zIndex: 20 }}>
         {/* Location */}
         <div className="[&_input]:bg-transparent [&_input]:border-0 [&_input]:backdrop-blur-none bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl">
           <LocationAutocomplete
