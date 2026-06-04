@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
@@ -75,6 +75,8 @@ export default function FeedPostCard({
   })
   const inputRef = useRef<HTMLInputElement>(null)
   const lastTapRef = useRef(0)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [longPressOpen, setLongPressOpen] = useState(false)
 
   const isOwner = currentUserId === post.user_id
   const profile = post.profile
@@ -238,6 +240,38 @@ export default function FeedPostCard({
     onDeleted?.(post.id)
   }
 
+  const handleLongPressStart = (e: React.TouchEvent) => {
+    longPressTimer.current = setTimeout(() => {
+      haptics.medium?.()
+      setLongPressOpen(true)
+    }, 500)
+  }
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
+  const handleCopyLink = () => {
+    const url = `https://lenzly.app/post/${post.id}`
+    navigator.clipboard?.writeText(url).then(() => toast.success('Link copied'))
+      .catch(() => toast.success(url))
+    setLongPressOpen(false)
+  }
+
+  const handleSaveImage = async () => {
+    try {
+      const a = document.createElement('a')
+      a.href = post.image_url
+      a.download = `lenzly-${post.id}.jpg`
+      a.target = '_blank'
+      a.click()
+      toast.success('Saving image…')
+    } catch {
+      toast.error('Could not save image')
+    }
+    setLongPressOpen(false)
+  }
+
   const handleAvatarClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!hasStory) { goToProfile(); return }
@@ -323,8 +357,14 @@ export default function FeedPostCard({
         </div>
       </div>
 
-      {/* Image — double-tap to like, pinch to zoom */}
-      <div className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg relative" onClick={handleImageTap}>
+      {/* Image — double-tap to like, long-press for options */}
+      <div
+        className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg relative"
+        onClick={handleImageTap}
+        onTouchStart={handleLongPressStart}
+        onTouchEnd={handleLongPressEnd}
+        onTouchMove={handleLongPressEnd}
+      >
         <ZoomableImage
           src={img.feed(post.image_url)}
           alt={post.caption ?? ''}
@@ -337,6 +377,100 @@ export default function FeedPostCard({
           </div>
         )}
       </div>
+
+      {/* Long-press action sheet */}
+      {longPressOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
+          onClick={() => setLongPressOpen(false)}
+        >
+          <div
+            className="w-full max-w-[430px] md:max-w-[600px] mx-auto pb-8 safe-bottom px-3"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Post preview */}
+            <div className="flex items-center gap-3 bg-lenz-card border border-lenz-border rounded-2xl px-4 py-3 mb-2">
+              <img src={img.thumb(post.image_url)} className="w-12 h-12 rounded-xl object-cover" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{profile?.username ?? 'Photographer'}</p>
+                {post.caption && <p className="text-xs text-white/40 truncate">{post.caption}</p>}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="bg-lenz-card border border-lenz-border rounded-2xl overflow-hidden mb-2">
+              <button
+                onClick={() => { toggleLike(); setLongPressOpen(false) }}
+                className="w-full flex items-center gap-4 px-5 py-4 border-b border-lenz-border/50 active:bg-white/5"
+              >
+                <Heart size={20} className={liked ? 'text-red-500 fill-red-500' : 'text-white/70'} />
+                <span className="text-sm font-medium text-white">{liked ? 'Unlike' : 'Like'}</span>
+              </button>
+              <button
+                onClick={() => { toggleSave(); setLongPressOpen(false) }}
+                className="w-full flex items-center gap-4 px-5 py-4 border-b border-lenz-border/50 active:bg-white/5"
+              >
+                <Bookmark size={20} className={saved ? 'text-gold fill-gold' : 'text-white/70'} />
+                <span className="text-sm font-medium text-white">{saved ? 'Unsave' : 'Save'}</span>
+              </button>
+              <button
+                onClick={() => { setShareOpen(true); setLongPressOpen(false) }}
+                className="w-full flex items-center gap-4 px-5 py-4 border-b border-lenz-border/50 active:bg-white/5"
+              >
+                <Share2 size={20} className="text-white/70" />
+                <span className="text-sm font-medium text-white">Share</span>
+              </button>
+              <button
+                onClick={handleCopyLink}
+                className="w-full flex items-center gap-4 px-5 py-4 border-b border-lenz-border/50 active:bg-white/5"
+              >
+                <Link size={20} className="text-white/70" />
+                <span className="text-sm font-medium text-white">Copy Link</span>
+              </button>
+              <button
+                onClick={handleSaveImage}
+                className={`w-full flex items-center gap-4 px-5 py-4 active:bg-white/5 ${isOwner ? 'border-b border-lenz-border/50' : ''}`}
+              >
+                <Download size={20} className="text-white/70" />
+                <span className="text-sm font-medium text-white">Save Photo</span>
+              </button>
+              {isOwner ? (
+                <>
+                  <button
+                    onClick={() => { handleArchive(); setLongPressOpen(false) }}
+                    className="w-full flex items-center gap-4 px-5 py-4 border-b border-lenz-border/50 active:bg-white/5"
+                  >
+                    <Archive size={20} className="text-white/70" />
+                    <span className="text-sm font-medium text-white">Archive</span>
+                  </button>
+                  <button
+                    onClick={() => { handleDelete(); setLongPressOpen(false) }}
+                    className="w-full flex items-center gap-4 px-5 py-4 active:bg-white/5"
+                  >
+                    <Trash2 size={20} className="text-red-400" />
+                    <span className="text-sm font-medium text-red-400">Delete</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { setReportOpen(true); setLongPressOpen(false) }}
+                  className="w-full flex items-center gap-4 px-5 py-4 active:bg-white/5"
+                >
+                  <Flag size={20} className="text-red-400" />
+                  <span className="text-sm font-medium text-red-400">Report</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setLongPressOpen(false)}
+              className="w-full py-4 bg-lenz-card border border-lenz-border rounded-2xl text-sm font-semibold text-white/60 active:bg-white/5"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Action bar */}
       <div className="flex items-center justify-between px-4 pt-3">
