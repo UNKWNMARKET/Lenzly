@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Bell, MessageCircle, Search, Clock } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
@@ -25,7 +25,10 @@ export default function Home() {
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
-  const [feedVisible, setFeedVisible] = useState(true)
+  const swipeStartX = useRef(0)
+  const swipeStartY = useRef(0)
+  const [swipeOpacity, setSwipeOpacity] = useState(1)
+  const isSwiping = useRef(false)
   const [followingIds, setFollowingIds] = useState<string[]>([])
   const { blockedIds } = useBlockedUsers()
 
@@ -145,6 +148,45 @@ export default function Home() {
 
   // Use real posts if available, otherwise fall back to mock data.
   // Always hide posts from users involved in a block relationship.
+  const switchTab = (tab: 'foryou' | 'following') => {
+    if (tab === feedTab) return
+    setSwipeOpacity(0)
+    setTimeout(() => { setFeedTab(tab); setSwipeOpacity(1) }, 200)
+  }
+
+  const onSwipeTouchStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX
+    swipeStartY.current = e.touches[0].clientY
+    isSwiping.current = false
+  }
+
+  const onSwipeTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - swipeStartX.current
+    const dy = Math.abs(e.touches[0].clientY - swipeStartY.current)
+    if (dy > 20 && !isSwiping.current) return // vertical scroll, ignore
+    if (Math.abs(dx) > 8) isSwiping.current = true
+    if (!isSwiping.current) return
+    // Fade out proportional to drag distance (max fade at 80px)
+    const progress = Math.min(Math.abs(dx) / 80, 1)
+    setSwipeOpacity(1 - progress * 0.85)
+  }
+
+  const onSwipeTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwiping.current) { setSwipeOpacity(1); return }
+    const dx = e.changedTouches[0].clientX - swipeStartX.current
+    isSwiping.current = false
+    if (Math.abs(dx) > 50) {
+      // Swipe left → Following, swipe right → For You
+      const next = dx < 0 ? 'following' : 'foryou'
+      if (next !== feedTab) {
+        switchTab(next)
+        return
+      }
+    }
+    // Not far enough — snap back
+    setSwipeOpacity(1)
+  }
+
   const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
   const visiblePosts = feedTab === 'following'
     ? notBlocked.filter(p => followingIds.includes(p.user_id))
@@ -205,11 +247,7 @@ export default function Home() {
         {(['foryou', 'following'] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => {
-              if (tab === feedTab) return
-              setFeedVisible(false)
-              setTimeout(() => { setFeedTab(tab); setFeedVisible(true) }, 220)
-            }}
+            onClick={() => switchTab(tab)}
             className={`flex-1 py-3 text-xs font-semibold tracking-wider uppercase transition-colors relative ${
               feedTab === tab ? 'text-gold' : 'text-white/40'
             }`}
@@ -227,8 +265,11 @@ export default function Home() {
 
       {/* Feed */}
       <div
-        className="mt-1 md:grid md:grid-cols-2 md:gap-0 transition-opacity duration-200"
-        style={{ opacity: feedVisible ? 1 : 0 }}
+        className="mt-1 md:grid md:grid-cols-2 md:gap-0"
+        style={{ opacity: swipeOpacity, transition: isSwiping.current ? 'none' : 'opacity 0.2s ease' }}
+        onTouchStart={onSwipeTouchStart}
+        onTouchMove={onSwipeTouchMove}
+        onTouchEnd={onSwipeTouchEnd}
       >
         {loading ? (
           // Skeleton loading
