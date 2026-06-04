@@ -405,10 +405,10 @@ export default function FeedPostCard({
           alt={post.caption ?? ''}
           className="w-full h-full"
         />
-        {/* Double-tap heart burst */}
+        {/* Double-tap camera burst */}
         {doubleTapHeart && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Heart size={80} className="text-white fill-white drop-shadow-lg heart-burst" />
+            <Camera size={90} className="text-white fill-white drop-shadow-[0_0_24px_rgba(255,255,255,0.8)] heart-burst" />
           </div>
         )}
       </div>
