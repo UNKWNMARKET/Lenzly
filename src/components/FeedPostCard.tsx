@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
@@ -32,6 +32,8 @@ type Comment = {
   user_id: string
   profiles: { username: string | null; name: string | null; avatar_url: string | null } | null
 }
+
+type CommentLikeAnim = { id: string; key: number }
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -77,6 +79,8 @@ export default function FeedPostCard({
   const lastTapRef = useRef(0)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [longPressOpen, setLongPressOpen] = useState(false)
+  const [commentLikes, setCommentLikes] = useState<Set<string>>(new Set())
+  const [commentLikeAnims, setCommentLikeAnims] = useState<CommentLikeAnim[]>([])
 
   const isOwner = currentUserId === post.user_id
   const profile = post.profile
@@ -176,7 +180,38 @@ export default function FeedPostCard({
 
     const profMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
     setComments(rows.map(r => ({ ...r, profiles: profMap[r.user_id] ?? null })) as unknown as Comment[])
+
+    // Load which comments the current user has liked
+    if (currentUserId && rows.length > 0) {
+      const commentIds = rows.map(r => r.id)
+      const { data: myLikes } = await supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', currentUserId)
+        .in('comment_id', commentIds)
+      if (myLikes) setCommentLikes(new Set(myLikes.map(l => l.comment_id)))
+    }
+
     setTimeout(() => inputRef.current?.focus(), 100)
+  }
+
+  const toggleCommentLike = async (commentId: string) => {
+    if (!currentUserId) { toast.error('Sign in to like comments'); return }
+    const isLiked = commentLikes.has(commentId)
+    setCommentLikes(prev => {
+      const next = new Set(prev)
+      isLiked ? next.delete(commentId) : next.add(commentId)
+      return next
+    })
+    haptics.light()
+    if (!isLiked) {
+      const key = Date.now()
+      setCommentLikeAnims(prev => [...prev, { id: commentId, key }])
+      setTimeout(() => setCommentLikeAnims(prev => prev.filter(a => a.key !== key)), 900)
+      await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: currentUserId }).maybeSingle()
+    } else {
+      await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUserId)
+    }
   }
 
   const submitComment = async () => {
@@ -525,28 +560,49 @@ export default function FeedPostCard({
           {comments.length === 0 && (
             <p className="text-center text-xs text-white/25 py-2">No comments yet. Be the first!</p>
           )}
-          {comments.map(c => (
-            <div key={c.id} className="flex items-start gap-2.5">
-              <button
-                className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5 active:opacity-70 transition-opacity"
-                onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
-              >
-                {c.profiles?.avatar_url
-                  ? <img src={img.avatar(c.profiles.avatar_url)} alt="" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/40 font-bold">{(c.profiles?.name || '?')[0].toUpperCase()}</div>}
-              </button>
-              <div className="flex-1 min-w-0 bg-white/4 rounded-2xl px-3 py-2">
-                <p className="text-sm text-white leading-relaxed">
+          {comments.map(c => {
+            const isCommentLiked = commentLikes.has(c.id)
+            const anim = commentLikeAnims.find(a => a.id === c.id)
+            return (
+              <div key={c.id} className="flex items-start gap-2.5">
+                <button
+                  className="w-7 h-7 rounded-full bg-lenz-bg border border-lenz-border overflow-hidden shrink-0 mt-0.5 active:opacity-70 transition-opacity"
+                  onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
+                >
+                  {c.profiles?.avatar_url
+                    ? <img src={img.avatar(c.profiles.avatar_url)} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/40 font-bold">{(c.profiles?.name || '?')[0].toUpperCase()}</div>}
+                </button>
+                <div className="flex-1 min-w-0 bg-white/4 rounded-2xl px-3 py-2">
+                  <p className="text-sm text-white leading-relaxed">
+                    <button
+                      className="font-bold hover:text-gold transition-colors"
+                      onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
+                    >{c.profiles?.username || c.profiles?.name || 'User'}</button>{' '}
+                    <span className="text-white/75">{c.text}</span>
+                  </p>
+                  <p className="text-[10px] text-white/25 mt-0.5">{timeAgo(c.created_at)}</p>
+                </div>
+                {/* Camera like button */}
+                <div className="relative flex-shrink-0 self-center">
+                  {anim && (
+                    <div key={anim.key} className="absolute -top-6 left-1/2 -translate-x-1/2 pointer-events-none camera-float">
+                      <Camera size={16} className="text-gold fill-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.8)]" />
+                    </div>
+                  )}
                   <button
-                    className="font-bold hover:text-gold transition-colors"
-                    onClick={() => c.user_id === currentUserId ? navigate('/profile') : navigate(`/photographer/${c.user_id}`)}
-                  >{c.profiles?.username || c.profiles?.name || 'User'}</button>{' '}
-                  <span className="text-white/75">{c.text}</span>
-                </p>
-                <p className="text-[10px] text-white/25 mt-0.5">{timeAgo(c.created_at)}</p>
+                    onClick={() => toggleCommentLike(c.id)}
+                    className="p-1 active:scale-75 transition-transform"
+                  >
+                    <Camera
+                      size={14}
+                      className={`transition-all duration-200 ${isCommentLiked ? 'text-gold fill-gold' : 'text-white/25 hover:text-white/50'}`}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {/* Comment input */}
           <div className="flex items-center gap-2 pt-1">
