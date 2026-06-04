@@ -27,9 +27,10 @@ type Props = {
   onSelect?: (suggestion: LocationSuggestion) => void
   placeholder?: string
   dropUp?: boolean
+  pill?: boolean
 }
 
-export default function LocationAutocomplete({ value, onChange, onSelect, placeholder, dropUp }: Props) {
+export default function LocationAutocomplete({ value, onChange, onSelect, placeholder, dropUp, pill }: Props) {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -113,7 +114,10 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
-        className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+        className={pill
+          ? "w-full bg-transparent border-0 pl-9 pr-3 py-2.5 text-sm text-white placeholder-white/35 outline-none"
+          : "w-full bg-lenz-card border border-lenz-border rounded-xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+        }
       />
       {loading && (
         <Loader size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 animate-spin" />

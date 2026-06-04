@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { X, Camera, ChevronLeft, ImagePlus, Send, Plus } from 'lucide-react'
+import { X, ChevronLeft, ImagePlus, Send, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -421,9 +421,9 @@ export default function PostSpot() {
 
   // ── Step 2: Photos selected ──────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black flex flex-col safe-top safe-bottom">
+    <div className="fixed inset-0 bg-black">
 
-      {/* ── Layout preview (full screen) ────────────────────────────────── */}
+      {/* ── Full-screen photo ───────────────────────────────────────────── */}
       <div className="absolute inset-0">
         {activeLayout.slots.map((slot, i) => {
           const preview = activeItem.previews[i]
@@ -446,7 +446,6 @@ export default function PostSpot() {
                   style={{ filter: activeFilter.css === 'none' ? undefined : activeFilter.css }}
                 />
               ) : (
-                // Empty slot — tap to fill
                 <button
                   className="w-full h-full bg-white/8 border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 active:bg-white/12 transition-colors"
                   onClick={() => {
@@ -461,153 +460,184 @@ export default function PostSpot() {
             </div>
           )
         })}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none" />
+        {/* Subtle top gradient for back button */}
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        {/* Subtle bottom gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
       </div>
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 flex items-center justify-between px-4 pt-3">
+      <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 8px)' }}>
         <button onClick={() => { setItems([]); setStep('photo') }}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
           <ChevronLeft size={20} className="text-white" />
         </button>
-        <span className="text-white text-sm font-bold tracking-widest uppercase opacity-80">
+        <span className="text-white text-sm font-bold tracking-widest uppercase"
+          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {items.length > 1 ? `Spot ${activeIndex + 1} of ${items.length}` : 'Your Spot'}
         </span>
         <button onClick={() => { slotToFill.current = null; fileInputRef.current?.click() }}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
           <Plus size={18} className="text-white" />
         </button>
       </div>
 
-      {/* ── Thumbnail strip ─────────────────────────────────────────────── */}
+      {/* ── Thumbnail strip (top, when multi) ───────────────────────────── */}
       {items.length > 1 && (
-        <div className="relative z-10 flex gap-2 px-4 mt-3 overflow-x-auto no-scrollbar">
+        <div className="absolute inset-x-0 z-20 flex gap-2 px-4 overflow-x-auto no-scrollbar"
+          style={{ top: 'calc(env(safe-area-inset-top, 44px) + 60px)' }}>
           {items.map((it, i) => (
             <button key={i} onClick={() => setActiveIndex(i)}
-              className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-gold' : 'border-white/20'}`}>
+              className={`relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-gold' : 'border-white/20'}`}>
               {it.previews[0]
                 ? <img src={it.previews[0]} className="w-full h-full object-cover"
                     style={{ filter: FILTERS[it.filterIndex].css === 'none' ? undefined : FILTERS[it.filterIndex].css }} />
                 : <div className="w-full h-full bg-white/10" />
               }
               <button onClick={e => { e.stopPropagation(); removeItem(i) }}
-                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center">
-                <X size={10} className="text-white" />
+                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center">
+                <X size={9} className="text-white" />
               </button>
               {!it.locationName && <div className="absolute bottom-0 inset-x-0 h-1 bg-rose-500/80" />}
             </button>
           ))}
           <button onClick={() => { slotToFill.current = null; fileInputRef.current?.click() }}
-            className="flex-shrink-0 w-14 h-14 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center">
-            <Plus size={18} className="text-white/40" />
+            className="flex-shrink-0 w-12 h-12 rounded-xl border-2 border-dashed border-white/20 bg-black/30 backdrop-blur-md flex items-center justify-center">
+            <Plus size={16} className="text-white/40" />
           </button>
         </div>
       )}
 
-      {/* ── Floating edit strip (above bottom sheet) ───────────────────── */}
-      <div className="absolute left-0 right-0 z-20" style={{ bottom: '268px' }}>
-        {/* Tab pills */}
-        <div className="flex justify-center gap-1 mb-2">
-          <button onClick={() => setEditTab('filters')}
-            className={`px-4 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all ${
-              editTab === 'filters' ? 'bg-gold text-lenz-bg' : 'bg-black/50 text-white/50 border border-white/15 backdrop-blur-sm'
-            }`}>Filters</button>
-          <button onClick={() => setEditTab('layout')}
-            className={`px-4 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all ${
-              editTab === 'layout' ? 'bg-gold text-lenz-bg' : 'bg-black/50 text-white/50 border border-white/15 backdrop-blur-sm'
-            }`}>Layout</button>
-        </div>
-
-        {/* Filter strip */}
-        {editTab === 'filters' && (
-          <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-1">
-            {FILTERS.map((f, i) => (
-              <button key={f.name} onClick={() => updateActive({ filterIndex: i })}
-                className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
-                <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
-                  activeItem.filterIndex === i ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
-                }`}>
-                  {activeItem.previews[0]
-                    ? <img src={activeItem.previews[0]} className="w-full h-full object-cover"
-                        style={{ filter: f.css === 'none' ? undefined : f.css }} />
-                    : <div className="w-full h-full bg-white/10" />}
-                </div>
-                <span className={`text-[9px] font-semibold tracking-wide ${activeItem.filterIndex === i ? 'text-gold' : 'text-white/50'}`}>{f.name}</span>
-              </button>
-            ))}
+      {/* ── Right-side bubble buttons (Filters + Layout) ────────────────── */}
+      <div className="absolute right-4 z-20 flex flex-col gap-2.5"
+        style={{ top: '50%', transform: 'translateY(-50%)' }}>
+        <button
+          onClick={() => setEditTab(t => t === 'filters' ? 'layout' : 'filters')}
+          className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
+            editTab === 'filters'
+              ? 'bg-gold/90 border-gold text-lenz-bg'
+              : 'bg-black/40 border-white/15 text-white/70'
+          }`}
+        >
+          <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0">
+            {activeItem.previews[0]
+              ? <img src={activeItem.previews[0]} className="w-full h-full object-cover"
+                  style={{ filter: activeFilter.css === 'none' ? undefined : activeFilter.css }} />
+              : <div className="w-full h-full bg-white/20" />
+            }
           </div>
-        )}
+          <span className="text-[8px] font-bold tracking-wide leading-none">FX</span>
+        </button>
 
-        {/* Layout strip — same height as filter strip, horizontal scroll */}
-        {editTab === 'layout' && (
-          <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-1">
-            {LAYOUTS.map(layout => {
-              const firstPreview = activeItem.previews[0]
-              const isActive = activeItem.layoutId === layout.id
-              return (
-                <button key={layout.id} onClick={() => changeLayout(layout.id)}
-                  className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
-                  <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 relative transition-all ${
-                    isActive ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
-                  }`}>
-                    {/* Photo divided by slots */}
-                    {layout.slots.map((slot, si) => (
-                      <div key={si} className="absolute overflow-hidden"
-                        style={{
-                          left: `${slot.x * 100}%`, top: `${slot.y * 100}%`,
-                          width: `calc(${slot.w * 100}% - 1px)`,
-                          height: `calc(${slot.h * 100}% - 1px)`,
-                          background: firstPreview ? undefined : 'rgba(255,255,255,0.08)',
-                        }}>
-                        {firstPreview && (
-                          <img src={firstPreview} className="w-full h-full object-cover"
-                            style={{ filter: FILTERS[activeItem.filterIndex].css === 'none' ? undefined : FILTERS[activeItem.filterIndex].css }} />
-                        )}
-                      </div>
-                    ))}
-                    {isActive && <div className="absolute inset-0 bg-gold/25 pointer-events-none" />}
-                  </div>
-                  <span className={`text-[9px] font-semibold tracking-wide ${isActive ? 'text-gold' : 'text-white/50'}`}>{layout.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
+        <button
+          onClick={() => setEditTab(t => t === 'layout' ? 'filters' : 'layout')}
+          className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
+            editTab === 'layout'
+              ? 'bg-gold/90 border-gold text-lenz-bg'
+              : 'bg-black/40 border-white/15 text-white/70'
+          }`}
+        >
+          <LayoutIcon layout={activeLayout} size={20} />
+          <span className="text-[8px] font-bold tracking-wide leading-none">Grid</span>
+        </button>
       </div>
 
-      {/* ── Bottom sheet ────────────────────────────────────────────────── */}
-      <div className="absolute inset-x-0 bottom-0 px-4 pb-8 space-y-3" style={{ zIndex: 20 }}>
-        {/* Location */}
-        <div className="[&_input]:bg-transparent [&_input]:border-0 [&_input]:backdrop-blur-none bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl">
-          <LocationAutocomplete
-            value={activeItem.locationName}
-            onChange={v => updateActive({ locationName: v })}
-            onSelect={(s: LocationSuggestion) => updateActive({ locationName: s.display })}
-            placeholder="Tag your location…"
-            dropUp
-          />
+      {/* ── Edit strip (floats over photo, above bottom bubbles) ─────────── */}
+      {editTab === 'filters' && (
+        <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
+          {FILTERS.map((f, i) => (
+            <button key={f.name} onClick={() => updateActive({ filterIndex: i })}
+              className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
+              <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
+                activeItem.filterIndex === i ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
+              }`}>
+                {activeItem.previews[0]
+                  ? <img src={activeItem.previews[0]} className="w-full h-full object-cover"
+                      style={{ filter: f.css === 'none' ? undefined : f.css }} />
+                  : <div className="w-full h-full bg-white/10" />}
+              </div>
+              <span className={`text-[9px] font-semibold tracking-wide ${activeItem.filterIndex === i ? 'text-gold' : 'text-white/70'}`}
+                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{f.name}</span>
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* Caption */}
-        <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3">
+      {editTab === 'layout' && (
+        <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
+          {LAYOUTS.map(layout => {
+            const firstPreview = activeItem.previews[0]
+            const isActive = activeItem.layoutId === layout.id
+            return (
+              <button key={layout.id} onClick={() => changeLayout(layout.id)}
+                className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
+                <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 relative transition-all ${
+                  isActive ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
+                }`}>
+                  {layout.slots.map((slot, si) => (
+                    <div key={si} className="absolute overflow-hidden"
+                      style={{
+                        left: `${slot.x * 100}%`, top: `${slot.y * 100}%`,
+                        width: `calc(${slot.w * 100}% - 1px)`,
+                        height: `calc(${slot.h * 100}% - 1px)`,
+                        background: firstPreview ? undefined : 'rgba(255,255,255,0.08)',
+                      }}>
+                      {firstPreview && (
+                        <img src={firstPreview} className="w-full h-full object-cover"
+                          style={{ filter: FILTERS[activeItem.filterIndex].css === 'none' ? undefined : FILTERS[activeItem.filterIndex].css }} />
+                      )}
+                    </div>
+                  ))}
+                  {isActive && <div className="absolute inset-0 bg-gold/25 pointer-events-none" />}
+                </div>
+                <span className={`text-[9px] font-semibold tracking-wide ${isActive ? 'text-gold' : 'text-white/70'}`}
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{layout.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Bottom floating bubbles ──────────────────────────────────────── */}
+      <div className="absolute inset-x-0 z-20 flex flex-col gap-2.5 px-4"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 16px)' }}>
+
+        {/* Caption pill */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/12 rounded-full px-4 py-2.5 flex items-center gap-2">
           <input
             value={activeItem.caption}
             onChange={e => updateActive({ caption: e.target.value })}
             placeholder="Add a caption… (optional)"
             maxLength={200}
-            className="w-full bg-transparent text-white text-sm placeholder-white/30 outline-none"
+            className="flex-1 bg-transparent text-white text-sm placeholder-white/30 outline-none"
           />
         </div>
 
-        {/* Duration picker */}
-        <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3">
-          <p className="text-[10px] text-white/35 font-bold tracking-[0.15em] uppercase mb-2">Story Duration</p>
-          <div className="flex gap-2">
+        {/* Location + Duration row */}
+        <div className="flex gap-2 items-center">
+          {/* Location bubble */}
+          <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/12 rounded-full overflow-visible">
+            <LocationAutocomplete
+              value={activeItem.locationName}
+              onChange={v => updateActive({ locationName: v })}
+              onSelect={(s: LocationSuggestion) => updateActive({ locationName: s.display })}
+              placeholder="Tag location…"
+              dropUp
+              pill
+            />
+          </div>
+
+          {/* Duration bubbles */}
+          <div className="flex gap-1 flex-shrink-0">
             {[5, 10, 15].map(s => (
               <button key={s} onClick={() => setStoryDuration(s)}
-                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                  storyDuration === s ? 'bg-gold text-lenz-bg' : 'bg-white/8 text-white/50 border border-white/10'
+                className={`w-10 h-10 rounded-full text-xs font-bold transition-all active:scale-90 backdrop-blur-md border ${
+                  storyDuration === s
+                    ? 'bg-gold/90 border-gold text-lenz-bg'
+                    : 'bg-black/40 border-white/15 text-white/60'
                 }`}>
                 {s}s
               </button>
@@ -617,15 +647,11 @@ export default function PostSpot() {
 
         {/* Share button */}
         <button onClick={handlePost} disabled={uploading}
-          className="w-full py-4 rounded-2xl bg-gold text-lenz-bg font-bold text-base flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 transition-all">
+          className="w-full py-3.5 rounded-full bg-gold text-lenz-bg font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 transition-all shadow-[0_4px_20px_rgba(201,168,76,0.4)]">
           {uploading
             ? <span className="animate-pulse">Sharing…</span>
-            : <><Send size={17} /> {items.length > 1 ? `Share ${items.length} Spots` : 'Share Spot'}</>}
+            : <><Send size={16} /> {items.length > 1 ? `Share ${items.length} Spots` : 'Share Spot'}</>}
         </button>
-
-        <p className="text-center text-[11px] text-white/25 tracking-wide">
-          Visible to everyone for 24 hours · Not on your profile
-        </p>
       </div>
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
