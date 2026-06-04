@@ -198,7 +198,7 @@ function DeepLinkHandler() {
 function SwipeWrapper({ children }: { children: React.ReactNode }) {
   const { onTouchStart, onTouchEnd } = useSwipeNav()
   return (
-    <div className="relative h-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="absolute inset-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {children}
     </div>
   )
