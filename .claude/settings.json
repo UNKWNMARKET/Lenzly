@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/user/Lenzly/.claude/auto-commit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
