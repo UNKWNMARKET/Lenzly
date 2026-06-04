@@ -29,6 +29,9 @@ export default function Home() {
   const swipeStartY = useRef(0)
   const [swipeOpacity, setSwipeOpacity] = useState(1)
   const isSwiping = useRef(false)
+  const edgeSwipeStartX = useRef(0)
+  const edgeSwipeActive = useRef(false)
+  const [cameraSwipeX, setCameraSwipeX] = useState(0)
   const [followingIds, setFollowingIds] = useState<string[]>([])
   const { blockedIds } = useBlockedUsers()
 
@@ -187,6 +190,24 @@ export default function Home() {
     setSwipeOpacity(1)
   }
 
+  const onEdgeTouchStart = (e: React.TouchEvent) => {
+    const x = e.touches[0].clientX
+    if (x < 30) { edgeSwipeActive.current = true; edgeSwipeStartX.current = x }
+    else edgeSwipeActive.current = false
+  }
+
+  const onEdgeTouchMove = (e: React.TouchEvent) => {
+    if (!edgeSwipeActive.current) return
+    const dx = e.touches[0].clientX - edgeSwipeStartX.current
+    if (dx > 0) setCameraSwipeX(Math.min(dx, 120))
+  }
+
+  const onEdgeTouchEnd = () => {
+    if (edgeSwipeActive.current && cameraSwipeX > 60) navigate('/spot')
+    edgeSwipeActive.current = false
+    setCameraSwipeX(0)
+  }
+
   const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
   const visiblePosts = feedTab === 'following'
     ? notBlocked.filter(p => followingIds.includes(p.user_id))
@@ -195,6 +216,31 @@ export default function Home() {
 
   return (
     <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    {/* Edge swipe detector — sits over the left edge only */}
+    <div
+      className="fixed left-0 top-0 h-full w-8 z-50"
+      onTouchStart={onEdgeTouchStart}
+      onTouchMove={onEdgeTouchMove}
+      onTouchEnd={onEdgeTouchEnd}
+    />
+    {/* Camera swipe peek indicator */}
+    {cameraSwipeX > 0 && (
+      <div
+        className="fixed left-0 top-0 h-full z-40 flex items-center justify-center pointer-events-none"
+        style={{
+          width: `${cameraSwipeX + 20}px`,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.9), transparent)',
+          opacity: Math.min(cameraSwipeX / 80, 1),
+        }}
+      >
+        <div className="flex flex-col items-center gap-2 pl-3">
+          <div className="w-12 h-12 rounded-full bg-gold/20 border border-gold/50 flex items-center justify-center">
+            <span className="text-2xl">📸</span>
+          </div>
+          {cameraSwipeX > 60 && <span className="text-[9px] text-gold font-bold tracking-widest uppercase">SPOT</span>}
+        </div>
+      </div>
+    )}
     <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">

@@ -88,23 +88,36 @@ export default function StoriesBar() {
     <>
       <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar">
         {/* Your Spot */}
-        <button
-          onClick={() => { haptics.light(); myStory ? setStoryIndex(0) : navigate('/spot') }}
-          className="flex flex-col items-center gap-1.5 shrink-0 active:scale-95 transition-transform duration-150"
-        >
-          {myStory ? (
-            <div className={ring(!viewedIds.has(myStory.id))}>
-              <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
-                <img src={img.thumb(myStory.image_url)} className="w-full h-full object-cover" />
-              </div>
-            </div>
-          ) : (
-            <div className="w-[63px] h-[63px] rounded-full border-[1.5px] border-dashed border-gold/30 bg-lenz-card/50 flex items-center justify-center">
-              <Plus size={20} className="text-gold/50" />
-            </div>
-          )}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <div className="relative">
+            <button
+              onClick={() => { haptics.light(); myStory ? setStoryIndex(0) : navigate('/spot') }}
+              className="active:scale-95 transition-transform duration-150"
+            >
+              {myStory ? (
+                <div className={ring(!viewedIds.has(myStory.id))}>
+                  <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
+                    <img src={img.thumb(myStory.image_url)} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              ) : (
+                <div className="w-[63px] h-[63px] rounded-full border-[1.5px] border-dashed border-gold/30 bg-lenz-card/50 flex items-center justify-center">
+                  <Plus size={20} className="text-gold/50" />
+                </div>
+              )}
+            </button>
+            {/* Add more spots button — always visible */}
+            {myStory && (
+              <button
+                onClick={() => { haptics.light(); navigate('/spot') }}
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gold border-2 border-lenz-bg flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Plus size={11} className="text-lenz-bg" strokeWidth={3} />
+              </button>
+            )}
+          </div>
           <span className="text-[10px] text-white/30 tracking-wide">Your Spot</span>
-        </button>
+        </div>
 
         {/* Others */}
         {othersStories.map((story, i) => {
