@@ -382,7 +382,7 @@ export default function Chat() {
   const bgStyle: React.CSSProperties = isBg(bg) ? { background: bg } : { backgroundColor: bg }
 
   return (
-    <div className="flex flex-col" style={{ ...bgStyle, position: 'fixed', inset: 0, paddingBottom: keyboardOffset }}>
+    <div className="flex flex-col" style={{ ...bgStyle, position: 'fixed', inset: 0, paddingBottom: keyboardOffset, zIndex: 10 }}>
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top flex-shrink-0"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)' }}>
@@ -530,23 +530,25 @@ export default function Chat() {
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
 
-      {/* Reaction picker — frosted glass bubble */}
+      {/* Reaction picker */}
       {reactionPickerMsgId && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 200 }}
+          onTouchEnd={() => setReactionPickerMsgId(null)}
           onClick={() => setReactionPickerMsgId(null)}
         >
-          {/* Scrim */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-          {/* Frosted pill — centered on screen */}
+          <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative flex items-center gap-1 px-3 py-2.5 rounded-full shadow-2xl"
+            className="relative flex items-center px-2 py-2 rounded-2xl shadow-2xl"
             style={{
-              background: 'rgba(28,28,28,0.85)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(22,22,22,0.97)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
             }}
+            onTouchEnd={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
           >
             {REACTION_EMOJIS.map(emoji => {
@@ -556,11 +558,20 @@ export default function Chat() {
               return (
                 <button
                   key={emoji}
-                  onClick={e => { e.stopPropagation(); handleReact(pid, emoji) }}
                   className={cn(
-                    'text-2xl w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-75',
-                    isActive ? 'bg-gold/25 scale-110' : 'active:bg-white/10'
+                    'w-12 h-12 rounded-xl flex items-center justify-center text-[26px] transition-transform',
+                    isActive ? 'scale-125 bg-gold/20' : ''
                   )}
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  onTouchEnd={e => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleReact(pid, emoji)
+                  }}
+                  onClick={e => {
+                    e.stopPropagation()
+                    handleReact(pid, emoji)
+                  }}
                 >
                   {emoji}
                 </button>
