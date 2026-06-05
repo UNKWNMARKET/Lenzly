@@ -72,10 +72,27 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
 
   useEffect(() => {
     const t = setInterval(() => setNowTick(Date.now()), 1000)
     return () => clearInterval(t)
+  }, [])
+
+  // Track keyboard height via visualViewport (iOS WKWebView)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardOffset(offset)
+      // Scroll to bottom when keyboard opens
+      if (offset > 0) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
+    vv.addEventListener('resize', onResize)
+    vv.addEventListener('scroll', onResize)
+    return () => { vv.removeEventListener('resize', onResize); vv.removeEventListener('scroll', onResize) }
   }, [])
 
   const fetchConv = useCallback(async () => {
@@ -185,7 +202,7 @@ export default function Chat() {
   }
 
   const sendMessage = async (content: string, imageUrl?: string) => {
-    if (!user || !convId || sending) return
+    if (!user || !convId) return
     setSending(true)
 
     // Optimistic insert — shows immediately without waiting for real-time
@@ -230,11 +247,11 @@ export default function Chat() {
     inputRef.current?.focus()
   }
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!input.trim()) return
     const content = input.trim()
     setInput('')
-    await sendMessage(content)
+    sendMessage(content)
   }
 
   const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,7 +327,7 @@ export default function Chat() {
   const bgStyle: React.CSSProperties = isBg(bg) ? { background: bg } : { backgroundColor: bg }
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ ...bgStyle, height: '100%' }}>
+    <div className="flex flex-col" style={{ ...bgStyle, position: 'fixed', inset: 0, paddingBottom: keyboardOffset }}>
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top flex-shrink-0"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)' }}>
@@ -333,7 +350,7 @@ export default function Chat() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         {loading && (
           <div className="flex justify-center pt-12">
             <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
