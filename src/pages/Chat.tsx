@@ -125,26 +125,53 @@ export default function Chat() {
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
         payload => {
-          setMessages(prev => [...prev, { ...(payload.new as Message), reactions: [] }])
+          const incoming = payload.new as Message
+          // Skip if already added optimistically
+          setMessages(prev => {
+            if (prev.some(m => m.id === incoming.id)) return prev
+            return [...prev, { ...incoming, reactions: [] }]
+          })
           if (user) supabase.from('conversation_participants')
             .update({ last_read_at: new Date().toISOString() })
             .eq('conversation_id', convId).eq('user_id', user.id)
         })
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
-        payload => setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...payload.new as Message, reactions: m.reactions } : m)))
+        payload => setMessages(prev => prev.map(m =>
+          m.id === payload.new.id ? { ...payload.new as Message, reactions: m.reactions } : m
+        )))
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'message_reactions' },
-        () => fetchConv())
+        ({ new: row }: any) => {
+          setMessages(prev => prev.map(m => {
+            if (m.id !== row.message_id) return m
+            const existing = m.reactions ?? []
+            const already = existing.findIndex(r => r.emoji === row.emoji)
+            if (already >= 0) {
+              const updated = [...existing]
+              updated[already] = { ...updated[already], count: updated[already].count + 1, mine: updated[already].mine || row.user_id === user?.id }
+              return { ...m, reactions: updated }
+            }
+            return { ...m, reactions: [...existing, { emoji: row.emoji, count: 1, mine: row.user_id === user?.id }] }
+          }))
+        })
       .on('postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'message_reactions' },
-        () => fetchConv())
+        ({ old: row }: any) => {
+          setMessages(prev => prev.map(m => {
+            if (m.id !== row.message_id) return m
+            const updated = (m.reactions ?? [])
+              .map(r => r.emoji === row.emoji ? { ...r, count: r.count - 1, mine: r.emoji === row.emoji && row.user_id === user?.id ? false : r.mine } : r)
+              .filter(r => r.count > 0)
+            return { ...m, reactions: updated }
+          }))
+        })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  }, [convId, user, fetchConv])
+  }, [convId, user])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({ behavior: messages.length <= 1 ? 'instant' : 'smooth' } as ScrollIntoViewOptions)
   }, [messages])
 
   function buildReactions(rows: any[], msgId: string, myId: string): Reaction[] {
@@ -160,6 +187,21 @@ export default function Chat() {
   const sendMessage = async (content: string, imageUrl?: string) => {
     if (!user || !convId || sending) return
     setSending(true)
+
+    // Optimistic insert — shows immediately without waiting for real-time
+    const tempId = `temp_${Date.now()}`
+    const optimistic: Message = {
+      id: tempId,
+      conversation_id: convId,
+      sender_id: user.id,
+      content: content || '',
+      image_url: imageUrl ?? null,
+      unsent: false,
+      sent_at: new Date().toISOString(),
+      reactions: [],
+    }
+    setMessages(prev => [...prev, optimistic])
+
     const { data, error } = await supabase.from('messages').insert({
       conversation_id: convId,
       sender_id: user.id,
@@ -167,10 +209,19 @@ export default function Chat() {
       image_url: imageUrl ?? null,
     }).select().single()
 
-    if (error) { toast.error('Failed to send'); setSending(false); return }
+    if (error) {
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      toast.error('Failed to send')
+      setSending(false)
+      return
+    }
+
     if (data) {
+      // Replace temp with real message
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...data, reactions: [] } : m))
       setUnsendMap(prev => new Map(prev).set(data.id, { sentAt: Date.now() }))
-      await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId)
+      supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId)
       if (otherUser?.id) {
         supabase.from('notifications').insert({ user_id: otherUser.id, actor_id: user.id, type: 'message', read: false })
       }
