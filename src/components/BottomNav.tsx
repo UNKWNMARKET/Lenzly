@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Home, Compass, MapPin, User, Plus, Camera, ImagePlus, X } from 'lucide-react'
 import { useLocation, Link } from 'wouter'
 import { cn } from '@/lib/utils'
@@ -11,83 +11,68 @@ const tabs = [
   { path: '/profile', icon: User, label: 'Profile' },
 ]
 
+// Total slots in the nav row (4 tabs + 1 create button)
+const TOTAL_SLOTS = 5
+
 export default function BottomNav() {
   const [location, navigate] = useLocation()
   const [open, setOpen] = useState(false)
 
-  // Glass pill drag state
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const navRowRef = useRef<HTMLDivElement>(null)
-  const pillRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ startX: number; pillX: number; tabCenters: number[] } | null>(null)
-  const [pillX, setPillX] = useState<number | null>(null)
-  const [pillW, setPillW] = useState(0)
+  const dragRef = useRef<{ startX: number; startPct: number } | null>(null)
+  const [dragPct, setDragPct] = useState<number | null>(null) // 0-1 across tabs
   const [dragging, setDragging] = useState(false)
 
   const activeIdx = tabs.findIndex(({ path }) =>
     path === '/' ? location === '/' : location.startsWith(path)
   )
 
-  // Measure tab centers relative to the nav row container
-  useLayoutEffect(() => {
-    const measure = () => {
-      const containerLeft = navRowRef.current?.getBoundingClientRect().left ?? 0
-      const centers = tabRefs.current.map(el => {
-        if (!el) return 0
-        const r = el.getBoundingClientRect()
-        return (r.left - containerLeft) + r.width / 2
-      })
-      const tabEl = tabRefs.current[0]
-      const w = tabEl ? tabEl.getBoundingClientRect().width + 16 : 72
-      setPillW(w)
-      if (activeIdx >= 0) setPillX(centers[activeIdx] - w / 2)
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [activeIdx, location])
+  // Each slot takes 1/TOTAL_SLOTS of the nav width.
+  // Pill center aligns with slot center.
+  // pillLeft (as % of nav width) = (activeIdx + 0.5) / TOTAL_SLOTS - pillHalfWidth
+  // We use inline style with calc so it's always pixel-perfect.
 
-  const getTabCenters = () => {
-    const containerLeft = navRowRef.current?.getBoundingClientRect().left ?? 0
-    return tabRefs.current.map(el => {
-      const r = el?.getBoundingClientRect()
-      return r ? (r.left - containerLeft) + r.width / 2 : 0
-    })
-  }
+  const slotPct = 100 / TOTAL_SLOTS            // % width of one slot
+  const pillWidthPct = slotPct * 0.85          // pill is 85% of a slot width
+  const activeCenterPct = (activeIdx + 0.5) * slotPct  // center of active slot in %
 
+  // During drag, override with dragPct
+  const pillCenterPct = dragging && dragPct !== null ? dragPct : activeCenterPct
+  const pillLeftPct = pillCenterPct - pillWidthPct / 2
+
+  // ── Drag handlers ────────────────────────────────────────────────────────
   const onPillTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation()
-    const centers = getTabCenters()
-    dragRef.current = { startX: e.touches[0].clientX, pillX: pillX ?? 0, tabCenters: centers }
     setDragging(true)
+    dragRef.current = { startX: e.touches[0].clientX, startPct: pillCenterPct }
     haptics.light?.()
   }
 
   const onPillTouchMove = (e: React.TouchEvent) => {
-    if (!dragRef.current) return
+    if (!dragRef.current || !navRowRef.current) return
     e.stopPropagation()
+    const navW = navRowRef.current.getBoundingClientRect().width
     const dx = e.touches[0].clientX - dragRef.current.startX
-    const raw = dragRef.current.pillX + dx
+    const dPct = (dx / navW) * 100
     // Clamp between first and last tab center
-    const centers = dragRef.current.tabCenters
-    const min = centers[0] - pillW / 2
-    const max = centers[centers.length - 1] - pillW / 2
-    setPillX(Math.max(min, Math.min(max, raw)))
+    const minPct = 0.5 * slotPct
+    const maxPct = (tabs.length - 0.5) * slotPct
+    setDragPct(Math.max(minPct, Math.min(maxPct, dragRef.current.startPct + dPct)))
   }
 
-  const onPillTouchEnd = (e: React.TouchEvent) => {
+  const onPillTouchEnd = () => {
     if (!dragRef.current) return
-    e.stopPropagation()
     setDragging(false)
     // Snap to nearest tab
-    const pillCenter = (pillX ?? 0) + pillW / 2
-    const centers = dragRef.current.tabCenters
+    const cur = dragPct ?? pillCenterPct
     let nearest = 0
     let minDist = Infinity
-    centers.forEach((cx, i) => {
-      const d = Math.abs(cx - pillCenter)
+    tabs.forEach((_, i) => {
+      const center = (i + 0.5) * slotPct
+      const d = Math.abs(center - cur)
       if (d < minDist) { minDist = d; nearest = i }
     })
+    setDragPct(null)
     dragRef.current = null
     haptics.light?.()
     navigate(tabs[nearest].path)
@@ -144,20 +129,21 @@ export default function BottomNav() {
 
       <nav className="app-bottom-nav md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50">
         <div className="mx-4 mb-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-          <div ref={navRowRef} className="relative flex items-center justify-around px-2 py-2 bg-[#0e0e0e]/95 backdrop-blur-2xl border border-white/8 rounded-3xl shadow-2xl shadow-black/60">
-
-            {/* Floating gold-outline pill */}
-            {pillX !== null && (
+          <div
+            ref={navRowRef}
+            className="relative flex items-center px-2 py-2 bg-[#0e0e0e]/95 backdrop-blur-2xl border border-white/8 rounded-3xl shadow-2xl shadow-black/60"
+          >
+            {/* Gold outline pill — absolutely positioned, purely CSS-calculated */}
+            {activeIdx >= 0 && (
               <div
-                ref={pillRef}
                 className="absolute top-1.5 bottom-1.5 rounded-2xl pointer-events-auto z-10"
                 style={{
-                  left: pillX,
-                  width: pillW,
+                  left: `${pillLeftPct}%`,
+                  width: `${pillWidthPct}%`,
                   background: 'transparent',
-                  border: '1.5px solid rgba(201,168,76,0.75)',
-                  boxShadow: '0 0 10px rgba(201,168,76,0.18), inset 0 0 8px rgba(201,168,76,0.06)',
-                  transition: dragging ? 'none' : 'left 0.28s cubic-bezier(0.34,1.56,0.64,1)',
+                  border: '1.5px solid rgba(201,168,76,0.7)',
+                  boxShadow: '0 0 12px rgba(201,168,76,0.15), inset 0 0 6px rgba(201,168,76,0.05)',
+                  transition: dragging ? 'none' : 'left 0.3s cubic-bezier(0.34,1.56,0.64,1)',
                 }}
                 onTouchStart={onPillTouchStart}
                 onTouchMove={onPillTouchMove}
@@ -165,14 +151,13 @@ export default function BottomNav() {
               />
             )}
 
-            {/* Tab buttons */}
+            {/* Tab buttons — equal flex so slots are perfectly even */}
             {tabs.map(({ path, icon: Icon, label }, i) => {
               const active = path === '/' ? location === '/' : location.startsWith(path)
               return (
-                <Link key={path} href={path}>
+                <Link key={path} href={path} className="flex-1">
                   <button
-                    ref={el => { tabRefs.current[i] = el }}
-                    className="relative z-20 flex flex-col items-center gap-1 py-2 px-2.5 rounded-2xl transition-all duration-200 active:scale-95"
+                    className="relative z-20 w-full flex flex-col items-center gap-1 py-2 rounded-2xl transition-all duration-200 active:scale-95"
                     onClick={() => haptics.light?.()}
                   >
                     <Icon
@@ -181,7 +166,7 @@ export default function BottomNav() {
                       className={cn('transition-all duration-200', active ? 'text-gold' : 'text-white/35')}
                     />
                     <span className={cn(
-                      'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] text-center transition-colors duration-200',
+                      'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] transition-colors duration-200',
                       active ? 'text-gold/80' : 'text-white/25'
                     )}>
                       {label}
@@ -191,21 +176,23 @@ export default function BottomNav() {
               )
             })}
 
-            {/* Create button */}
-            <button
-              onClick={() => { haptics.medium(); setOpen(o => !o) }}
-              className="relative z-20 flex flex-col items-center py-1 px-3 group"
-            >
-              <div className={cn(
-                'w-12 h-12 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-gold/30 transition-all duration-200',
-                open ? 'scale-90 rotate-45' : 'active:scale-95'
-              )}>
-                {open
-                  ? <X size={22} strokeWidth={2.5} className="text-lenz-bg" />
-                  : <Plus size={24} strokeWidth={2.5} className="text-lenz-bg" />
-                }
-              </div>
-            </button>
+            {/* Create button — same flex-1 slot as tabs */}
+            <div className="flex-1 flex justify-center">
+              <button
+                onClick={() => { haptics.medium(); setOpen(o => !o) }}
+                className="relative z-20 flex flex-col items-center py-1"
+              >
+                <div className={cn(
+                  'w-12 h-12 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-gold/30 transition-all duration-200',
+                  open ? 'scale-90 rotate-45' : 'active:scale-95'
+                )}>
+                  {open
+                    ? <X size={22} strokeWidth={2.5} className="text-lenz-bg" />
+                    : <Plus size={24} strokeWidth={2.5} className="text-lenz-bg" />
+                  }
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
