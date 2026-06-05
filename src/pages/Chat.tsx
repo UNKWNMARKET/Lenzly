@@ -9,6 +9,61 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
 
+// ── Hire proposal card ───────────────────────────────────────────────────────
+function HireProposalCard({ content, isMine }: { content: string; isMine: boolean }) {
+  let proposal: Record<string, string | null> = {}
+  try { proposal = JSON.parse(content) } catch { return <span>{content}</span> }
+
+  return (
+    <div className="w-[260px] rounded-2xl overflow-hidden"
+      style={{ background: 'linear-gradient(135deg,#1a1200 0%,#2b1e00 100%)', border: '1px solid rgba(201,168,76,0.35)' }}>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-gold/20"
+        style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.18) 0%,rgba(201,168,76,0.06) 100%)' }}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center flex-shrink-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-lenz-bg">
+              <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="2"/>
+            </svg>
+          </div>
+          <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-gold/80">Hire Opportunity</span>
+        </div>
+        <p className="text-white font-bold text-[15px] leading-snug">{proposal.projectType}</p>
+      </div>
+
+      {/* Fields */}
+      <div className="px-4 py-3 space-y-2.5">
+        {proposal.date && (
+          <div className="flex items-start gap-2">
+            <span className="text-[9px] font-bold tracking-widest uppercase text-gold/50 w-14 pt-0.5 flex-shrink-0">Date</span>
+            <span className="text-[13px] text-white/80 leading-snug">{proposal.date}</span>
+          </div>
+        )}
+        {proposal.budget && (
+          <div className="flex items-start gap-2">
+            <span className="text-[9px] font-bold tracking-widest uppercase text-gold/50 w-14 pt-0.5 flex-shrink-0">Budget</span>
+            <span className="text-[13px] text-white/80 leading-snug">{proposal.budget}</span>
+          </div>
+        )}
+        {proposal.details && (
+          <div className="flex items-start gap-2">
+            <span className="text-[9px] font-bold tracking-widest uppercase text-gold/50 w-14 pt-0.5 flex-shrink-0">Details</span>
+            <span className="text-[13px] text-white/70 leading-snug">{proposal.details}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-gold/15"
+        style={{ background: 'rgba(201,168,76,0.04)' }}>
+        <p className="text-[10px] text-gold/50 font-medium">
+          {isMine ? `Sent to ${proposal.photographerName}` : 'Reply to discuss availability'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 const BG_PRESETS = [
   { label: 'Dark',       value: '#0A0804',   preview: '#0A0804' },
   { label: 'Midnight',   value: 'linear-gradient(135deg,#0A0804 0%,#1a0a2e 100%)', preview: '#0f0619' },
@@ -366,15 +421,17 @@ export default function Chat() {
           const isMine = msg.sender_id === user?.id
           const remaining = canUnsend(msg.id) ? unsendRemaining(msg.id) : 0
           const hasReactions = (msg.reactions?.length ?? 0) > 0
+          const isProposal = !msg.unsent && !msg.image_url && msg.content.startsWith('{"type":"hire_proposal"')
 
           return (
             <div key={msg.id} className={cn('flex flex-col', isMine ? 'items-end' : 'items-start')}>
               <div
-                className={cn('max-w-[75%] rounded-2xl text-sm leading-relaxed relative',
-                  msg.unsent ? 'px-4 py-2.5 bg-white/5 text-white/30 italic border border-white/10 text-xs'
-                    : msg.image_url ? 'overflow-hidden p-0'
-                    : isMine ? 'px-4 py-2.5 bg-gold text-lenz-bg font-medium rounded-br-sm'
-                    : 'px-4 py-2.5 bg-white/10 text-white/90 rounded-bl-sm backdrop-blur-sm'
+                className={cn('rounded-2xl text-sm leading-relaxed relative',
+                  msg.unsent ? 'px-4 py-2.5 bg-white/5 text-white/30 italic border border-white/10 text-xs max-w-[75%]'
+                    : isProposal ? ''
+                    : msg.image_url ? 'overflow-hidden p-0 max-w-[75%]'
+                    : isMine ? 'px-4 py-2.5 bg-gold text-lenz-bg font-medium rounded-br-sm max-w-[75%]'
+                    : 'px-4 py-2.5 bg-white/10 text-white/90 rounded-bl-sm backdrop-blur-sm max-w-[75%]'
                 )}
                 onPointerDown={e => !msg.unsent && handleLongPressStart(e, msg.id)}
                 onPointerUp={handleLongPressEnd}
@@ -382,6 +439,7 @@ export default function Chat() {
                 style={{ touchAction: 'manipulation', userSelect: 'none' }}
               >
                 {msg.unsent ? '🚫 Message unsent'
+                  : isProposal ? <HireProposalCard content={msg.content} isMine={isMine} />
                   : msg.image_url ? (
                     <img
                       src={msg.image_url}

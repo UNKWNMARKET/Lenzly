@@ -384,11 +384,19 @@ export default function PhotographerProfile() {
       }
 
       if (conversationId) {
-        const messageText = `Hi! I'd like to hire you for: ${hireForm.projectType}${hireForm.date ? '\nDate: ' + hireForm.date : ''}${hireForm.details ? '\n\n' + hireForm.details : ''}`
+        const proposal = {
+          type: 'hire_proposal',
+          projectType: hireForm.projectType,
+          date: hireForm.date || null,
+          budget: hireForm.budget || null,
+          details: hireForm.details || null,
+          photographerName: p.name,
+          sentAt: new Date().toISOString(),
+        }
         await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_id: user.id,
-          content: messageText,
+          content: JSON.stringify(proposal),
         })
         await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
       }
