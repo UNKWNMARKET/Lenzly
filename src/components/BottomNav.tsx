@@ -146,7 +146,7 @@ export default function BottomNav() {
         <div className="mx-4 mb-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div ref={navRowRef} className="relative flex items-center justify-around px-2 py-2 bg-[#0e0e0e]/95 backdrop-blur-2xl border border-white/8 rounded-3xl shadow-2xl shadow-black/60">
 
-            {/* Floating glass pill */}
+            {/* Floating gold-outline pill */}
             {pillX !== null && (
               <div
                 ref={pillRef}
@@ -154,11 +154,9 @@ export default function BottomNav() {
                 style={{
                   left: pillX,
                   width: pillW,
-                  background: 'rgba(255,255,255,0.03)',
-                  backdropFilter: 'blur(8px) saturate(1.4)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(1.4)',
-                  border: '1.5px solid rgba(255,255,255,0.22)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 1px rgba(255,255,255,0.04)',
+                  background: 'transparent',
+                  border: '1.5px solid rgba(201,168,76,0.75)',
+                  boxShadow: '0 0 10px rgba(201,168,76,0.18), inset 0 0 8px rgba(201,168,76,0.06)',
                   transition: dragging ? 'none' : 'left 0.28s cubic-bezier(0.34,1.56,0.64,1)',
                 }}
                 onTouchStart={onPillTouchStart}
@@ -179,12 +177,12 @@ export default function BottomNav() {
                   >
                     <Icon
                       size={21}
-                      strokeWidth={active ? 2.4 : 1.6}
-                      className={cn('transition-all duration-200', active ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]' : 'text-white/35')}
+                      strokeWidth={active ? 2.2 : 1.6}
+                      className={cn('transition-all duration-200', active ? 'text-gold' : 'text-white/35')}
                     />
                     <span className={cn(
                       'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] text-center transition-colors duration-200',
-                      active ? 'text-white/90' : 'text-white/25'
+                      active ? 'text-gold/80' : 'text-white/25'
                     )}>
                       {label}
                     </span>
