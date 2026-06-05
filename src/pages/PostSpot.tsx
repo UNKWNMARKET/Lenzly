@@ -211,7 +211,7 @@ export default function PostSpot() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
-  const [editTab, setEditTab] = useState<'filters' | 'layout'>('filters')
+  const [editTab, setEditTab] = useState<'filters' | 'layout' | 'none'>('none')
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
   const [cameraReady, setCameraReady] = useState(false)
   const [capturing, setCapturing] = useState(false)
@@ -650,7 +650,7 @@ export default function PostSpot() {
       {cropSlot === null && <div className="absolute right-4 z-20 flex flex-col gap-2.5"
         style={{ top: '50%', transform: 'translateY(-50%)' }}>
         <button
-          onClick={() => setEditTab(t => t === 'filters' ? 'layout' : 'filters')}
+          onClick={() => setEditTab(t => t === 'filters' ? 'none' : 'filters')}
           className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
             editTab === 'filters'
               ? 'bg-gold/90 border-gold text-lenz-bg'
@@ -668,7 +668,7 @@ export default function PostSpot() {
         </button>
 
         <button
-          onClick={() => setEditTab(t => t === 'layout' ? 'filters' : 'layout')}
+          onClick={() => setEditTab(t => t === 'layout' ? 'none' : 'layout')}
           className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
             editTab === 'layout'
               ? 'bg-gold/90 border-gold text-lenz-bg'
