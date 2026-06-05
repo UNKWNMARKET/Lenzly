@@ -154,11 +154,11 @@ export default function BottomNav() {
                 style={{
                   left: pillX,
                   width: pillW,
-                  background: 'rgba(255,255,255,0.06)',
-                  backdropFilter: 'blur(20px) saturate(1.8)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 8px rgba(0,0,0,0.2)',
+                  background: 'rgba(255,255,255,0.03)',
+                  backdropFilter: 'blur(8px) saturate(1.4)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(1.4)',
+                  border: '1.5px solid rgba(255,255,255,0.22)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 1px rgba(255,255,255,0.04)',
                   transition: dragging ? 'none' : 'left 0.28s cubic-bezier(0.34,1.56,0.64,1)',
                 }}
                 onTouchStart={onPillTouchStart}
@@ -179,12 +179,12 @@ export default function BottomNav() {
                   >
                     <Icon
                       size={21}
-                      strokeWidth={active ? 2.2 : 1.6}
-                      className={cn('transition-all duration-200', active ? 'text-white' : 'text-white/35')}
+                      strokeWidth={active ? 2.4 : 1.6}
+                      className={cn('transition-all duration-200', active ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]' : 'text-white/35')}
                     />
                     <span className={cn(
                       'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] text-center transition-colors duration-200',
-                      active ? 'text-white/80' : 'text-white/25'
+                      active ? 'text-white/90' : 'text-white/25'
                     )}>
                       {label}
                     </span>
