@@ -17,6 +17,7 @@ export default function BottomNav() {
 
   // Glass pill drag state
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const navRowRef = useRef<HTMLDivElement>(null)
   const pillRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ startX: number; pillX: number; tabCenters: number[] } | null>(null)
   const [pillX, setPillX] = useState<number | null>(null)
@@ -27,28 +28,32 @@ export default function BottomNav() {
     path === '/' ? location === '/' : location.startsWith(path)
   )
 
-  // Measure tab centers whenever location changes or on mount
+  // Measure tab centers relative to the nav row container
   useLayoutEffect(() => {
     const measure = () => {
+      const containerLeft = navRowRef.current?.getBoundingClientRect().left ?? 0
       const centers = tabRefs.current.map(el => {
         if (!el) return 0
         const r = el.getBoundingClientRect()
-        return r.left + r.width / 2
+        return (r.left - containerLeft) + r.width / 2
       })
-      const w = tabRefs.current[0]?.getBoundingClientRect().width ?? 56
-      setPillW(w + 16)
-      if (activeIdx >= 0) setPillX(centers[activeIdx] - (w + 16) / 2)
+      const tabEl = tabRefs.current[0]
+      const w = tabEl ? tabEl.getBoundingClientRect().width + 16 : 72
+      setPillW(w)
+      if (activeIdx >= 0) setPillX(centers[activeIdx] - w / 2)
     }
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [activeIdx, location])
 
-  const getTabCenters = () =>
-    tabRefs.current.map(el => {
+  const getTabCenters = () => {
+    const containerLeft = navRowRef.current?.getBoundingClientRect().left ?? 0
+    return tabRefs.current.map(el => {
       const r = el?.getBoundingClientRect()
-      return r ? r.left + r.width / 2 : 0
+      return r ? (r.left - containerLeft) + r.width / 2 : 0
     })
+  }
 
   const onPillTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation()
@@ -139,7 +144,7 @@ export default function BottomNav() {
 
       <nav className="app-bottom-nav md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50">
         <div className="mx-4 mb-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-          <div className="relative flex items-center justify-around px-2 py-2 bg-[#0e0e0e]/95 backdrop-blur-2xl border border-white/8 rounded-3xl shadow-2xl shadow-black/60">
+          <div ref={navRowRef} className="relative flex items-center justify-around px-2 py-2 bg-[#0e0e0e]/95 backdrop-blur-2xl border border-white/8 rounded-3xl shadow-2xl shadow-black/60">
 
             {/* Floating glass pill */}
             {pillX !== null && (
