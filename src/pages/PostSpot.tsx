@@ -588,7 +588,7 @@ export default function PostSpot() {
         {cropSlot === null && <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />}
       </div>
 
-      {/* ── Crop mode: tap anywhere outside to exit, show Done ──────────── */}
+      {/* ── Crop mode: Done button ───────────────────────────────────────── */}
       {cropSlot !== null && (
         <button
           className="absolute top-0 inset-x-0 z-30 flex items-center justify-center"
@@ -601,148 +601,114 @@ export default function PostSpot() {
         </button>
       )}
 
-      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      {/* ── Top bar: back arrow only ─────────────────────────────────────── */}
       {cropSlot === null && (
-      <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 8px)' }}>
-        <button onClick={() => { setItems([]); setStep('photo') }}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
-          <ChevronLeft size={20} className="text-white" />
-        </button>
-        <span className="text-white text-sm font-bold tracking-widest uppercase"
-          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-          {items.length > 1 ? `Spot ${activeIndex + 1} of ${items.length}` : 'Your Spot'}
-        </span>
-        <button onClick={() => { slotToFill.current = null; fileInputRef.current?.click() }}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
-          <Plus size={18} className="text-white" />
-        </button>
-      </div>
-      )}
-
-      {/* ── Thumbnail strip (top, when multi) ───────────────────────────── */}
-      {items.length > 1 && cropSlot === null && (
-        <div className="absolute inset-x-0 z-20 flex gap-2 px-4 overflow-x-auto no-scrollbar"
-          style={{ top: 'calc(env(safe-area-inset-top, 44px) + 60px)' }}>
-          {items.map((it, i) => (
-            <button key={i} onClick={() => setActiveIndex(i)}
-              className={`relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-gold' : 'border-white/20'}`}>
-              {it.previews[0]
-                ? <img src={it.previews[0]} className="w-full h-full object-cover"
-                    style={{ filter: FILTERS[it.filterIndex].css === 'none' ? undefined : FILTERS[it.filterIndex].css }} />
-                : <div className="w-full h-full bg-white/10" />
-              }
-              <button onClick={e => { e.stopPropagation(); removeItem(i) }}
-                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center">
-                <X size={9} className="text-white" />
-              </button>
-              {!it.locationName && <div className="absolute bottom-0 inset-x-0 h-1 bg-rose-500/80" />}
-            </button>
-          ))}
-          <button onClick={() => { slotToFill.current = null; fileInputRef.current?.click() }}
-            className="flex-shrink-0 w-12 h-12 rounded-xl border-2 border-dashed border-white/20 bg-black/30 backdrop-blur-md flex items-center justify-center">
-            <Plus size={16} className="text-white/40" />
+        <div className="absolute top-0 left-0 z-20 px-4"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 44px) + 8px)' }}>
+          <button onClick={() => { setItems([]); setStep('photo') }}
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+            <ChevronLeft size={20} className="text-white" />
           </button>
         </div>
       )}
 
-      {/* ── Right-side bubble buttons (Filters + Layout) ────────────────── */}
-      {cropSlot === null && <div className="absolute right-4 z-20 flex flex-col gap-2.5"
-        style={{ top: '50%', transform: 'translateY(-50%)' }}>
+      {/* ── Dot indicator (multi-story) ──────────────────────────────────── */}
+      {items.length > 1 && cropSlot === null && (
+        <div className="absolute inset-x-0 z-20 flex items-center justify-center gap-1.5"
+          style={{ top: 'calc(env(safe-area-inset-top, 44px) + 20px)' }}>
+          {items.map((it, i) => (
+            <button key={i} onClick={() => setActiveIndex(i)}
+              className={`rounded-full transition-all ${i === activeIndex ? 'w-4 h-2 bg-gold' : 'w-2 h-2 ' + (!it.locationName ? 'bg-rose-400/80' : 'bg-white/40')}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Single edit button (right side) — opens bottom sheet ────────── */}
+      {cropSlot === null && (
         <button
-          onClick={() => setEditTab(t => t === 'filters' ? 'none' : 'filters')}
-          className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
-            editTab === 'filters'
-              ? 'bg-gold/90 border-gold text-lenz-bg'
-              : 'bg-black/40 border-white/15 text-white/70'
+          onClick={() => setEditTab(t => t === 'none' ? 'filters' : 'none')}
+          className={`absolute right-4 z-20 w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
+            editTab !== 'none' ? 'bg-gold/90 border-gold text-lenz-bg' : 'bg-black/40 border-white/15 text-white/70'
           }`}
+          style={{ top: '50%', transform: 'translateY(-50%)' }}
         >
           <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0">
             {activeItem.previews[0]
               ? <img src={activeItem.previews[0]} className="w-full h-full object-cover"
                   style={{ filter: activeFilter.css === 'none' ? undefined : activeFilter.css }} />
-              : <div className="w-full h-full bg-white/20" />
-            }
+              : <div className="w-full h-full bg-white/20" />}
           </div>
-          <span className="text-[8px] font-bold tracking-wide leading-none">FX</span>
+          <span className="text-[8px] font-bold tracking-wide leading-none">Edit</span>
         </button>
-
-        <button
-          onClick={() => setEditTab(t => t === 'layout' ? 'none' : 'layout')}
-          className={`w-12 h-12 rounded-full backdrop-blur-md border flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all ${
-            editTab === 'layout'
-              ? 'bg-gold/90 border-gold text-lenz-bg'
-              : 'bg-black/40 border-white/15 text-white/70'
-          }`}
-        >
-          <LayoutIcon layout={activeLayout} size={20} />
-          <span className="text-[8px] font-bold tracking-wide leading-none">Grid</span>
-        </button>
-      </div>}
-
-      {/* ── Edit strip (floats over photo, above bottom bubbles) ─────────── */}
-      {cropSlot === null && editTab === 'filters' && (
-        <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
-          {FILTERS.map((f, i) => (
-            <button key={f.name} onClick={() => updateActive({ filterIndex: i })}
-              className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
-              <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
-                activeItem.filterIndex === i ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
-              }`}>
-                {activeItem.previews[0]
-                  ? <img src={activeItem.previews[0]} className="w-full h-full object-cover"
-                      style={{ filter: f.css === 'none' ? undefined : f.css }} />
-                  : <div className="w-full h-full bg-white/10" />}
-              </div>
-              <span className={`text-[9px] font-semibold tracking-wide ${activeItem.filterIndex === i ? 'text-gold' : 'text-white/70'}`}
-                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{f.name}</span>
-            </button>
-          ))}
-        </div>
       )}
 
-      {cropSlot === null && editTab === 'layout' && (
-        <div className="absolute inset-x-0 z-20 flex gap-3 px-4 overflow-x-auto no-scrollbar"
+      {/* ── Edit bottom sheet ────────────────────────────────────────────── */}
+      {cropSlot === null && editTab !== 'none' && (
+        <div className="absolute inset-x-0 z-20 bg-black/70 backdrop-blur-xl border-t border-white/10 rounded-t-2xl"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 148px)' }}>
-          {LAYOUTS.map(layout => {
-            const firstPreview = activeItem.previews[0]
-            const isActive = activeItem.layoutId === layout.id
-            return (
-              <button key={layout.id} onClick={() => changeLayout(layout.id)}
-                className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
-                <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 relative transition-all ${
-                  isActive ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
+          {/* Tab row */}
+          <div className="flex border-b border-white/10">
+            {(['filters', 'layout'] as const).map(tab => (
+              <button key={tab} onClick={() => setEditTab(tab)}
+                className={`flex-1 py-2.5 text-[11px] font-bold tracking-widest uppercase transition-colors ${
+                  editTab === tab ? 'text-gold border-b-2 border-gold' : 'text-white/40'
                 }`}>
-                  {layout.slots.map((slot, si) => (
-                    <div key={si} className="absolute overflow-hidden"
-                      style={{
-                        left: `${slot.x * 100}%`, top: `${slot.y * 100}%`,
-                        width: `calc(${slot.w * 100}% - 1px)`,
-                        height: `calc(${slot.h * 100}% - 1px)`,
-                        background: firstPreview ? undefined : 'rgba(255,255,255,0.08)',
-                      }}>
-                      {firstPreview && (
-                        <img src={firstPreview} className="w-full h-full object-cover"
-                          style={{ filter: FILTERS[activeItem.filterIndex].css === 'none' ? undefined : FILTERS[activeItem.filterIndex].css }} />
-                      )}
-                    </div>
-                  ))}
-                  {isActive && <div className="absolute inset-0 bg-gold/25 pointer-events-none" />}
-                </div>
-                <span className={`text-[9px] font-semibold tracking-wide ${isActive ? 'text-gold' : 'text-white/70'}`}
-                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{layout.label}</span>
+                {tab === 'filters' ? 'Filters' : 'Layout'}
               </button>
-            )
-          })}
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar">
+            {editTab === 'filters' && FILTERS.map((f, i) => (
+              <button key={f.name} onClick={() => updateActive({ filterIndex: i })}
+                className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
+                <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
+                  activeItem.filterIndex === i ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
+                }`}>
+                  {activeItem.previews[0]
+                    ? <img src={activeItem.previews[0]} className="w-full h-full object-cover" style={{ filter: f.css === 'none' ? undefined : f.css }} />
+                    : <div className="w-full h-full bg-white/10" />}
+                </div>
+                <span className={`text-[9px] font-semibold tracking-wide ${activeItem.filterIndex === i ? 'text-gold' : 'text-white/60'}`}>{f.name}</span>
+              </button>
+            ))}
+
+            {editTab === 'layout' && LAYOUTS.map(layout => {
+              const firstPreview = activeItem.previews[0]
+              const isActive = activeItem.layoutId === layout.id
+              return (
+                <button key={layout.id} onClick={() => changeLayout(layout.id)}
+                  className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform">
+                  <div className={`w-14 h-14 rounded-xl overflow-hidden border-2 relative transition-all ${
+                    isActive ? 'border-gold scale-105 shadow-[0_0_10px_rgba(201,168,76,0.5)]' : 'border-white/20'
+                  }`}>
+                    {layout.slots.map((slot, si) => (
+                      <div key={si} className="absolute overflow-hidden"
+                        style={{
+                          left: `${slot.x * 100}%`, top: `${slot.y * 100}%`,
+                          width: `calc(${slot.w * 100}% - 1px)`, height: `calc(${slot.h * 100}% - 1px)`,
+                          background: firstPreview ? undefined : 'rgba(255,255,255,0.08)',
+                        }}>
+                        {firstPreview && <img src={firstPreview} className="w-full h-full object-cover"
+                          style={{ filter: FILTERS[activeItem.filterIndex].css === 'none' ? undefined : FILTERS[activeItem.filterIndex].css }} />}
+                      </div>
+                    ))}
+                    {isActive && <div className="absolute inset-0 bg-gold/25 pointer-events-none" />}
+                  </div>
+                  <span className={`text-[9px] font-semibold tracking-wide ${isActive ? 'text-gold' : 'text-white/60'}`}>{layout.label}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
-      {/* ── Bottom floating bubbles ──────────────────────────────────────── */}
+      {/* ── Bottom: location + share ─────────────────────────────────────── */}
       {cropSlot === null && <div className="absolute inset-x-0 z-20 flex flex-col gap-2.5 px-4"
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 34px) + 16px)' }}>
 
-        {/* Location pill */}
         <div className="bg-black/40 backdrop-blur-md border border-white/12 rounded-full overflow-visible">
           <LocationAutocomplete
             value={activeItem.locationName}
@@ -754,7 +720,6 @@ export default function PostSpot() {
           />
         </div>
 
-        {/* Share button */}
         <button onClick={handlePost} disabled={uploading}
           className="w-full py-3.5 rounded-full bg-gold text-lenz-bg font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 transition-all shadow-[0_4px_20px_rgba(201,168,76,0.4)]">
           {uploading
