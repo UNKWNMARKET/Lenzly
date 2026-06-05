@@ -40,6 +40,7 @@ export default function Home() {
     const { data } = await supabase
       .from('posts')
       .select('*, profiles(*)')
+      .eq('archived', false)
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE)
     setRealPosts(data ?? [])
@@ -66,6 +67,7 @@ export default function Home() {
     const { data } = await supabase
       .from('posts')
       .select('*, profiles(*)')
+      .eq('archived', false)
       .order('created_at', { ascending: false })
       .lt('created_at', oldest)
       .limit(PAGE_SIZE)
@@ -109,7 +111,7 @@ export default function Home() {
           .select('*, profiles(*)')
           .eq('id', (payload.new as { id: string }).id)
           .single()
-        if (data) setRealPosts(prev => {
+        if (data && !data.archived) setRealPosts(prev => {
           if (prev.some(p => p.id === data.id)) return prev // de-dupe
           return [data, ...prev]
         })
@@ -220,7 +222,11 @@ export default function Home() {
   const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
   const visiblePosts = feedTab === 'following'
     ? notBlocked.filter(p => followingIds.includes(p.user_id))
-    : notBlocked
+    : notBlocked.filter(p =>
+        !(p.profiles as any)?.private_account ||
+        p.user_id === user?.id ||
+        followingIds.includes(p.user_id)
+      )
   const hasPosts = visiblePosts.length > 0
 
   return (
