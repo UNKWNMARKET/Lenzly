@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { MapPin, X, Trash2, Heart, Send } from 'lucide-react'
+import { MapPin, X, Trash2, Heart, Send, Eye } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { img } from '@/lib/image'
 import { haptics } from '@/lib/haptics'
+
+type Viewer = {
+  user_id: string
+  viewed_at: string
+  profiles?: { username: string; avatar_url: string | null } | null
+}
 
 export type SpotStory = {
   id: string
@@ -64,6 +70,11 @@ export default function StoryViewer({
   const [commentOpen, setCommentOpen] = useState(false)
   const [sending, setSending] = useState(false)
   const commentInputRef = useRef<HTMLInputElement>(null)
+
+  // Viewer list (own stories)
+  const [viewerSheet, setViewerSheet] = useState(false)
+  const [viewers, setViewers] = useState<Viewer[]>([])
+  const [viewCount, setViewCount] = useState(0)
 
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -126,7 +137,29 @@ export default function StoryViewer({
     setCommentOpen(false)
     setCommentText('')
     setBarKey(k => k + 1)
+    setViewerSheet(false)
+    setViewers([])
+    setViewCount(0)
   }, [index, story?.id])
+
+  // Record view (upsert so duplicate views don't stack)
+  useEffect(() => {
+    if (!story || !userId || story.user_id === userId) return
+    supabase.from('story_views').upsert(
+      { story_id: story.id, user_id: userId },
+      { onConflict: 'story_id,user_id' }
+    )
+  }, [story?.id, userId])
+
+  // Load view count for own stories
+  useEffect(() => {
+    if (!story || !isOwn) return
+    supabase
+      .from('story_views')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('story_id', story.id)
+      .then(({ count }) => setViewCount(count ?? 0))
+  }, [story?.id, isOwn])
 
   // Load like status
   useEffect(() => {
@@ -173,6 +206,22 @@ export default function StoryViewer({
     holdTimer.current = setTimeout(() => setPaused(true), 120)
   }
 
+  const loadViewers = async () => {
+    const { data } = await supabase
+      .from('story_views')
+      .select('user_id, viewed_at')
+      .eq('story_id', story.id)
+      .order('viewed_at', { ascending: false })
+      .limit(100)
+    if (!data) return
+    const ids = data.map((v: any) => v.user_id)
+    const { data: profiles } = await supabase
+      .from('profiles').select('id, username, avatar_url').in('id', ids)
+    const profileMap = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p]))
+    setViewers(data.map((v: any) => ({ ...v, profiles: profileMap[v.user_id] ?? null })))
+    setViewCount(data.length)
+  }
+
   const onTouchEnd = (e: React.TouchEvent) => {
     if (holdTimer.current) clearTimeout(holdTimer.current)
     const dx = e.changedTouches[0].clientX - touchStartX.current
@@ -181,7 +230,15 @@ export default function StoryViewer({
     if (paused && !commentOpen) { setPaused(false); return }
     if (confirmDelete) { setConfirmDelete(false); return }
 
-    // Swipe DOWN to close (matches Instagram/standard UX)
+    // Swipe UP on own story → viewer list
+    if (isOwn && dy < -60 && Math.abs(dx) < 50) {
+      setPaused(true)
+      loadViewers()
+      setViewerSheet(true)
+      return
+    }
+
+    // Swipe DOWN to close
     if (dy > 80 && Math.abs(dx) < 50) { onClose(); return }
 
     if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
@@ -370,6 +427,23 @@ export default function StoryViewer({
         </div>
       )}
 
+      {/* ── Bottom: view count + swipe hint (own stories) ── */}
+      {isOwn && (
+        <button
+          className="absolute bottom-0 left-0 right-0 z-40 flex flex-col items-center gap-1 pb-2 active:opacity-70 transition-opacity"
+          style={{ paddingBottom: `max(env(safe-area-inset-bottom, 16px), 20px)` }}
+          onTouchStart={stopTouch}
+          onTouchEnd={e => { e.stopPropagation(); setPaused(true); loadViewers(); setViewerSheet(true) }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="w-8 h-1 bg-white/30 rounded-full" />
+          <div className="flex items-center gap-1.5 mt-1">
+            <Eye size={14} className="text-white/70" />
+            <span className="text-white/70 text-[13px] font-semibold">{viewCount}</span>
+          </div>
+        </button>
+      )}
+
       {/* ── Bottom: heart + comment (other people's stories only) ── */}
       {!isOwn && (
         <div
@@ -430,6 +504,48 @@ export default function StoryViewer({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Viewer list sheet ── */}
+      {viewerSheet && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end"
+          onTouchStart={stopTouch}
+          onTouchEnd={stopTouch}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setViewerSheet(false); setPaused(false) }} />
+          <div className="relative w-full bg-[#111] rounded-t-[28px] px-5 pt-4 safe-bottom animate-slide-up"
+            style={{ maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-4" />
+            <div className="flex items-center gap-2 mb-4">
+              <Eye size={16} className="text-gold" />
+              <p className="text-white font-bold text-[16px]">{viewCount} {viewCount === 1 ? 'view' : 'views'}</p>
+            </div>
+            <div className="overflow-y-auto flex-1 pb-6">
+              {viewers.length === 0 ? (
+                <p className="text-white/30 text-sm text-center py-8">No views yet</p>
+              ) : viewers.map(v => (
+                <div key={v.user_id} className="flex items-center gap-3 py-3 border-b border-white/6 last:border-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 shrink-0">
+                    {v.profiles?.avatar_url
+                      ? <img src={img.avatar(v.profiles.avatar_url)} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-white/50 font-bold text-sm">
+                          {v.profiles?.username?.[0]?.toUpperCase() ?? '?'}
+                        </div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-[14px] font-semibold truncate">
+                      {v.profiles?.username ? `@${v.profiles.username}` : 'Unknown'}
+                    </p>
+                    <p className="text-white/35 text-[11px]">{timeAgo(v.viewed_at)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
