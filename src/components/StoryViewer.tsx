@@ -207,6 +207,7 @@ export default function StoryViewer({
   }
 
   const loadViewers = async () => {
+    if (!isOwn) return
     const { data } = await supabase
       .from('story_views')
       .select('user_id, viewed_at')

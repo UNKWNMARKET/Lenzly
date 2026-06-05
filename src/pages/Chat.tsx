@@ -10,9 +10,19 @@ import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
 
 // ── Hire proposal card ───────────────────────────────────────────────────────
+function safeStr(v: unknown): string { return typeof v === 'string' ? v.slice(0, 500) : '' }
+
 function HireProposalCard({ content, isMine }: { content: string; isMine: boolean }) {
-  let proposal: Record<string, string | null> = {}
-  try { proposal = JSON.parse(content) } catch { return <span>{content}</span> }
+  let raw: unknown = {}
+  try { raw = JSON.parse(content) } catch { return <span className="text-white/50 text-xs">Proposal (unreadable)</span> }
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return <span className="text-white/50 text-xs">Proposal (invalid)</span>
+  const proposal = {
+    projectType: safeStr((raw as any).projectType),
+    date: safeStr((raw as any).date),
+    budget: safeStr((raw as any).budget),
+    details: safeStr((raw as any).details),
+    photographerName: safeStr((raw as any).photographerName),
+  }
 
   return (
     <div className="w-[260px] rounded-2xl overflow-hidden"
@@ -315,7 +325,9 @@ export default function Chat() {
     e.target.value = ''
     setUploadingImage(true)
     try {
-      const ext = file.name.split('.').pop() || 'jpg'
+      const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic']
+      const rawExt = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
+      const ext = ALLOWED_EXTS.includes(rawExt) ? rawExt : 'jpg'
       const path = `${user.id}/msg_${Date.now()}.${ext}`
       const { error: upErr } = await supabase.storage.from('photos').upload(path, file, { contentType: file.type })
       if (upErr) throw upErr
@@ -392,7 +404,8 @@ export default function Chat() {
 
   const canUnsend = (msgId: string) => unsendRemaining(msgId) > 0
 
-  const bgStyle: React.CSSProperties = isBg(bg) ? { background: bg } : { backgroundColor: bg }
+  const safeBg = BG_PRESETS.some(p => p.value === bg) || /^#[0-9a-fA-F]{6}$/.test(bg) ? bg : '#0A0804'
+  const bgStyle: React.CSSProperties = isBg(safeBg) ? { background: safeBg } : { backgroundColor: safeBg }
 
   return (
     <div className="flex flex-col" style={{ ...bgStyle, position: 'fixed', inset: 0, paddingBottom: keyboardOffset, zIndex: 10 }}>
