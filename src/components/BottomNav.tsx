@@ -149,10 +149,11 @@ export default function BottomNav() {
                 style={{
                   left: pillX,
                   width: pillW,
-                  background: 'rgba(255,255,255,0.09)',
-                  backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255,255,255,0.13)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(20px) saturate(1.8)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 8px rgba(0,0,0,0.2)',
                   transition: dragging ? 'none' : 'left 0.28s cubic-bezier(0.34,1.56,0.64,1)',
                 }}
                 onTouchStart={onPillTouchStart}
