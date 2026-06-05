@@ -5,14 +5,28 @@ on:
     # 6am UTC = 1am Eastern Time
     - cron: '0 6 * * *'
   workflow_dispatch: # allow manual trigger
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/health-check.yml'
 
 jobs:
   health-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Only run on push if it's a workflow file change; always run on schedule/dispatch
+    if: ${{ vars.SUPABASE_URL != '' || secrets.SUPABASE_URL != '' || github.event_name != 'push' }}
 
     steps:
+      - name: Check secrets are configured
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
+            echo "::warning::SUPABASE_URL or SUPABASE_SERVICE_KEY secret not set — skipping health check"
+            echo "SKIP=true" >> $GITHUB_ENV
+          fi
+
       - name: Run LENZLY Health Check
+        if: env.SKIP != 'true'
         uses: actions/github-script@v7
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
