@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { MapPin, X, Trash2, Heart, Send, Eye } from 'lucide-react'
+import { MapPin, X, Trash2, Heart, Send, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { img } from '@/lib/image'
@@ -437,9 +437,9 @@ export default function StoryViewer({
           onClick={e => e.stopPropagation()}
         >
           <div className="w-8 h-1 bg-white/30 rounded-full" />
-          <div className="flex items-center gap-1.5 mt-1">
-            <Eye size={14} className="text-white/70" />
-            <span className="text-white/70 text-[13px] font-semibold">{viewCount}</span>
+          <div className="flex items-center gap-1 mt-1">
+            <Camera size={12} className="text-white/60" />
+            <span className="text-white/60 text-[12px] font-semibold">{viewCount}</span>
           </div>
         </button>
       )}
@@ -520,7 +520,7 @@ export default function StoryViewer({
             style={{ maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
             <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-4" />
             <div className="flex items-center gap-2 mb-4">
-              <Eye size={16} className="text-gold" />
+              <Camera size={16} className="text-gold" />
               <p className="text-white font-bold text-[16px]">{viewCount} {viewCount === 1 ? 'view' : 'views'}</p>
             </div>
             <div className="overflow-y-auto flex-1 pb-6">
