@@ -331,9 +331,25 @@ export default function Chat() {
     if (!user) return
     setReactionPickerMsgId(null)
     haptics.light()
-    // Toggle: if already reacted with this emoji, remove it
     const msg = messages.find(m => m.id === msgId)
     const existing = msg?.reactions?.find(r => r.emoji === emoji && r.mine)
+    // Optimistic update
+    setMessages(prev => prev.map(m => {
+      if (m.id !== msgId) return m
+      const rxns = m.reactions ?? []
+      if (existing) {
+        const updated = rxns.map(r => r.emoji === emoji ? { ...r, count: r.count - 1, mine: false } : r).filter(r => r.count > 0)
+        return { ...m, reactions: updated }
+      } else {
+        const idx = rxns.findIndex(r => r.emoji === emoji)
+        if (idx >= 0) {
+          const updated = [...rxns]
+          updated[idx] = { ...updated[idx], count: updated[idx].count + 1, mine: true }
+          return { ...m, reactions: updated }
+        }
+        return { ...m, reactions: [...rxns, { emoji, count: 1, mine: true }] }
+      }
+    }))
     if (existing) {
       await supabase.from('message_reactions').delete()
         .eq('message_id', msgId).eq('user_id', user.id).eq('emoji', emoji)
@@ -342,17 +358,14 @@ export default function Chat() {
     }
   }
 
-  const handleLongPressStart = (e: React.PointerEvent, msgId: string) => {
-    // Capture the pointer so we get pointerup even if finger drifts
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  const handleLongPressStart = (msgId: string) => {
     longPressTimer.current = setTimeout(() => {
       haptics.medium()
       setReactionPickerMsgId(msgId)
     }, 400)
   }
 
-  const handleLongPressEnd = (e: React.PointerEvent) => {
-    ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+  const handleLongPressEnd = () => {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
   }
 
@@ -433,9 +446,9 @@ export default function Chat() {
                     : isMine ? 'px-4 py-2.5 bg-gold text-lenz-bg font-medium rounded-br-sm max-w-[75%]'
                     : 'px-4 py-2.5 bg-white/10 text-white/90 rounded-bl-sm backdrop-blur-sm max-w-[75%]'
                 )}
-                onPointerDown={e => !msg.unsent && handleLongPressStart(e, msg.id)}
-                onPointerUp={handleLongPressEnd}
-                onPointerCancel={handleLongPressEnd}
+                onTouchStart={() => !msg.unsent && handleLongPressStart(msg.id)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchMove={handleLongPressEnd}
                 style={{ touchAction: 'manipulation', userSelect: 'none' }}
               >
                 {msg.unsent ? '🚫 Message unsent'

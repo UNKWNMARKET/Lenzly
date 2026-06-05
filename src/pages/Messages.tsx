@@ -93,7 +93,14 @@ export default function Messages() {
         .limit(1)
 
       const lm = lastMsgs?.[0]
-      const lastMessage = lm ? (lm.unsent ? '🚫 Message unsent' : lm.content) : null
+      const rawContent = lm?.content ?? ''
+      const lastMessage = lm
+        ? lm.unsent
+          ? '🚫 Message unsent'
+          : rawContent.startsWith('{"type":"hire_proposal"')
+            ? '📋 Hire Opportunity'
+            : rawContent
+        : null
 
       // Unread = last message exists, was not sent by me, and is newer than last seen
       const unread = !!(lm && lm.sender_id !== user.id && !lm.unsent)
