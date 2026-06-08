@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, User } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import type { PhotoSpot } from '@/data/mockData'
 import { useSpotModal } from '@/contexts/SpotModalContext'
@@ -23,6 +23,7 @@ import { searchUSCities } from '@/data/usCities'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { img } from '@/lib/image'
+import CommunityPostCard from '@/components/CommunityPostCard'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
 
@@ -156,10 +157,12 @@ type CommunityPost = {
   id: string
   image_url: string
   location_name: string
+  lat: number | null
+  lng: number | null
   category: string | null
   created_at: string
   user_id: string
-  profiles: { username: string | null; avatar_url: string | null } | null
+  profiles: { username: string | null; avatar_url: string | null; private_account?: boolean } | null
 }
 
 export default function Explore() {
@@ -180,17 +183,17 @@ export default function Explore() {
   const fetchCommunityPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
-      .select('id, image_url, location_name, category, created_at, user_id, profiles(username, avatar_url)')
+      .select('id, image_url, location_name, lat, lng, category, created_at, user_id, profiles(username, avatar_url, private_account)')
       .not('location_name', 'is', null)
-      .eq('archived', false)
+      .neq('archived', true)           // NULL and false both pass — only true is excluded
       .order('created_at', { ascending: false })
-      .limit(200)
-    if (!error && data) {
-      setCommunityPosts(data.map((p: any) => ({
-        ...p,
-        profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles ?? null,
-      })))
-    }
+      .limit(500)
+    if (error) { console.error('[community]', error.message); setCommunityLoading(false); return }
+    const rows = (data ?? []).map((p: any) => ({
+      ...p,
+      profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles ?? null,
+    })).filter((p: any) => !p.profiles?.private_account)  // exclude private accounts
+    setCommunityPosts(rows)
     setCommunityLoading(false)
   }
 
@@ -459,46 +462,7 @@ const filteredPosts = useMemo(() => posts.filter(p => {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {filteredCommunityPosts.map(post => (
-                    <div
-                      key={post.id}
-                      onClick={() => navigate(`/post/${post.id}`)}
-                      className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer active:scale-[0.97] transition-transform"
-                    >
-                      <img
-                        src={img.thumb(post.image_url)}
-                        alt={post.location_name ?? ''}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                      {/* Location name */}
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                        <div className="flex items-center gap-1 mb-1">
-                          <MapPin size={9} className="text-gold shrink-0" />
-                          <p className="text-[11px] font-bold text-white truncate">{post.location_name}</p>
-                        </div>
-                        {/* Photographer credit */}
-                        {post.profiles?.username && (
-                          <div className="flex items-center gap-1">
-                            <div className="w-4 h-4 rounded-full bg-white/20 overflow-hidden shrink-0">
-                              {post.profiles.avatar_url
-                                ? <img src={img.avatar(post.profiles.avatar_url)} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center text-[7px] text-white font-bold">{post.profiles.username[0].toUpperCase()}</div>
-                              }
-                            </div>
-                            <span className="text-[9px] text-white/60 truncate">@{post.profiles.username}</span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Category badge */}
-                      {post.category && (
-                        <div className="absolute top-2 right-2">
-                          <span className="text-[9px] font-medium bg-black/50 backdrop-blur-sm text-white/70 px-1.5 py-0.5 rounded-full">
-                            {post.category}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    <CommunityPostCard key={post.id} post={post} />
                   ))}
                 </div>
               )}
