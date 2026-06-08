@@ -548,15 +548,35 @@ export default function UploadPost() {
             updated_at: new Date().toISOString(),
           }).eq('id', existing[0].id)
         } else {
-          await supabase.from('photo_spots').insert({
+          // Fetch profile for discoverer credit fields
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', user.id)
+            .single()
+          // Try with discoverer fields first; fall back without them if columns don't exist
+          let { error: spotErr } = await supabase.from('photo_spots').insert({
             name: spotName,
             lat: lat ?? 0, lng: lng ?? 0,
             city: city || null, state: state || null,
             location_name: locationName.trim(), category,
             cover_image_url: publicUrl, photo_count: 1,
             contributor_count: 1, ai_score: 50, tags: parsedTags,
-            created_by: user.id,
+            discoverer_username: prof?.username ?? null,
+            discoverer_avatar: prof?.avatar_url ?? null,
           })
+          if (spotErr) {
+            // Retry without discoverer columns in case they don't exist yet
+            const { error: spotErr2 } = await supabase.from('photo_spots').insert({
+              name: spotName,
+              lat: lat ?? 0, lng: lng ?? 0,
+              city: city || null, state: state || null,
+              location_name: locationName.trim(), category,
+              cover_image_url: publicUrl, photo_count: 1,
+              contributor_count: 1, ai_score: 50, tags: parsedTags,
+            })
+            if (spotErr2) console.error('[photo_spots insert]', spotErr2.message)
+          }
         }
       }
 

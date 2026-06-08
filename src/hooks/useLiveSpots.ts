@@ -17,8 +17,8 @@ export type LiveSpot = {
   tags: string[]
   created_at: string
   updated_at: string
-  created_by: string | null
-  discoverer?: { username: string | null; avatar_url: string | null } | null
+  discoverer_username: string | null
+  discoverer_avatar: string | null
 }
 
 export function useLiveSpots(limit = 200) {
@@ -28,17 +28,12 @@ export function useLiveSpots(limit = 200) {
   const fetchSpots = useCallback(async () => {
     const { data, error } = await supabase
       .from('photo_spots')
-      .select('*, profiles!photo_spots_created_by_fkey(username, avatar_url)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
 
-    if (!error && data) {
-      const mapped = data.map((row: any) => ({
-        ...row,
-        discoverer: row.profiles ?? null,
-      })) as LiveSpot[]
-      setSpots(mapped)
-    }
+    if (error) { console.error('[useLiveSpots]', error.message); setLoading(false); return }
+    setSpots((data ?? []) as LiveSpot[])
     setLoading(false)
   }, [limit])
 
