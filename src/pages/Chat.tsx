@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
-  ArrowLeft, Send, Palette, RotateCcw, Check, X, ImagePlus,
+  ArrowLeft, Send, Palette, RotateCcw, Check, X, ImagePlus, Lock,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
+import { deriveConvKey, encryptBlob, clearDecryptedCache } from '@/lib/crypto'
+import EncryptedImage from '@/components/EncryptedImage'
 
 // ── Hire proposal card ───────────────────────────────────────────────────────
 function safeStr(v: unknown): string { return typeof v === 'string' ? v.slice(0, 500) : '' }
@@ -132,6 +134,7 @@ export default function Chat() {
   const [nowTick, setNowTick] = useState(Date.now())
   const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [convKey, setConvKey] = useState<CryptoKey | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -252,6 +255,13 @@ export default function Chat() {
     return () => { supabase.removeChannel(ch) }
   }, [convId, user])
 
+  // Derive conversation encryption key + clean up decrypted blobs on unmount
+  useEffect(() => {
+    if (!convId) return
+    deriveConvKey(convId).then(setConvKey)
+    return () => { clearDecryptedCache() }
+  }, [convId])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: messages.length <= 1 ? 'instant' : 'smooth' } as ScrollIntoViewOptions)
   }, [messages])
@@ -327,9 +337,14 @@ export default function Chat() {
     try {
       const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic']
       const rawExt = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
-      const ext = ALLOWED_EXTS.includes(rawExt) ? rawExt : 'jpg'
-      const path = `${user.id}/msg_${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('photos').upload(path, file, { contentType: file.type })
+      if (!ALLOWED_EXTS.includes(rawExt)) throw new Error('Unsupported file type')
+
+      // Encrypt before upload — ciphertext stored in storage, not plaintext
+      const key = convKey ?? await deriveConvKey(convId!)
+      const encrypted = await encryptBlob(file, key)
+      const path = `${user.id}/msg_${Date.now()}.enc`
+      const { error: upErr } = await supabase.storage
+        .from('photos').upload(path, encrypted, { contentType: 'application/octet-stream' })
       if (upErr) throw upErr
       const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
       await sendMessage('', publicUrl)
@@ -424,6 +439,10 @@ export default function Chat() {
         </button>
         <button className="flex-1 min-w-0 text-left" onClick={() => otherUser && navigate(`/photographer/${otherUser.id}`)}>
           <p className="text-sm font-semibold text-white/90 truncate">{otherUser ? `@${otherUser.username}` : 'Loading…'}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <Lock size={8} className="text-gold/60" />
+            <span className="text-[9px] text-gold/60 font-medium tracking-wide">End-to-end encrypted</span>
+          </div>
         </button>
         <button onClick={() => setShowBgPicker(true)} className="p-2 rounded-full hover:bg-white/10 transition-colors">
           <Palette size={18} className="text-white/50" />
@@ -467,12 +486,14 @@ export default function Chat() {
                 {msg.unsent ? '🚫 Message unsent'
                   : isProposal ? <HireProposalCard content={msg.content} isMine={isMine} />
                   : msg.image_url ? (
-                    <img
-                      src={msg.image_url}
-                      alt="photo"
-                      className="max-w-[240px] max-h-[300px] object-cover rounded-2xl"
-                      onLoad={() => bottomRef.current?.scrollIntoView()}
-                    />
+                    msg.image_url.endsWith('.enc')
+                      ? <EncryptedImage src={msg.image_url} convKey={convKey} />
+                      : <img
+                          src={msg.image_url}
+                          alt="photo"
+                          className="max-w-[240px] max-h-[300px] object-cover rounded-2xl"
+                          onLoad={() => bottomRef.current?.scrollIntoView()}
+                        />
                   ) : msg.content}
               </div>
 

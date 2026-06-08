@@ -9,6 +9,7 @@ import StoryViewer, { type SpotStory } from './StoryViewer'
 import { img } from '@/lib/image'
 import { haptics } from '@/lib/haptics'
 import ZoomableImage from './ZoomableImage'
+import ProtectedImage from './ProtectedImage'
 
 export type FeedPost = {
   id: string
@@ -395,15 +396,16 @@ export default function FeedPostCard({
       {/* Image — double-tap to like, long-press for options */}
       <div
         className="mx-3 rounded-2xl overflow-hidden aspect-square bg-lenz-bg relative"
-        onClick={handleImageTap}
         onTouchStart={handleLongPressStart}
         onTouchEnd={handleLongPressEnd}
         onTouchMove={handleLongPressEnd}
       >
-        <ZoomableImage
+        <ProtectedImage
           src={img.feed(post.image_url)}
           alt={post.caption ?? ''}
           className="w-full h-full"
+          watermark={post.profile?.username ?? undefined}
+          onClick={handleImageTap}
         />
         {/* Double-tap camera burst — camera with heart-shaped cutout as lens */}
         {doubleTapHeart && (
