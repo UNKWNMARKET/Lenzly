@@ -17,6 +17,21 @@ const TOTAL_SLOTS = 5
 export default function BottomNav() {
   const [location, navigate] = useLocation()
   const [open, setOpen] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  // Hide nav when software keyboard is open (iOS WKWebView resize event)
+  useEffect(() => {
+    const onResize = () => {
+      // If the visual viewport is significantly shorter than the window, keyboard is up
+      const vv = (window as any).visualViewport
+      if (vv) {
+        setKeyboardVisible(vv.height < window.innerHeight * 0.75)
+      }
+    }
+    const vv = (window as any).visualViewport
+    vv?.addEventListener('resize', onResize)
+    return () => vv?.removeEventListener('resize', onResize)
+  }, [])
 
   const navRowRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ startX: number; startPct: number } | null>(null)
@@ -127,7 +142,13 @@ export default function BottomNav() {
         </div>
       )}
 
-      <nav className="app-bottom-nav md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50">
+      <nav
+        className="app-bottom-nav md:hidden fixed bottom-0 left-1/2 w-full max-w-[430px] z-50"
+        style={{
+          transform: keyboardVisible ? 'translateX(-50%) translateY(110%)' : 'translateX(-50%)',
+          transition: 'transform 0.2s ease',
+        }}
+      >
         <div className="mx-4 mb-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div
             ref={navRowRef}
