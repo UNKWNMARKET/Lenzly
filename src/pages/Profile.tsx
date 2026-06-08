@@ -433,11 +433,11 @@ export default function Profile() {
               <button
                 key={post.id}
                 onClick={() => navigate(`/post/${post.id}`)}
-                className="relative overflow-hidden aspect-square group bg-lenz-card"
+                className="relative overflow-hidden aspect-square group bg-lenz-card active:scale-95 transition-transform duration-150"
               >
-                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                <div className="absolute bottom-1.5 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-active:opacity-100 transition-opacity duration-150" />
+                <div className="absolute bottom-1.5 left-2 flex items-center gap-1 opacity-0 group-active:opacity-100 transition-opacity duration-150">
                   <Heart size={11} className="text-white fill-white" />
                   <span className="text-[10px] text-white font-semibold">{post.likes_count ?? 0}</span>
                 </div>
