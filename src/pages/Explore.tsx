@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, User } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import type { PhotoSpot } from '@/data/mockData'
-import type { LiveSpot } from '@/hooks/useLiveSpots'
 import { useSpotModal } from '@/contexts/SpotModalContext'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
@@ -18,12 +17,12 @@ import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
 import { statesSpots, floridaExtraSpots } from '@/data/statesSpots'
 import { engagementExtraSpots } from '@/data/engagementSpots'
 
-// Existing engagement data (9/state) + new supplemental venues (8/state)
 const allEngagementSpots = [...engagementSpotData, ...engagementExtraSpots]
-import { useLiveSpots } from '@/hooks/useLiveSpots'
 import { useLocationSearch, spotMatchesLocation } from '@/hooks/useLocationSearch'
 import { searchUSCities } from '@/data/usCities'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { img } from '@/lib/image'
 
 const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
 
@@ -37,26 +36,10 @@ const US_STATES = [
 
 const allFilters = [...specialtyFilters, 'Architecture', 'Florida', 'Engagement', 'Car']
 
-// Map a live DB spot to the PhotoSpot shape the detail modal expects so
-// community-discovered spots open the same full-screen detail sheet.
-function liveSpotToPhotoSpot(s: LiveSpot): PhotoSpot {
-  return {
-    id: s.id,
-    name: s.name,
-    description: s.location_name ?? `${s.city ?? ''}${s.state ? `, ${s.state}` : ''}`.trim(),
-    image: s.cover_image_url ?? '',
-    lat: s.lat,
-    lng: s.lng,
-    category: s.category,
-    rating: Math.min(5, Math.max(3.5, (s.ai_score ?? 50) / 20)),
-    photoCount: s.photo_count ?? 0,
-    bestTime: 'Golden hour · Check forecast',
-    city: s.city ?? '',
-    state: s.state ?? undefined,
-    aiDiscovered: true,
-    tags: s.tags,
-  } as PhotoSpot
-}
+
+// (liveSpotToPhotoSpot removed — Community Discovered now uses posts directly)
+
+
 
 // Build a deduped list of all searchable "City, ST" locations from every data source
 const LOCATION_INDEX: { label: string; city: string; state: string }[] = (() => {
@@ -169,6 +152,16 @@ function FocusedSection({
   )
 }
 
+type CommunityPost = {
+  id: string
+  image_url: string
+  location_name: string
+  category: string | null
+  created_at: string
+  user_id: string
+  profiles: { username: string | null; avatar_url: string | null } | null
+}
+
 export default function Explore() {
   const [, navigate] = useLocation()
   const [activeFilter, setActiveFilter] = useState('All')
@@ -179,8 +172,37 @@ export default function Explore() {
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
   const { openSpot } = useSpotModal()
-  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(200)
-  const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
+
+  // Community Discovered: real posts from the DB that have a tagged location
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([])
+  const [communityLoading, setCommunityLoading] = useState(true)
+
+  const fetchCommunityPosts = async () => {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('id, image_url, location_name, category, created_at, user_id, profiles(username, avatar_url)')
+      .not('location_name', 'is', null)
+      .eq('archived', false)
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (!error && data) {
+      setCommunityPosts(data.map((p: any) => ({
+        ...p,
+        profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles ?? null,
+      })))
+    }
+    setCommunityLoading(false)
+  }
+
+  useEffect(() => {
+    fetchCommunityPosts()
+    const channel = supabase.channel('community_posts_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchCommunityPosts)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  const ptr = usePullToRefresh({ onRefresh: fetchCommunityPosts })
   const locQuery = useLocationSearch(query)
 
   // Live location suggestions as the user types — every US city + spot locations
@@ -204,19 +226,15 @@ export default function Explore() {
     return out.slice(0, 8)
   }, [query])
 
-  const filteredLiveSpots = useMemo(() =>
-    liveSpots.filter(s => {
-      if (!locQuery.isLocationSearch) {
-        return !query || s.name.toLowerCase().includes(query.toLowerCase()) ||
-          s.category.toLowerCase().includes(query.toLowerCase())
-      }
-      return spotMatchesLocation(
-        { name: s.name, city: (s as any).city, state: (s as any).state, location: (s as any).location_name },
-        locQuery
-      )
-    }), [liveSpots, locQuery, query])
+  const filteredCommunityPosts = useMemo(() =>
+    communityPosts.filter(p => {
+      if (!query) return true
+      const loc = p.location_name?.toLowerCase() ?? ''
+      return loc.includes(query.toLowerCase()) ||
+        (p.profiles?.username ?? '').toLowerCase().includes(query.toLowerCase())
+    }), [communityPosts, query])
 
-  const filteredPosts = useMemo(() => posts.filter(p => {
+const filteredPosts = useMemo(() => posts.filter(p => {
     const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
       ? activeFilter !== 'Architecture'
       : p.category === activeFilter
@@ -408,87 +426,83 @@ export default function Explore() {
               <span className="text-white/40 text-xl font-light shrink-0">›</span>
             </div>
 
-            {/* Community Discovered (live from DB) — the hero, full grid */}
-            {(filteredLiveSpots.length > 0 || liveSpotsLoading) && (
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-gold" />
-                    <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
-                    {!liveSpotsLoading && (
-                      <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
-                        {filteredLiveSpots.length}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-[10px] text-white/30">Live</span>
-                  </div>
+            {/* Community Discovered — real posts from DB with a tagged location */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-gold" />
+                  <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
+                  {!communityLoading && filteredCommunityPosts.length > 0 && (
+                    <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
+                      {filteredCommunityPosts.length}
+                    </span>
+                  )}
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-[10px] text-white/30">Live</span>
+                </div>
+              </div>
 
-                {liveSpotsLoading ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {filteredLiveSpots.map(spot => (
-                      <div
-                        key={spot.id}
-                        onClick={() => openSpot(liveSpotToPhotoSpot(spot))}
-                        className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer group"
-                      >
-                        {spot.cover_image_url ? (
-                          <img
-                            src={spot.cover_image_url}
-                            alt={spot.name}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <MapPin size={24} className="text-white/20" />
+              {communityLoading ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredCommunityPosts.length === 0 ? (
+                <div className="rounded-2xl bg-lenz-card border border-lenz-border p-6 text-center">
+                  <MapPin size={22} className="text-white/20 mx-auto mb-2" />
+                  <p className="text-white/30 text-sm">No tagged locations yet</p>
+                  <p className="text-white/20 text-xs mt-1">Upload a photo and tag a location to appear here</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {filteredCommunityPosts.map(post => (
+                    <div
+                      key={post.id}
+                      onClick={() => navigate(`/post/${post.id}`)}
+                      className="relative overflow-hidden rounded-xl aspect-[4/3] bg-lenz-card cursor-pointer active:scale-[0.97] transition-transform"
+                    >
+                      <img
+                        src={img.thumb(post.image_url)}
+                        alt={post.location_name ?? ''}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                      {/* Location name */}
+                      <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                        <div className="flex items-center gap-1 mb-1">
+                          <MapPin size={9} className="text-gold shrink-0" />
+                          <p className="text-[11px] font-bold text-white truncate">{post.location_name}</p>
+                        </div>
+                        {/* Photographer credit */}
+                        {post.profiles?.username && (
+                          <div className="flex items-center gap-1">
+                            <div className="w-4 h-4 rounded-full bg-white/20 overflow-hidden shrink-0">
+                              {post.profiles.avatar_url
+                                ? <img src={img.avatar(post.profiles.avatar_url)} className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center justify-center text-[7px] text-white font-bold">{post.profiles.username[0].toUpperCase()}</div>
+                              }
+                            </div>
+                            <span className="text-[9px] text-white/60 truncate">@{post.profiles.username}</span>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                          <p className="text-xs font-semibold text-white truncate leading-tight">{spot.name}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center gap-1">
-                              <Users size={9} className="text-white/50" />
-                              <span className="text-[10px] text-white/50">{spot.photo_count} photos</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Zap size={9} className="text-gold fill-gold" />
-                              <span className="text-[10px] text-gold font-bold">{spot.ai_score}</span>
-                            </div>
-                          </div>
-                          {spot.discoverer_username && (
-                            <div className="flex items-center gap-1 mt-1.5">
-                              <div className="w-4 h-4 rounded-full bg-lenz-card overflow-hidden border border-white/20 shrink-0">
-                                {spot.discoverer_avatar
-                                  ? <img src={spot.discoverer_avatar} className="w-full h-full object-cover" />
-                                  : <div className="w-full h-full flex items-center justify-center text-[7px] text-white/60 font-bold">{spot.discoverer_username[0].toUpperCase()}</div>
-                                }
-                              </div>
-                              <span className="text-[9px] text-white/50 truncate">by @{spot.discoverer_username}</span>
-                            </div>
-                          )}
-                        </div>
+                      </div>
+                      {/* Category badge */}
+                      {post.category && (
                         <div className="absolute top-2 right-2">
                           <span className="text-[9px] font-medium bg-black/50 backdrop-blur-sm text-white/70 px-1.5 py-0.5 rounded-full">
-                            {spot.category}
+                            {post.category}
                           </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
             {/* Category preview rows — one tidy swipeable strip each */}
             <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => window.scrollTo({ top: 0 })} />
