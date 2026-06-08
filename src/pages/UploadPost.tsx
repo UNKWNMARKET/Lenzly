@@ -527,15 +527,20 @@ export default function UploadPost() {
       }).select().single()
       if (insertError) throw insertError
 
-      if (locationName.trim() && lat && lng) {
+      if (locationName.trim()) {
+        const spotName = locationName.trim().split(',')[0].trim()
         const locParts = locationName.trim().split(',').map(p => p.trim())
+        // Parse "City, ST" or "Name, City, ST" patterns
         const cityState = locParts[locParts.length - 1] ?? ''
         const parts = cityState.split(' ').filter(Boolean)
         const state = parts[parts.length - 1] ?? ''
-        const city  = parts.slice(0, -1).join(' ') || (locParts[0] ?? '')
+        const city  = parts.slice(0, -1).join(' ') || (locParts[1] ?? '')
+
         const { data: existing } = await supabase.from('photo_spots')
           .select('id, photo_count, cover_image_url')
-          .ilike('name', `%${locationName.trim().split(',')[0]}%`).limit(1)
+          .ilike('name', `%${spotName}%`)
+          .limit(1)
+
         if (existing && existing.length > 0) {
           await supabase.from('photo_spots').update({
             photo_count: (existing[0].photo_count ?? 0) + 1,
@@ -544,11 +549,13 @@ export default function UploadPost() {
           }).eq('id', existing[0].id)
         } else {
           await supabase.from('photo_spots').insert({
-            name: locationName.trim().split(',')[0], lat, lng,
+            name: spotName,
+            lat: lat ?? 0, lng: lng ?? 0,
             city: city || null, state: state || null,
             location_name: locationName.trim(), category,
             cover_image_url: publicUrl, photo_count: 1,
             contributor_count: 1, ai_score: 50, tags: parsedTags,
+            created_by: user.id,
           })
         }
       }

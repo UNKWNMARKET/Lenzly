@@ -466,6 +466,17 @@ export default function Explore() {
                               <span className="text-[10px] text-gold font-bold">{spot.ai_score}</span>
                             </div>
                           </div>
+                          {spot.discoverer?.username && (
+                            <div className="flex items-center gap-1 mt-1.5">
+                              <div className="w-4 h-4 rounded-full bg-lenz-card overflow-hidden border border-white/20 shrink-0">
+                                {spot.discoverer.avatar_url
+                                  ? <img src={spot.discoverer.avatar_url} className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full flex items-center justify-center text-[7px] text-white/60 font-bold">{spot.discoverer.username[0].toUpperCase()}</div>
+                                }
+                              </div>
+                              <span className="text-[9px] text-white/50 truncate">by @{spot.discoverer.username}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="absolute top-2 right-2">
                           <span className="text-[9px] font-medium bg-black/50 backdrop-blur-sm text-white/70 px-1.5 py-0.5 rounded-full">
