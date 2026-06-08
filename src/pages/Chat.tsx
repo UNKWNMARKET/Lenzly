@@ -344,9 +344,9 @@ export default function Chat() {
       const encrypted = await encryptBlob(file, key)
       const path = `${user.id}/msg_${Date.now()}.enc`
       const { error: upErr } = await supabase.storage
-        .from('photos').upload(path, encrypted, { contentType: 'application/octet-stream' })
+        .from('chat-photos').upload(path, encrypted, { contentType: 'application/octet-stream' })
       if (upErr) throw upErr
-      const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
+      const { data: { publicUrl } } = supabase.storage.from('chat-photos').getPublicUrl(path)
       await sendMessage('', publicUrl)
     } catch (err: any) {
       toast.error(err.message ?? 'Could not send image')

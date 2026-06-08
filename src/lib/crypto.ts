@@ -61,11 +61,13 @@ export async function decryptImageUrl(
   url: string,
   key: CryptoKey,
   mimeType = 'image/jpeg',
+  authToken?: string,
 ): Promise<string> {
   const cached = decryptedCache.get(url)
   if (cached) return cached
 
-  const res = await fetch(url)
+  const headers: HeadersInit = authToken ? { Authorization: `Bearer ${authToken}` } : {}
+  const res = await fetch(url, { headers })
   if (!res.ok) throw new Error('Failed to fetch encrypted image')
   const blob = await res.blob()
   const decrypted = await decryptBlob(blob, key, mimeType)
