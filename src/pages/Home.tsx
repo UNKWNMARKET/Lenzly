@@ -174,11 +174,20 @@ export default function Home() {
 
     const ch = supabase.channel('home_badges')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        () => setUnreadNotifs(n => n + 1))
+        () => fetchCounts())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => fetchCounts())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
         () => fetchCounts())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
+        () => fetchCounts())
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+
+    // Re-fetch when tab regains focus (e.g. returning from Notifications/Chat)
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchCounts() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => { supabase.removeChannel(ch); document.removeEventListener('visibilitychange', onVisible) }
   }, [user])
 
   // Use real posts if available, otherwise fall back to mock data.

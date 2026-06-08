@@ -44,10 +44,10 @@ export default function Messages() {
 
   const fetchConversations = useCallback(async () => {
     if (!user) return
-    // Get all conversation IDs the user is in
+    // Get all conversation IDs the user is in (with last_read_at)
     const { data: participations } = await supabase
       .from('conversation_participants')
-      .select('conversation_id')
+      .select('conversation_id, last_read_at')
       .eq('user_id', user.id)
 
     if (!participations || participations.length === 0) {
@@ -57,6 +57,8 @@ export default function Messages() {
     }
 
     const ids = participations.map(p => p.conversation_id)
+    const lastReadMap: Record<string, string | null> = {}
+    for (const p of participations) lastReadMap[p.conversation_id] = p.last_read_at
 
     // Get conversations
     const { data: convos } = await supabase
@@ -103,8 +105,10 @@ export default function Messages() {
             : rawContent
         : null
 
-      // Unread = last message exists, was not sent by me, and is newer than last seen
-      const unread = !!(lm && lm.sender_id !== user.id && !lm.unsent)
+      // Unread = last message not sent by me, not unsent, and newer than last_read_at
+      const myLastRead = lastReadMap[c.id]
+      const unread = !!(lm && lm.sender_id !== user.id && !lm.unsent &&
+        (!myLastRead || new Date(lm.sent_at) > new Date(myLastRead)))
 
       return { id: c.id, bg: c.bg, updated_at: c.updated_at, other_user: other, last_message: lastMessage, unread } as Conversation
     }))
@@ -120,15 +124,17 @@ export default function Messages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Live updates — refresh when messages change (INSERT covers new messages,
-  // UPDATE covers unsent; both re-sort the conversation list by recency)
+  // Live updates — listen on conversations table (updated_at bumps on each new message)
+  // and on conversation_participants (last_read_at changes clear the unread dot)
   useEffect(() => {
     if (!user) return
     const ch = supabase
       .channel('messages_list_live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' },
         () => fetchConversations())
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' },
+        () => fetchConversations())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
         () => fetchConversations())
       .subscribe()
     return () => { supabase.removeChannel(ch) }
