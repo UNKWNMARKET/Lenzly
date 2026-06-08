@@ -29,7 +29,7 @@ function CropEditor({ src, onConfirm, onCancel }: {
   onConfirm: (croppedDataUrl: string) => void
   onCancel: () => void
 }) {
-  const [ratioIdx, setRatioIdx] = useState(0)
+  const [ratioIdx, setRatioIdx] = useState(2) // default to 4:5 to match feed
   const [natSize, setNatSize] = useState({ w: 0, h: 0 })
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -573,8 +573,8 @@ export default function UploadPost() {
 
       <div className="px-4 pt-4 space-y-4">
         {imagePreview ? (
-          <div className="relative rounded-2xl overflow-hidden bg-lenz-card">
-            <img src={imagePreview} alt="preview" className="w-full object-contain max-h-[70vh]" />
+          <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/5]">
+            <img src={imagePreview} alt="preview" className="w-full h-full object-cover object-center" />
             <div className="absolute top-3 right-3 flex gap-2">
               <button onClick={() => setRawSrc(imagePreview)}
                 className="px-3 py-1.5 rounded-full bg-black/60 text-white text-xs font-semibold backdrop-blur-sm active:bg-black/80">
