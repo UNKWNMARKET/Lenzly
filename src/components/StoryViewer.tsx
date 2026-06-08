@@ -335,7 +335,7 @@ export default function StoryViewer({
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); if (!commentOpen) setPaused(false) }}
     >
-      {/* Blurred background so any aspect ratio fits without harsh crop */}
+      {/* Blurred background — use compressed version to load fast */}
       <img
         key={`bg-${story.id}`}
         src={img.feed(story.image_url)}
@@ -344,10 +344,10 @@ export default function StoryViewer({
         className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none"
       />
 
-      {/* Story image — contain so portrait/landscape both fit */}
+      {/* Story image — use raw URL for full quality, object-contain so nothing is cropped */}
       <img
         key={story.id}
-        src={img.feed(story.image_url)}
+        src={story.image_url}
         alt=""
         onLoad={() => setImgLoaded(true)}
         className={`story-image absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -431,18 +431,30 @@ export default function StoryViewer({
       </div>{/* end top overlay */}
 
       {/* ── Caption + attribution ── */}
-      {story.caption && (() => {
-        const sharedMatch = story.caption.match(/· Shared from (@\S+)$/)
-        const displayCaption = sharedMatch ? story.caption.replace(/ · Shared from @\S+$/, '') : story.caption
+      {(() => {
+        const rawCaption = story.caption ?? ''
+        const sharedMatch = rawCaption.match(/· Shared from (@\S+)$/)
+        const sharedUsername = sharedMatch ? sharedMatch[1] : null
+        const displayCaption = sharedUsername
+          ? rawCaption.replace(/ · Shared from @\S+$/, '').trim()
+          : rawCaption
+        if (!displayCaption && !sharedUsername) return null
         return (
-          <div className="absolute bottom-32 left-0 right-0 z-20 px-5 pointer-events-none space-y-2">
-            {sharedMatch && (
-              <div className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/15 rounded-full px-3 py-1.5">
-                <Camera size={11} className="text-gold shrink-0" />
-                <span className="text-white/80 text-[12px] font-semibold">{sharedMatch[1]}</span>
+          <div className="absolute bottom-32 left-0 right-0 z-20 px-5 pointer-events-none space-y-2.5">
+            {sharedUsername && (
+              <div className="inline-flex items-center gap-2 bg-black/60 backdrop-blur-md border border-gold/25 rounded-2xl px-3 py-2">
+                <div className="w-6 h-6 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0">
+                  <Camera size={11} className="text-gold" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] text-white/40 uppercase tracking-widest leading-none mb-0.5">Photo by</p>
+                  <p className="text-[13px] text-gold font-bold leading-none">{sharedUsername}</p>
+                </div>
               </div>
             )}
-            <p className="text-white text-[14px] leading-snug drop-shadow-md">{displayCaption}</p>
+            {displayCaption ? (
+              <p className="text-white text-[14px] leading-snug drop-shadow-md">{displayCaption}</p>
+            ) : null}
           </div>
         )
       })()}
