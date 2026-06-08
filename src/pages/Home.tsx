@@ -16,7 +16,7 @@ const PAGE_SIZE = 20
 
 export default function Home() {
   const [, navigate] = useLocation()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [realPosts, setRealPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -37,25 +37,29 @@ export default function Home() {
 
   // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*, profiles(*)')
-      .order('created_at', { ascending: false })
-      .limit(PAGE_SIZE)
-    if (error) console.error('[Feed] fetchPosts error:', error.message, error.details)
-    setRealPosts(data ?? [])
-    setHasMore((data?.length ?? 0) === PAGE_SIZE)
-    setLoading(false)
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, profiles(*)')
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE)
+      if (error) console.error('[Feed] fetchPosts error:', error.message, error.code, error.details)
+      setRealPosts(data ?? [])
+      setHasMore((data?.length ?? 0) === PAGE_SIZE)
 
-    // Batch check which post authors have active stories
-    if (data && data.length > 0) {
-      const authorIds = [...new Set(data.map((p: any) => p.user_id))]
-      const { data: storyRows } = await supabase
-        .from('spot_stories')
-        .select('user_id')
-        .in('user_id', authorIds)
-        .gt('expires_at', new Date().toISOString())
-      setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
+      // Batch check which post authors have active stories
+      if (data && data.length > 0) {
+        const authorIds = [...new Set(data.map((p: any) => p.user_id))]
+        const { data: storyRows } = await supabase
+          .from('spot_stories').select('user_id')
+          .in('user_id', authorIds).gt('expires_at', new Date().toISOString())
+        setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
+      }
+    } catch (err) {
+      console.error('[Feed] fetchPosts threw:', err)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -97,7 +101,12 @@ export default function Home() {
 
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
 
+  // Re-fetch once auth settles so we get the full authenticated view
+  const hasFetched = useRef(false)
   useEffect(() => {
+    if (authLoading) return          // wait for session to resolve
+    if (hasFetched.current) return   // only do this once
+    hasFetched.current = true
     fetchPosts()
 
     // Real-time subscription for new posts
@@ -118,7 +127,7 @@ export default function Home() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [authLoading, fetchPosts])
 
   // Unread counts
   useEffect(() => {
