@@ -46,7 +46,7 @@ export default function ProtectedImage({ src, alt = '', className, style, waterm
       <img
         src={src}
         alt={alt}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         style={{
           WebkitUserSelect: 'none',
           userSelect: 'none',
@@ -77,7 +77,7 @@ export default function ProtectedImage({ src, alt = '', className, style, waterm
               userSelect: 'none',
             } as React.CSSProperties}
           >
-            © @{watermark}
+            @{watermark}
           </span>
         </div>
       )}
