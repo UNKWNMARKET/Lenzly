@@ -264,6 +264,31 @@ export default function FeedPostCard({
     if (!currentUserId) return
     const { error } = await supabase.from('posts').delete().eq('id', post.id).eq('user_id', currentUserId)
     if (error) { toast.error('Could not delete'); return }
+
+    // Keep photo_spots in sync: decrement count or remove spot if it reaches 0
+    if (post.location_name) {
+      const spotName = post.location_name.split(',')[0].trim()
+      const { data: spots } = await supabase
+        .from('photo_spots')
+        .select('id, photo_count, cover_image_url')
+        .ilike('name', `%${spotName}%`)
+        .limit(1)
+      if (spots && spots[0]) {
+        const newCount = Math.max(0, (spots[0].photo_count ?? 1) - 1)
+        if (newCount === 0) {
+          await supabase.from('photo_spots').delete().eq('id', spots[0].id)
+        } else {
+          // If the deleted post's image was the cover, clear it so it refreshes
+          const newCover = spots[0].cover_image_url === post.image_url ? null : spots[0].cover_image_url
+          await supabase.from('photo_spots').update({
+            photo_count: newCount,
+            cover_image_url: newCover,
+            updated_at: new Date().toISOString(),
+          }).eq('id', spots[0].id)
+        }
+      }
+    }
+
     toast.success('Post deleted')
     onDeleted?.(post.id)
   }

@@ -45,14 +45,12 @@ export function useLiveSpots(limit = 200) {
   useEffect(() => {
     fetchSpots()
 
-    // Real-time: re-fetch whenever any spot row changes (new post uploaded anywhere)
+    // Re-fetch when photo_spots change OR when posts are deleted (which affects spot counts)
     const channel = supabase
       .channel('photo_spots_live')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'photo_spots' },
-        () => fetchSpots()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_spots' }, () => fetchSpots())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, () => fetchSpots())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => fetchSpots())
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
