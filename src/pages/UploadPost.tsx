@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
+import { uploadWithProgress } from '@/lib/uploadWithProgress'
+import UploadProgressBar from '@/components/UploadProgressBar'
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Geolocation } from '@capacitor/geolocation'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
@@ -452,6 +454,7 @@ export default function UploadPost() {
   const [addToCommunity, setAddToCommunity] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const pickPhoto = async () => {
     if (Capacitor.isNativePlatform()) {
@@ -510,14 +513,11 @@ export default function UploadPost() {
     if (!imageFile || !user) return
     if (!caption.trim()) { toast.error('Please add a caption'); return }
     setUploading(true)
+    setUploadProgress(0)
     try {
       const ext = imageFile.type === 'image/webp' ? 'webp' : 'jpg'
       const filePath = `${user.id}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from('photos').upload(filePath, imageFile, { contentType: imageFile.type })
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(filePath)
+      const publicUrl = await uploadWithProgress('photos', filePath, imageFile, setUploadProgress)
 
       const parsedTags = tags.split(/[\s,]+/).filter(t => t.startsWith('#')).map(t => t.toLowerCase())
 
@@ -595,6 +595,7 @@ export default function UploadPost() {
 
   return (
     <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <UploadProgressBar progress={uploadProgress} visible={uploading} label="Uploading photo" />
     <div className="min-h-full bg-lenz-bg pb-8">
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => navigate('/')} className="p-2 -ml-2">

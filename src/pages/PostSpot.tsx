@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import LocationAutocomplete, { type LocationSuggestion } from '@/components/LocationAutocomplete'
+import { uploadWithProgress } from '@/lib/uploadWithProgress'
+import UploadProgressBar from '@/components/UploadProgressBar'
 
 const BUCKET = 'photos'
 
@@ -210,6 +212,7 @@ export default function PostSpot() {
   const [items, setItems] = useState<StoryItem[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [step, setStep] = useState<'photo' | 'details'>('photo')
   const [editTab, setEditTab] = useState<'filters' | 'layout' | 'none'>('none')
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
@@ -391,16 +394,15 @@ export default function PostSpot() {
     }
 
     setUploading(true)
+    setUploadProgress(0)
     let failed = 0
     for (const item of items) {
       try {
         const fileToUpload = await composeStory(item)
         const filePath = `${user.id}/spot_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET).upload(filePath, fileToUpload, { contentType: 'image/jpeg' })
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
+        const publicUrl = await uploadWithProgress(BUCKET, filePath, fileToUpload, pct =>
+          setUploadProgress(Math.round((items.indexOf(item) + pct / 100) / items.length * 100))
+        )
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         const { error: insertError } = await supabase.from('spot_stories').insert({
           user_id: user.id,
@@ -492,6 +494,7 @@ export default function PostSpot() {
   // ── Step 2: Photos selected ──────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black">
+      <UploadProgressBar progress={uploadProgress} visible={uploading} label="Uploading story" />
 
       {/* ── Full-screen photo ───────────────────────────────────────────── */}
       <div className="absolute inset-0">
