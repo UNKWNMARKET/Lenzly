@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { decryptImageUrl } from '@/lib/crypto'
 import { Lock } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 interface Props {
   src: string
@@ -17,12 +16,9 @@ export default function EncryptedImage({ src, convKey, className, style }: Props
   useEffect(() => {
     if (!convKey || !src) return
     let revoke: string | null = null
-    supabase.auth.getSession().then(({ data }) => {
-      const token = data.session?.access_token
-      decryptImageUrl(src, convKey, 'image/jpeg', token)
-        .then(url => { revoke = url; setObjectUrl(url) })
-        .catch(() => setError(true))
-    })
+    decryptImageUrl(src, convKey, 'image/jpeg')
+      .then(url => { revoke = url; setObjectUrl(url) })
+      .catch(() => setError(true))
     return () => { /* object URL lives in cache, cleaned up on unmount of whole chat */ }
   }, [src, convKey])
 

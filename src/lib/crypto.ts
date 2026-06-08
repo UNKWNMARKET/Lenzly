@@ -61,15 +61,26 @@ export async function decryptImageUrl(
   url: string,
   key: CryptoKey,
   mimeType = 'image/jpeg',
-  authToken?: string,
+  _authToken?: string,
 ): Promise<string> {
   const cached = decryptedCache.get(url)
   if (cached) return cached
 
-  const headers: HeadersInit = authToken ? { Authorization: `Bearer ${authToken}` } : {}
-  const res = await fetch(url, { headers })
-  if (!res.ok) throw new Error('Failed to fetch encrypted image')
-  const blob = await res.blob()
+  // Extract storage path from URL (works for both public and private buckets)
+  const match = url.match(/\/chat-photos\/(.+)$/)
+  let blob: Blob
+  if (match) {
+    // Use Supabase SDK download — handles auth automatically
+    const { supabase } = await import('./supabase')
+    const { data, error } = await supabase.storage.from('chat-photos').download(match[1])
+    if (error || !data) throw new Error('Failed to fetch encrypted image')
+    blob = data
+  } else {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('Failed to fetch encrypted image')
+    blob = await res.blob()
+  }
+
   const decrypted = await decryptBlob(blob, key, mimeType)
   const objectUrl = URL.createObjectURL(decrypted)
   decryptedCache.set(url, objectUrl)
