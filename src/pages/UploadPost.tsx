@@ -243,7 +243,10 @@ function CropEditor({ src, onConfirm, onCancel }: {
     canvas.height = Math.round(srcH * downScale)
 
     ctx.drawImage(imgRef.current, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height)
-    onConfirm(canvas.toDataURL('image/jpeg', 0.95))
+    // WebP at 0.95 gives better quality than JPEG at 0.95 with smaller file size
+    const webpUrl = canvas.toDataURL('image/webp', 0.95)
+    // Fall back to high-quality JPEG on browsers without WebP canvas support
+    onConfirm(webpUrl.startsWith('data:image/webp') ? webpUrl : canvas.toDataURL('image/jpeg', 0.97))
   }
 
   // ── Computed image position for current mode ─────────────────────────────────
@@ -478,7 +481,9 @@ export default function UploadPost() {
     setRawSrc(null)
     const res = await fetch(croppedDataUrl)
     const blob = await res.blob()
-    setImageFile(new File([blob], 'photo.jpg', { type: 'image/jpeg' }))
+    const isWebP = blob.type === 'image/webp' || croppedDataUrl.startsWith('data:image/webp')
+    const ext = isWebP ? 'webp' : 'jpg'
+    setImageFile(new File([blob], `photo.${ext}`, { type: isWebP ? 'image/webp' : 'image/jpeg' }))
   }
 
   const getLocation = async () => {
@@ -504,9 +509,10 @@ export default function UploadPost() {
     if (!caption.trim()) { toast.error('Please add a caption'); return }
     setUploading(true)
     try {
-      const filePath = `${user.id}/${Date.now()}.jpg`
+      const ext = imageFile.type === 'image/webp' ? 'webp' : 'jpg'
+      const filePath = `${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from('photos').upload(filePath, imageFile, { contentType: 'image/jpeg' })
+        .from('photos').upload(filePath, imageFile, { contentType: imageFile.type })
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(filePath)

@@ -21,7 +21,7 @@ export function optimizedImage(url: string | null | undefined, opts: Opts = {}):
   if (url.startsWith('data:') || url.startsWith('blob:')) return url
   if (url.includes('wsrv.nl')) return url
 
-  const { width, height, quality = 80, fit = 'cover' } = opts
+  const { width, height, quality = 90, fit = 'cover' } = opts
   const params = new URLSearchParams()
   params.set('url', url)
   if (width) params.set('w', String(Math.round(width)))
