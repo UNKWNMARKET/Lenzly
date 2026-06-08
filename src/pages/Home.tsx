@@ -219,11 +219,11 @@ export default function Home() {
 
   const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
   const visiblePosts = feedTab === 'following'
-    ? notBlocked.filter(p => followingIds.includes(p.user_id))
+    ? notBlocked.filter(p => p.user_id === user?.id || followingIds.includes(p.user_id))
     : notBlocked.filter(p =>
-        !(p.profiles as any)?.private_account ||
-        p.user_id === user?.id ||
-        followingIds.includes(p.user_id)
+        p.user_id === user?.id ||                        // always show own posts
+        !(p.profiles as any)?.private_account ||         // public accounts visible to all
+        followingIds.includes(p.user_id)                 // private accounts: only if following
       )
   const hasPosts = visiblePosts.length > 0
 
