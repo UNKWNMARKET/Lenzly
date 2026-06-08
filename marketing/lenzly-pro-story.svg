@@ -6,12 +6,12 @@
   <line x1="0" y1="1580" x2="320" y2="1920" stroke="#C9A84C" stroke-width="0.3" opacity="0.08"/>
   <text x="540" y="190" font-family="Georgia, serif" font-size="56" font-weight="400" fill="#FFFFFF" text-anchor="middle" letter-spacing="20" opacity="0.95">LENZLY</text>
   <rect x="340" y="208" width="400" height="1" fill="#C9A84C" opacity="0.35"/>
-  <text x="90" y="430" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Stop</text>
-  <text x="90" y="540" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Googling</text>
-  <text x="90" y="650" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#C9A84C" letter-spacing="-1" font-style="italic">photo spots.</text>
-  <text x="90" y="730" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Lenzly shows you real locations</text>
-  <text x="90" y="760" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">shared by real photographers —</text>
-  <text x="90" y="790" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">with live weather included.</text>
+  <text x="90" y="430" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Find your</text>
+  <text x="90" y="540" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">next</text>
+  <text x="90" y="650" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#C9A84C" letter-spacing="-1" font-style="italic">photo spot.</text>
+  <text x="90" y="730" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Real locations shared by real photographers.</text>
+  <text x="90" y="760" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Live weather data. One-tap directions.</text>
+  <text x="90" y="790" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Community-powered. Always free.</text>
   <rect x="90" y="840" width="900" height="1" fill="#FFFFFF" opacity="0.07"/>
   <text x="90" y="920" font-family="Georgia, serif" font-size="52" font-weight="400" fill="#C9A84C">Real</text>
   <text x="90" y="958" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFFFFF" opacity="0.35" letter-spacing="3">LOCATIONS</text>
