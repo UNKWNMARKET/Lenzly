@@ -179,7 +179,7 @@ export default function Explore() {
   const [activeEngState, setActiveEngState] = useState('All')
   const [activeCarState, setActiveCarState] = useState('All')
   const { openSpot } = useSpotModal()
-  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(50)
+  const { spots: liveSpots, loading: liveSpotsLoading, refresh: refreshLiveSpots } = useLiveSpots(200)
   const ptr = usePullToRefresh({ onRefresh: refreshLiveSpots })
   const locQuery = useLocationSearch(query)
 
@@ -435,7 +435,7 @@ export default function Explore() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {filteredLiveSpots.slice(0, 6).map(spot => (
+                    {filteredLiveSpots.map(spot => (
                       <div
                         key={spot.id}
                         onClick={() => openSpot(liveSpotToPhotoSpot(spot))}
