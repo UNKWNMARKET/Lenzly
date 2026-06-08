@@ -181,18 +181,30 @@ export default function Explore() {
   const [communityLoading, setCommunityLoading] = useState(true)
 
   const fetchCommunityPosts = async () => {
-    const { data, error } = await supabase
+    // Step 1: fetch posts with location tags (user_id → auth.users, NOT profiles — must join separately)
+    const { data: postsData, error } = await supabase
       .from('posts')
-      .select('id, image_url, location_name, lat, lng, category, created_at, user_id, profiles(username, avatar_url, private_account)')
+      .select('id, image_url, location_name, lat, lng, category, created_at, user_id')
       .not('location_name', 'is', null)
-      .neq('archived', true)           // NULL and false both pass — only true is excluded
+      .neq('archived', true)
       .order('created_at', { ascending: false })
       .limit(500)
     if (error) { console.error('[community]', error.message); setCommunityLoading(false); return }
-    const rows = (data ?? []).map((p: any) => ({
-      ...p,
-      profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles ?? null,
-    })).filter((p: any) => !p.profiles?.private_account)  // exclude private accounts
+    if (!postsData || postsData.length === 0) { setCommunityPosts([]); setCommunityLoading(false); return }
+
+    // Step 2: fetch profiles for those users separately
+    const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, private_account')
+      .in('id', userIds)
+    const profileMap: Record<string, any> = {}
+    for (const p of profilesData ?? []) profileMap[p.id] = p
+
+    // Step 3: merge, exclude private accounts
+    const rows = postsData
+      .map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      .filter((p: any) => !p.profiles?.private_account)
     setCommunityPosts(rows)
     setCommunityLoading(false)
   }
