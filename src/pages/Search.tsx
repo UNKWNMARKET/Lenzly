@@ -93,13 +93,13 @@ export default function Search() {
         </button>
 
         {loading && (
-          <div className="px-4 pt-4 space-y-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-lenz-card animate-pulse" />
+          <div className="px-4 pt-4 space-y-0">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-3 border-b border-lenz-border/30 animate-pulse">
+                <div className="w-11 h-11 rounded-full bg-lenz-card shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="w-28 h-3 bg-lenz-card rounded animate-pulse" />
-                  <div className="w-20 h-2 bg-lenz-card rounded animate-pulse" />
+                  <div className="h-3 bg-lenz-card rounded" style={{ width: `${48 + (i * 13) % 30}%` }} />
+                  <div className="h-2 bg-lenz-card rounded" style={{ width: `${30 + (i * 7) % 25}%` }} />
                 </div>
               </div>
             ))}
