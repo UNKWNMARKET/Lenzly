@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X, Camera } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X, Camera, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import SharePostSheet from './SharePostSheet'
@@ -82,6 +82,7 @@ export default function FeedPostCard({
   const [longPressOpen, setLongPressOpen] = useState(false)
   const [commentLikes, setCommentLikes] = useState<Set<string>>(new Set())
   const [commentLikeAnims, setCommentLikeAnims] = useState<CommentLikeAnim[]>([])
+  const [inCommunity, setInCommunity] = useState<boolean>(!!(post as any).show_in_community)
 
   const isOwner = currentUserId === post.user_id
   const profile = post.profile
@@ -301,6 +302,15 @@ export default function FeedPostCard({
     onDeleted?.(post.id)
   }
 
+  const handleToggleCommunity = async () => {
+    if (!currentUserId) return
+    const next = !inCommunity
+    setInCommunity(next)
+    const { error } = await supabase.from('posts').update({ show_in_community: next }).eq('id', post.id).eq('user_id', currentUserId)
+    if (error) { setInCommunity(!next); toast.error('Could not update'); return }
+    toast.success(next ? 'Added to Community Discovered' : 'Removed from Community Discovered')
+  }
+
   const handleLongPressStart = (e: React.TouchEvent) => {
     longPressTimer.current = setTimeout(() => {
       haptics.medium?.()
@@ -398,6 +408,14 @@ export default function FeedPostCard({
             <div className="absolute right-0 top-10 w-44 bg-[#161616] border border-lenz-border rounded-2xl overflow-hidden shadow-2xl shadow-black/60 z-30">
               {isOwner ? (
                 <>
+                  {post.location_name && (
+                    <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleToggleCommunity() }}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-sm border-b border-lenz-border/50 hover:bg-white/5"
+                      style={{ color: inCommunity ? 'rgba(255,255,255,0.5)' : 'rgb(201,168,76)' }}>
+                      <Sparkles size={15} style={{ color: inCommunity ? 'rgba(255,255,255,0.35)' : 'rgb(201,168,76)' }} />
+                      {inCommunity ? 'Remove from Community' : 'Add to Community'}
+                    </button>
+                  )}
                   <button onClick={e => { e.stopPropagation(); setMenuOpen(false); handleArchive() }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-white/80 hover:bg-white/5 border-b border-lenz-border/50">
                     <Archive size={15} className="text-white/50" /> Archive
