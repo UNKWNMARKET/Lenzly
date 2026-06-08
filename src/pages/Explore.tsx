@@ -186,6 +186,7 @@ export default function Explore() {
       .from('posts')
       .select('id, image_url, location_name, lat, lng, category, created_at, user_id')
       .not('location_name', 'is', null)
+      .eq('show_in_community', true)
       .neq('archived', true)
       .order('created_at', { ascending: false })
       .limit(500)

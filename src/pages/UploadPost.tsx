@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { useLocation } from 'wouter'
-import { MapPin, X, Image, ChevronDown, Info } from 'lucide-react'
+import { MapPin, X, Image, ChevronDown, Info, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -449,6 +449,7 @@ export default function UploadPost() {
   const [lng, setLng] = useState<number | null>(null)
   const [category, setCategory] = useState('Portrait')
   const [tags, setTags] = useState('')
+  const [addToCommunity, setAddToCommunity] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
   const [uploading, setUploading] = useState(false)
 
@@ -524,6 +525,7 @@ export default function UploadPost() {
         user_id: user.id, image_url: publicUrl,
         caption: caption.trim(), location_name: locationName.trim() || null,
         lat, lng, tags: parsedTags, category,
+        show_in_community: locationName.trim() ? addToCommunity : false,
       }).select().single()
       if (insertError) throw insertError
 
@@ -660,6 +662,47 @@ export default function UploadPost() {
             <MapPin size={13} />
             {gettingLocation ? 'Getting location...' : lat ? `GPS: ${lat.toFixed(4)}, ${lng?.toFixed(4)}` : 'Use current GPS location'}
           </button>
+
+          {/* Community toggle — only shown when a location is entered */}
+          {locationName.trim() && (
+            <button
+              type="button"
+              onClick={() => setAddToCommunity(v => !v)}
+              className={cn(
+                'w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all duration-200',
+                addToCommunity
+                  ? 'bg-gold/10 border-gold/40'
+                  : 'bg-lenz-card border-lenz-border'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+                  addToCommunity ? 'bg-gold/20' : 'bg-white/5'
+                )}>
+                  <Sparkles size={16} className={addToCommunity ? 'text-gold' : 'text-white/30'} />
+                </div>
+                <div className="text-left">
+                  <p className={cn('text-sm font-semibold transition-colors', addToCommunity ? 'text-gold' : 'text-white/60')}>
+                    Add to Community Discovered
+                  </p>
+                  <p className="text-[10px] text-white/30 mt-0.5">
+                    Share this location with all photographers
+                  </p>
+                </div>
+              </div>
+              {/* Toggle pill */}
+              <div className={cn(
+                'w-11 h-6 rounded-full transition-colors duration-200 relative shrink-0',
+                addToCommunity ? 'bg-gold' : 'bg-white/15'
+              )}>
+                <div className={cn(
+                  'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                  addToCommunity ? 'translate-x-5' : 'translate-x-0.5'
+                )} />
+              </div>
+            </button>
+          )}
         </div>
 
         <div className="relative">
