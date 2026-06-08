@@ -30,7 +30,14 @@ const savedPhotos = currentUser.photos.slice(3)
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts')
+  const [tabVisible, setTabVisible] = useState(true)
   const [modal, setModal] = useState<ModalType>(null)
+
+  const switchTab = (tab: ProfileTab) => {
+    if (tab === activeTab) return
+    setTabVisible(false)
+    setTimeout(() => { setActiveTab(tab); setTabVisible(true) }, 150)
+  }
   const [, navigate] = useLocation()
   const { user, profile, refreshProfile } = useAuth()
 
@@ -401,7 +408,7 @@ export default function Profile() {
         {tabs.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => switchTab(key)}
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium tracking-wide uppercase border-b-2 transition-all',
               activeTab === key
@@ -416,6 +423,7 @@ export default function Profile() {
       </div>
 
       {/* Photo Grid */}
+      <div style={{ opacity: tabVisible ? 1 : 0, transition: 'opacity 0.15s ease' }}>
       {activeTab === 'posts' && hasRealProfile ? (
         myPosts.length > 0 ? (
           <>
@@ -505,6 +513,7 @@ export default function Profile() {
           <p className="text-sm text-white/25">No photos yet</p>
         </div>
       )}
+      </div>
 
       {/* Upgrade to Pro CTA (if not pro) */}
       {!u.pro && (

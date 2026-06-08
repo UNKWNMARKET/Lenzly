@@ -353,17 +353,21 @@ export default function Home() {
         onTouchEnd={onSwipeTouchEnd}
       >
         {loading ? (
-          // Skeleton loading
-          [1, 2, 3].map(i => (
-            <div key={i} className="p-4 border-b border-lenz-border animate-pulse">
-              <div className="flex items-center gap-3 mb-3">
+          // Skeleton loading — 4:5 ratio matches real cards
+          [1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="mx-3 my-3 rounded-3xl overflow-hidden border border-lenz-border/40 animate-pulse">
+              <div className="flex items-center gap-3 p-4">
                 <div className="w-10 h-10 rounded-full bg-lenz-card" />
-                <div className="space-y-1.5">
-                  <div className="w-32 h-3 bg-lenz-card rounded" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="w-28 h-3 bg-lenz-card rounded" />
                   <div className="w-20 h-2 bg-lenz-card rounded" />
                 </div>
               </div>
-              <div className="aspect-square bg-lenz-card rounded-xl" />
+              <div className="mx-3 rounded-2xl aspect-[4/5] bg-lenz-card" />
+              <div className="p-4 space-y-2">
+                <div className="w-16 h-3 bg-lenz-card rounded" />
+                <div className="w-40 h-2.5 bg-lenz-card rounded" />
+              </div>
             </div>
           ))
         ) : hasPosts ? (

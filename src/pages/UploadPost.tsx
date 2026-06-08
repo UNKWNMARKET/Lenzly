@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import { useLocation } from 'wouter'
 import { MapPin, X, Image, ChevronDown, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -607,9 +608,17 @@ export default function UploadPost() {
 
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-        <textarea placeholder="Write a caption..." value={caption} onChange={e => setCaption(e.target.value)}
-          rows={3}
-          className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors resize-none" />
+        <div className="relative">
+          <textarea placeholder="Write a caption..." value={caption} onChange={e => setCaption(e.target.value.slice(0, 2200))}
+            rows={3}
+            className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors resize-none" />
+          <span className={cn(
+            'absolute bottom-2.5 right-3 text-[10px] tabular-nums transition-colors',
+            caption.length > 2000 ? 'text-rose-400' : 'text-white/20'
+          )}>
+            {caption.length}/2200
+          </span>
+        </div>
 
         <div className="space-y-2">
           <LocationAutocomplete value={locationName} onChange={setLocationName} />

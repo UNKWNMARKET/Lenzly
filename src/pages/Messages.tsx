@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Edit2, Search, MessageCircle, Trash2, X, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -192,11 +192,40 @@ export default function Messages() {
 
   const deleteConversation = async (id: string) => {
     setDeleting(null)
+    setSwipeOffsets(prev => { const n = { ...prev }; delete n[id]; return n })
     await supabase.from('messages').delete().eq('conversation_id', id)
     await supabase.from('conversation_participants').delete().eq('conversation_id', id)
     await supabase.from('conversations').delete().eq('id', id)
     setConversations(prev => prev.filter(c => c.id !== id))
     toast.success('Conversation deleted')
+  }
+
+  // Swipe-to-delete state
+  const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({})
+  const swipeTouchStart = useRef<Record<string, { x: number; y: number }>>({})
+
+  const onRowTouchStart = (id: string, e: React.TouchEvent) => {
+    swipeTouchStart.current[id] = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+
+  const onRowTouchMove = (id: string, e: React.TouchEvent) => {
+    const start = swipeTouchStart.current[id]
+    if (!start) return
+    const dx = e.touches[0].clientX - start.x
+    const dy = Math.abs(e.touches[0].clientY - start.y)
+    if (dy > 10 && Math.abs(dx) < dy) return // vertical scroll, ignore
+    if (dx < 0) setSwipeOffsets(prev => ({ ...prev, [id]: Math.max(dx, -80) }))
+    else if ((swipeOffsets[id] ?? 0) < 0) setSwipeOffsets(prev => ({ ...prev, [id]: Math.min(dx + (prev[id] ?? 0), 0) }))
+  }
+
+  const onRowTouchEnd = (id: string) => {
+    const offset = swipeOffsets[id] ?? 0
+    if (offset < -40) {
+      setSwipeOffsets(prev => ({ ...prev, [id]: -80 }))
+      setDeleting(id)
+    } else {
+      setSwipeOffsets(prev => ({ ...prev, [id]: 0 }))
+    }
   }
 
   return (
@@ -246,12 +275,34 @@ export default function Messages() {
       ) : (
         <div className="flex flex-col gap-0.5 p-4 mt-1">
           {conversations.map(c => (
-            <div key={c.id} className="relative group">
+            <div
+              key={c.id}
+              className="relative overflow-hidden rounded-2xl"
+              onTouchStart={e => onRowTouchStart(c.id, e)}
+              onTouchMove={e => onRowTouchMove(c.id, e)}
+              onTouchEnd={() => onRowTouchEnd(c.id)}
+            >
+              {/* Swipe-to-delete red bg */}
+              <div className="absolute inset-y-0 right-0 w-20 bg-rose-500 flex items-center justify-center rounded-2xl">
+                <Trash2 size={18} className="text-white" />
+              </div>
+
               <button
-                onClick={() => navigate(`/chat/${c.id}`)}
+                onClick={() => {
+                  if ((swipeOffsets[c.id] ?? 0) < -20) {
+                    setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 }))
+                    setDeleting(null)
+                    return
+                  }
+                  navigate(`/chat/${c.id}`)
+                }}
+                style={{
+                  transform: `translateX(${swipeOffsets[c.id] ?? 0}px)`,
+                  transition: swipeOffsets[c.id] === 0 || swipeOffsets[c.id] === -80 ? 'transform 0.2s ease' : 'none',
+                }}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-2xl transition-all w-full text-left',
-                  c.unread ? 'bg-white/5 hover:bg-white/8' : 'hover:bg-white/5'
+                  'flex items-center gap-3 p-3 rounded-2xl transition-colors w-full text-left relative bg-lenz-bg',
+                  c.unread ? 'bg-white/5' : ''
                 )}
               >
                 {/* Avatar */}
@@ -286,20 +337,21 @@ export default function Messages() {
                 }
               </button>
 
-              {/* Delete button on hover */}
-              {deleting === c.id ? (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-lenz-card border border-lenz-border rounded-xl px-3 py-1.5">
-                  <span className="text-xs text-white/60">Delete?</span>
-                  <button onClick={() => deleteConversation(c.id)} className="text-xs text-rose-400 font-semibold">Yes</button>
-                  <button onClick={() => setDeleting(null)} className="text-xs text-white/40">No</button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setDeleting(c.id)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-lenz-card text-white/30 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+              {/* Confirm delete overlay (appears when fully swiped) */}
+              {deleting === c.id && (
+                <div
+                  style={{ transform: `translateX(${swipeOffsets[c.id] ?? 0}px)` }}
+                  className="absolute inset-0 flex items-center justify-end pr-3 gap-2 pointer-events-none"
                 >
-                  <Trash2 size={14} />
-                </button>
+                  <button
+                    className="pointer-events-auto px-3 py-1.5 rounded-xl bg-rose-500 text-white text-xs font-bold"
+                    onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
+                  >Delete</button>
+                  <button
+                    className="pointer-events-auto px-3 py-1.5 rounded-xl bg-lenz-card border border-lenz-border text-white/60 text-xs"
+                    onClick={e => { e.stopPropagation(); setDeleting(null); setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 })) }}
+                  >Cancel</button>
+                </div>
               )}
             </div>
           ))}
