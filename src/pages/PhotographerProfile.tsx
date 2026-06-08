@@ -140,7 +140,6 @@ export default function PhotographerProfile() {
       .from('posts')
       .select('*')
       .eq('user_id', id)
-      .eq('archived', false)
       .order('created_at', { ascending: false })
       .then(async ({ data }) => {
         if (!data || data.length === 0) return
