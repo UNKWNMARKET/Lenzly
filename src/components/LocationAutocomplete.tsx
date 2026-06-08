@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Loader, Utensils, Building2, Landmark } from 'lucide-react'
+import { MapPin, Utensils, Building2, Landmark } from 'lucide-react'
+import Spinner from './Spinner'
 import { supabase } from '@/lib/supabase'
 import { searchUSCities } from '@/data/usCities'
 import { searchPlaces } from '@/lib/placesSearch'
@@ -120,7 +121,7 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
         }
       />
       {loading && (
-        <Loader size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 animate-spin" />
+        <Spinner size="sm" className="absolute right-4 top-1/2 -translate-y-1/2" />
       )}
 
       {open && suggestions.length > 0 && (

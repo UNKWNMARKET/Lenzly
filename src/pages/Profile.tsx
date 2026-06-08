@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Spinner from '@/components/Spinner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
@@ -445,7 +446,7 @@ export default function Profile() {
           </div>
           {myHasMore && (
             <div ref={gridSentinelRef} className="py-6 flex items-center justify-center">
-              {myLoadingMore && <div className="w-5 h-5 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />}
+              {myLoadingMore && <Spinner size="sm" />}
             </div>
           )}
           </>
@@ -613,7 +614,7 @@ function PeopleModal({ title, userId, type, onClose }: {
         <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
           {loading ? (
             <div className="flex justify-center py-10">
-              <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              <Spinner size="sm" />
             </div>
           ) : people.length === 0 ? (
             <p className="text-center text-white/30 text-sm py-10">No one here yet</p>

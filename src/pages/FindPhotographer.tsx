@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Spinner from '@/components/Spinner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { Search, SlidersHorizontal, List, Map as MapIcon, X, Star, MapPin } from 'lucide-react'
@@ -305,7 +306,7 @@ export default function FindPhotographer() {
             ) : (
               <div className="w-full h-full bg-lenz-card flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <Spinner size="lg" className="mx-auto mb-2" />
                   <p className="text-xs text-white/30">Loading map...</p>
                 </div>
               </div>

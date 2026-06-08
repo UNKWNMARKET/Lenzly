@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Search, Send, Check, Clapperboard } from 'lucide-react'
+import Spinner from './Spinner'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -210,7 +211,7 @@ export default function SharePostSheet({
                 {sharedToStory ? 'Visible to everyone for 24 hours' : 'Post this photo to your spot story for 24h'}
               </p>
             </div>
-            {sharingToStory && <div className="ml-auto w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin shrink-0" />}
+            {sharingToStory && <Spinner size="sm" className="ml-auto shrink-0" />}
           </button>
         </div>
 

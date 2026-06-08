@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'wouter'
-import { Mail, Lock, User, Eye, EyeOff, AtSign, CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, AtSign, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import Spinner from '@/components/Spinner'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import AppLogo from '@/components/AppLogo'
@@ -104,7 +105,7 @@ export default function SignUp() {
 
   const UsernameIndicator = () => {
     if (username.length < 3) return null
-    if (usernameStatus === 'checking') return <Loader size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 animate-spin" />
+    if (usernameStatus === 'checking') return <Spinner size="sm" className="absolute right-4 top-1/2 -translate-y-1/2" />
     if (usernameStatus === 'available') return <CheckCircle size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400" />
     if (usernameStatus === 'taken') return <XCircle size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />
     if (usernameStatus === 'error') return <AlertCircle size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-yellow-400" />

@@ -120,12 +120,15 @@ export default function Messages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Live updates — refresh list when any message is inserted
+  // Live updates — refresh when messages change (INSERT covers new messages,
+  // UPDATE covers unsent; both re-sort the conversation list by recency)
   useEffect(() => {
     if (!user) return
     const ch = supabase
       .channel('messages_list_live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => fetchConversations())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' },
         () => fetchConversations())
       .subscribe()
     return () => { supabase.removeChannel(ch) }

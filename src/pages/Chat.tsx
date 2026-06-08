@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
 import { deriveConvKey, encryptBlob, clearDecryptedCache } from '@/lib/crypto'
 import EncryptedImage from '@/components/EncryptedImage'
+import Spinner from '@/components/Spinner'
 
 // ── Hire proposal card ───────────────────────────────────────────────────────
 function safeStr(v: unknown): string { return typeof v === 'string' ? v.slice(0, 500) : '' }
@@ -453,7 +454,7 @@ export default function Chat() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-none px-4 py-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         {loading && (
           <div className="flex justify-center pt-12">
-            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            <Spinner size="md" />
           </div>
         )}
         {!loading && messages.length === 0 && (
@@ -548,7 +549,7 @@ export default function Chat() {
           className="w-10 h-10 rounded-full bg-white/8 border border-white/10 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform disabled:opacity-40"
         >
           {uploadingImage
-            ? <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            ? <Spinner size="sm" className="border-white/20 border-t-white/60" />
             : <ImagePlus size={18} className="text-white/50" />}
         </button>
         <div className="flex-1 flex items-center gap-2 bg-white/8 border border-white/10 rounded-full px-4 py-2.5">
@@ -570,7 +571,7 @@ export default function Chat() {
           )}
         >
           {sending
-            ? <div className="w-4 h-4 border-2 border-lenz-bg/40 border-t-lenz-bg rounded-full animate-spin" />
+            ? <Spinner size="sm" className="border-lenz-bg/40 border-t-lenz-bg" />
             : <Send size={16} className={input.trim() ? 'text-lenz-bg' : 'text-white/30'} />}
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
 import { ChevronLeft, MapPin, X, Clock, MoreHorizontal } from 'lucide-react'
+import Spinner from '@/components/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -318,7 +319,7 @@ export default function StoryArchive() {
       <div className="px-4 pt-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />
+            <Spinner size="md" />
           </div>
         ) : stories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
