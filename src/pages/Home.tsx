@@ -39,23 +39,33 @@ export default function Home() {
   const fetchPosts = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // Fetch posts without profiles join (user_id → auth.users, not profiles)
+      const { data: postsData, error } = await supabase
         .from('posts')
-        .select('*, profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(PAGE_SIZE)
-      if (error) console.error('[Feed] fetchPosts error:', error.message, error.code, error.details)
-      setRealPosts(data ?? [])
-      setHasMore((data?.length ?? 0) === PAGE_SIZE)
+      if (error) { console.error('[Feed] fetchPosts error:', error.message, error.code); setLoading(false); return }
+      if (!postsData || postsData.length === 0) { setRealPosts([]); setLoading(false); return }
+
+      // Fetch profiles for these posts separately
+      const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+        .in('id', userIds)
+      const profileMap: Record<string, any> = {}
+      for (const p of profilesData ?? []) profileMap[p.id] = p
+
+      // Merge profiles onto posts
+      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      setRealPosts(merged)
+      setHasMore(postsData.length === PAGE_SIZE)
 
       // Batch check which post authors have active stories
-      if (data && data.length > 0) {
-        const authorIds = [...new Set(data.map((p: any) => p.user_id))]
-        const { data: storyRows } = await supabase
-          .from('spot_stories').select('user_id')
-          .in('user_id', authorIds).gt('expires_at', new Date().toISOString())
-        setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
-      }
+      const { data: storyRows } = await supabase
+        .from('spot_stories').select('user_id')
+        .in('user_id', userIds).gt('expires_at', new Date().toISOString())
+      setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
     } catch (err) {
       console.error('[Feed] fetchPosts threw:', err)
     } finally {
@@ -68,20 +78,23 @@ export default function Home() {
     if (loadingMore || realPosts.length === 0) return
     setLoadingMore(true)
     const oldest = realPosts[realPosts.length - 1].created_at
-    const { data } = await supabase
-      .from('posts')
-      .select('*, profiles(*)')
+    const { data: postsData } = await supabase
+      .from('posts').select('*')
       .order('created_at', { ascending: false })
-      .lt('created_at', oldest)
-      .limit(PAGE_SIZE)
-    if (data && data.length > 0) {
-      // De-dupe in case a realtime insert overlapped the page boundary
+      .lt('created_at', oldest).limit(PAGE_SIZE)
+    if (postsData && postsData.length > 0) {
+      const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account').in('id', userIds)
+      const profileMap: Record<string, any> = {}
+      for (const p of profilesData ?? []) profileMap[p.id] = p
+      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
       setRealPosts(prev => {
         const seen = new Set(prev.map(p => p.id))
-        return [...prev, ...data.filter(p => !seen.has(p.id))]
+        return [...prev, ...merged.filter((p: any) => !seen.has(p.id))]
       })
     }
-    setHasMore((data?.length ?? 0) === PAGE_SIZE)
+    setHasMore((postsData?.length ?? 0) === PAGE_SIZE)
     setLoadingMore(false)
   }, [loadingMore, realPosts])
 
@@ -113,15 +126,14 @@ export default function Home() {
     const channel = supabase
       .channel('posts')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async payload => {
-        // Fetch the full row with profiles join so FeedPostCard has all the data it needs
-        const { data } = await supabase
-          .from('posts')
-          .select('*, profiles(*)')
-          .eq('id', (payload.new as { id: string }).id)
-          .single()
-        if (data) setRealPosts(prev => {
-          if (prev.some(p => p.id === data.id)) return prev // de-dupe
-          return [data, ...prev]
+        const newPost = payload.new as any
+        const { data: prof } = await supabase
+          .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+          .eq('id', newPost.user_id).single()
+        const merged = { ...newPost, profiles: prof ?? null }
+        setRealPosts(prev => {
+          if (prev.some(p => p.id === merged.id)) return prev
+          return [merged, ...prev]
         })
       })
       .subscribe()
