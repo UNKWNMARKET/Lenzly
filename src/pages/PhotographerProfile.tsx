@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { useRealPhotographer } from '@/hooks/useRealPhotographers'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReportSheet from '@/components/ReportSheet'
+import Spinner from '@/components/Spinner'
 import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 
 type HireStep = 'idle' | 'form' | 'sent'
@@ -71,7 +72,7 @@ function PhotoViewer({ photos, startIndex, onClose }: { photos: string[]; startI
       <div className="flex-1 relative overflow-hidden">
         {!imgLoaded && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            <Spinner size="md" />
           </div>
         )}
         <img

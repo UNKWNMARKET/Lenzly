@@ -7,6 +7,7 @@ import BusinessBanner from '@/components/BusinessBanner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import AppLogo from '@/components/AppLogo'
 import { supabase, Post } from '@/lib/supabase'
+import Spinner from '@/components/Spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
@@ -419,7 +420,7 @@ export default function Home() {
         {hasPosts && (
           <div ref={sentinelRef} className="py-6 flex items-center justify-center">
             {loadingMore && (
-              <div className="w-5 h-5 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />
+              <Spinner size="sm" />
             )}
             {!hasMore && (
               <p className="text-[11px] text-white/20 tracking-wider uppercase">You're all caught up</p>

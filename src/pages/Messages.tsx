@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import Spinner from '@/components/Spinner'
 
 type Participant = { username: string; name: string | null; avatar_url: string | null }
 
@@ -393,7 +394,7 @@ export default function Messages() {
             <div className="px-4 max-h-72 overflow-y-auto">
               {searching && (
                 <div className="flex justify-center py-6">
-                  <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <Spinner size="sm" />
                 </div>
               )}
               {!searching && searchQuery && searchResults.length === 0 && (

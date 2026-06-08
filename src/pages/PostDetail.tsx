@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import FeedPostCard, { FeedPost } from '@/components/FeedPostCard'
+import { PageSpinner } from '@/components/Spinner'
 
 export default function PostDetail() {
   const [, params] = useRoute('/post/:id')
@@ -60,11 +61,7 @@ export default function PostDetail() {
     }
   }, [loading])
 
-  if (loading) return (
-    <div className="min-h-screen bg-lenz-bg flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <PageSpinner />
 
   if (posts.length === 0) return (
     <div className="fixed inset-0 overflow-y-auto overscroll-none">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ChevronLeft, Camera, Check, MapPin, Globe, Loader } from 'lucide-react'
+import { ChevronLeft, Camera, Check, MapPin, Globe } from 'lucide-react'
+import Spinner from '@/components/Spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -193,7 +194,7 @@ export default function EditProfile() {
             }
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {uploadingCover
-                ? <Loader size={18} className="text-white animate-spin" />
+                ? <Spinner size="sm" className="border-white/30 border-t-white" />
                 : <div className="flex items-center gap-2 text-white text-xs font-medium">
                     <Camera size={15} />
                     Change Cover
@@ -221,7 +222,7 @@ export default function EditProfile() {
               </div>
               <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
                 {uploadingAvatar
-                  ? <Loader size={13} className="text-white animate-spin" />
+                  ? <Spinner size="sm" className="border-white/30 border-t-white" />
                   : <Camera size={13} className="text-white" />
                 }
               </div>
