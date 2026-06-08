@@ -210,11 +210,21 @@ function GlobalSpotModal() {
   return <SpotDetailModal spot={currentSpot} onClose={closeSpot} />
 }
 
+// Routes where the bottom nav is hidden (full-screen or dedicated pages)
+const NAV_HIDDEN_EXACT = new Set([
+  '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password',
+  '/spot', '/onboarding', '/search', '/brands', '/privacy', '/terms',
+  '/upload', '/profile/edit', '/settings', '/pro', '/pro/checkout',
+  '/notifications', '/messages', '/story-archive',
+])
+const NAV_HIDDEN_PREFIX = ['/admin', '/chat/', '/photographer/', '/post/']
+
 function BottomNavWrapper() {
   const [location] = useLocation()
   const { user } = useAuth()
-  const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/spot']
-  const hideNav = !user || authRoutes.includes(location) || location === '/onboarding' || location === '/search' || location === '/brands' || location.startsWith('/admin') || location === '/privacy' || location === '/terms' || location === '/upload' || location === '/profile/edit' || location === '/settings' || location === '/pro' || location === '/pro/checkout' || location === '/notifications' || location === '/messages' || location.startsWith('/chat/') || location.startsWith('/photographer/') || location.startsWith('/post/') || location === '/story-archive'
+  const hideNav = !user
+    || NAV_HIDDEN_EXACT.has(location)
+    || NAV_HIDDEN_PREFIX.some(p => location.startsWith(p))
   if (hideNav) return null
   return (
     <>

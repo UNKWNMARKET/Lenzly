@@ -631,7 +631,7 @@ export default function Chat() {
 
       {/* Background Picker */}
       {showBgPicker && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-sm"
+        <div className="fixed inset-0 z-[60] flex items-end bg-black/70 backdrop-blur-sm"
           onClick={e => e.target === e.currentTarget && setShowBgPicker(false)}>
           <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
             <div className="flex justify-center pt-3 pb-1">
