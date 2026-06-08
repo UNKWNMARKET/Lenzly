@@ -335,13 +335,22 @@ export default function StoryViewer({
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { if (holdTimer.current) clearTimeout(holdTimer.current); if (!commentOpen) setPaused(false) }}
     >
-      {/* Story image — fills container 100% */}
+      {/* Blurred background so any aspect ratio fits without harsh crop */}
+      <img
+        key={`bg-${story.id}`}
+        src={img.feed(story.image_url)}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none"
+      />
+
+      {/* Story image — contain so portrait/landscape both fit */}
       <img
         key={story.id}
         src={img.feed(story.image_url)}
         alt=""
         onLoad={() => setImgLoaded(true)}
-        className={`story-image absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`story-image absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
 
       {/* Gradient overlay */}
@@ -421,12 +430,22 @@ export default function StoryViewer({
         </div>{/* end header row */}
       </div>{/* end top overlay */}
 
-      {/* ── Caption ── */}
-      {story.caption && (
-        <div className="absolute bottom-32 left-0 right-0 z-20 px-5 pointer-events-none">
-          <p className="text-white text-[14px] leading-snug drop-shadow-md">{story.caption}</p>
-        </div>
-      )}
+      {/* ── Caption + attribution ── */}
+      {story.caption && (() => {
+        const sharedMatch = story.caption.match(/· Shared from (@\S+)$/)
+        const displayCaption = sharedMatch ? story.caption.replace(/ · Shared from @\S+$/, '') : story.caption
+        return (
+          <div className="absolute bottom-32 left-0 right-0 z-20 px-5 pointer-events-none space-y-2">
+            {sharedMatch && (
+              <div className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/15 rounded-full px-3 py-1.5">
+                <Camera size={11} className="text-gold shrink-0" />
+                <span className="text-white/80 text-[12px] font-semibold">{sharedMatch[1]}</span>
+              </div>
+            )}
+            <p className="text-white text-[14px] leading-snug drop-shadow-md">{displayCaption}</p>
+          </div>
+        )
+      })()}
 
       {/* ── Bottom: view count + swipe hint (own stories) ── */}
       {isOwn && (

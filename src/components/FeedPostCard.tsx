@@ -646,6 +646,7 @@ export default function FeedPostCard({
           imageUrl={post.image_url}
           caption={post.caption}
           postAuthorId={post.user_id}
+          postAuthorUsername={post.profile?.username ?? null}
           locationName={post.location_name}
           onClose={() => setShareOpen(false)}
         />

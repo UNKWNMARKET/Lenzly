@@ -13,6 +13,7 @@ export default function SharePostSheet({
   imageUrl,
   caption,
   postAuthorId,
+  postAuthorUsername,
   locationName,
   onClose,
 }: {
@@ -20,6 +21,7 @@ export default function SharePostSheet({
   imageUrl: string
   caption: string | null
   postAuthorId: string
+  postAuthorUsername?: string | null
   locationName?: string | null
   onClose: () => void
 }) {
@@ -133,7 +135,8 @@ export default function SharePostSheet({
     }
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    const storyCaption = caption ? `📸 ${caption}` : '📸 Check out this spot'
+    const attribution = postAuthorUsername ? ` · Shared from @${postAuthorUsername}` : ''
+    const storyCaption = (caption ? `📸 ${caption}` : '📸 Check out this spot') + attribution
     const storyLocation = locationName?.trim() || 'Shared from feed'
 
     const { error } = await supabase.from('spot_stories').insert({
