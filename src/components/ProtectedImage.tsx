@@ -46,7 +46,7 @@ export default function ProtectedImage({ src, alt = '', className, style, waterm
       <img
         src={src}
         alt={alt}
-        className="w-full h-full object-contain"
+        className="w-full h-full object-cover object-center"
         style={{
           WebkitUserSelect: 'none',
           userSelect: 'none',

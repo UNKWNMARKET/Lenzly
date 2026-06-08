@@ -395,7 +395,7 @@ export default function FeedPostCard({
 
       {/* Image — double-tap to like, long-press for options */}
       <div
-        className="mx-3 rounded-2xl overflow-hidden bg-black relative"
+        className="mx-3 rounded-2xl overflow-hidden bg-black relative aspect-[4/5]"
         onTouchStart={handleLongPressStart}
         onTouchEnd={handleLongPressEnd}
         onTouchMove={handleLongPressEnd}
@@ -403,7 +403,7 @@ export default function FeedPostCard({
         <ProtectedImage
           src={img.feed(post.image_url)}
           alt={post.caption ?? ''}
-          className="w-full"
+          className="w-full h-full"
           watermark={post.profile?.username ?? undefined}
           onClick={handleImageTap}
         />
