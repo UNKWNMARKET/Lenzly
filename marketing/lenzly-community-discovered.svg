@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:gn="http://www.goodnotes.com/gn-svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#090909"/>
+  <line x1="0" y1="270" x2="1080" y2="270" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <line x1="0" y1="540" x2="1080" y2="540" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <line x1="0" y1="810" x2="1080" y2="810" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <line x1="270" y1="0" x2="270" y2="1080" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <line x1="540" y1="0" x2="540" y2="1080" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <line x1="810" y1="0" x2="810" y2="1080" stroke="#C9A84C" stroke-width="0.4" opacity="0.08"/>
+  <ellipse cx="540" cy="520" rx="180" ry="60" fill="#C9A84C" opacity="0.06"/>
+  <ellipse cx="540" cy="380" rx="90" ry="90" fill="#1A1500" stroke="#C9A84C" stroke-width="2.5" opacity="0.95"/>
+  <circle cx="540" cy="380" r="54" fill="#C9A84C" opacity="0.18"/>
+  <circle cx="540" cy="380" r="32" fill="#C9A84C" opacity="0.9"/>
+  <polygon points="490,458 590,458 540,540" fill="#1A1500" stroke="#C9A84C" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="492" y="456" width="96" height="6" fill="#1A1500"/>
+  <ellipse cx="540" cy="548" rx="40" ry="8" fill="#C9A84C" opacity="0.20"/>
+  <circle cx="540" cy="540" r="80" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.12"/>
+  <circle cx="540" cy="540" r="130" fill="none" stroke="#C9A84C" stroke-width="0.8" opacity="0.08"/>
+  <circle cx="540" cy="540" r="180" fill="none" stroke="#C9A84C" stroke-width="0.6" opacity="0.05"/>
+  <text x="540" y="110" font-family="Arial, sans-serif" font-size="14" fill="#C9A84C" text-anchor="middle" letter-spacing="5" opacity="0.7">INTRODUCING</text>
+  <text x="540" y="200" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#FFFFFF" text-anchor="middle">Community</text>
+  <text x="540" y="280" font-family="Georgia, serif" font-size="72" font-weight="700" fill="#C9A84C" text-anchor="middle">Discovered</text>
+  <text x="540" y="640" font-family="Georgia, serif" font-size="24" fill="#FFFFFF" text-anchor="middle" opacity="0.75">Photographers share their secret spots.</text>
+  <text x="540" y="678" font-family="Georgia, serif" font-size="24" fill="#FFFFFF" text-anchor="middle" opacity="0.55">See live weather. Get directions. Go shoot.</text>
+  <rect x="80" y="760" width="260" height="130" rx="18" fill="#141414" stroke="#C9A84C" stroke-width="0.8" opacity="0.9"/>
+  <text x="210" y="820" font-family="Georgia, serif" font-size="40" font-weight="700" fill="#C9A84C" text-anchor="middle">Real</text>
+  <text x="210" y="860" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF" text-anchor="middle" opacity="0.45" letter-spacing="1">LIVE LOCATIONS</text>
+  <rect x="400" y="760" width="260" height="130" rx="18" fill="#141414" stroke="#C9A84C" stroke-width="0.8" opacity="0.9"/>
+  <text x="530" y="820" font-family="Georgia, serif" font-size="40" font-weight="700" fill="#C9A84C" text-anchor="middle">Live</text>
+  <text x="530" y="860" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF" text-anchor="middle" opacity="0.45" letter-spacing="1">WEATHER DATA</text>
+  <rect x="720" y="760" width="260" height="130" rx="18" fill="#141414" stroke="#C9A84C" stroke-width="0.8" opacity="0.9"/>
+  <text x="850" y="820" font-family="Georgia, serif" font-size="40" font-weight="700" fill="#C9A84C" text-anchor="middle">Free</text>
+  <text x="850" y="860" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF" text-anchor="middle" opacity="0.45" letter-spacing="1">TO USE</text>
+  <text x="540" y="960" font-family="Georgia, serif" font-size="28" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="8">LENZLY</text>
+  <text x="540" y="995" font-family="Arial, sans-serif" font-size="14" fill="#C9A84C" text-anchor="middle" opacity="0.5" letter-spacing="3">@LENZLY · APP STORE</text>
+</svg>
