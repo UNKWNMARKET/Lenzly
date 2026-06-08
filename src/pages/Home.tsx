@@ -37,11 +37,12 @@ export default function Home() {
 
   // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('*, profiles(*)')
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE)
+    if (error) console.error('[Feed] fetchPosts error:', error.message, error.details)
     setRealPosts(data ?? [])
     setHasMore((data?.length ?? 0) === PAGE_SIZE)
     setLoading(false)
