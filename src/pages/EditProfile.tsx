@@ -27,6 +27,20 @@ export default function EditProfile() {
   const [secondShooter, setSecondShooter] = useState<boolean>(profile?.second_shooter ?? false)
   const [priceRange, setPriceRange] = useState<string>(profile?.price_range ?? '')
   const [saving, setSaving] = useState(false)
+  const [websiteError, setWebsiteError] = useState('')
+
+  const handleWebsiteChange = (val: string) => {
+    setWebsite(val)
+    if (!val.trim()) { setWebsiteError(''); return }
+    try { new URL(val.includes('://') ? val : `https://${val}`) ; setWebsiteError('') }
+    catch { setWebsiteError('Enter a valid URL') }
+  }
+
+  const normalizeWebsite = (val: string) => {
+    if (!val.trim()) return ''
+    if (/^https?:\/\//i.test(val)) return val.trim()
+    return `https://${val.trim()}`
+  }
 
   // ── Photo upload ─────────────────────────────────────────────────────────────
   const [avatarPreview, setAvatarPreview]   = useState<string | null>(null)
@@ -126,7 +140,7 @@ export default function EditProfile() {
       username:  username.trim().toLowerCase(),
       bio:       bio.trim() || null,
       location:  location.trim() || null,
-      website:   website.trim() || null,
+      website:   website.trim() ? normalizeWebsite(website) : null,
       specialty:      specialties,
       available:      available,
       second_shooter: secondShooter,
@@ -242,13 +256,20 @@ export default function EditProfile() {
         {/* Display Name */}
         <div>
           <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Display Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Your Name"
-            className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value.slice(0, 50))}
+              placeholder="Your Name"
+              className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+            />
+            {name.length > 35 && (
+              <span className={`absolute bottom-2.5 right-3 text-[10px] tabular-nums ${name.length >= 50 ? 'text-rose-400' : 'text-white/20'}`}>
+                {name.length}/50
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Username */}
@@ -320,13 +341,14 @@ export default function EditProfile() {
           <div className="relative">
             <Globe size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
             <input
-              type="url"
+              type="text"
               value={website}
-              onChange={e => setWebsite(e.target.value)}
-              placeholder="https://yoursite.com"
-              className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+              onChange={e => handleWebsiteChange(e.target.value)}
+              placeholder="yoursite.com"
+              className={`w-full bg-lenz-card border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none transition-colors ${websiteError ? 'border-rose-500/50 focus:border-rose-400/70' : 'border-lenz-border focus:border-gold/50'}`}
             />
           </div>
+          {websiteError && <p className="text-[11px] text-rose-400 mt-1 pl-1">{websiteError}</p>}
         </div>
 
         {/* Specialties */}
