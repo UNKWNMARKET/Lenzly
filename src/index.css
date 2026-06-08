@@ -90,6 +90,17 @@
   }
 }
 
+/* ── Z-index scale (document-level reference) ─────────────────────────────
+   10  sticky headers / tab bars
+   20  floating buttons (back arrows on pages)
+   30  overlays inside a page (story progress bars)
+   40  page headers (sticky top navs)
+   50  bottom nav
+   60  sheets / bottom drawers
+   70  full-screen overlays (story viewer, modals)
+   80  toasts / alerts
+   ──────────────────────────────────────────────────────────────────────── */
+
 @layer components {
   .gold-gradient {
     background: linear-gradient(135deg, #C9A84C 0%, #E2C170 50%, #C9A84C 100%);

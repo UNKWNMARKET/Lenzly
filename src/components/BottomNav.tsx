@@ -84,7 +84,7 @@ export default function BottomNav() {
     <>
       {/* Create sheet */}
       {open && (
-        <div className="fixed inset-0 z-[60] flex items-end" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[65] flex items-end" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <div
             className="relative w-full max-w-[430px] mx-auto px-4 pb-6 animate-slide-up"

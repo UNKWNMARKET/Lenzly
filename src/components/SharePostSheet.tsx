@@ -164,7 +164,7 @@ export default function SharePostSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end" onClick={onClose}>
       <div
         className="w-full bg-lenz-bg rounded-t-3xl border-t border-lenz-border max-h-[75vh] flex flex-col"
         style={{ maxWidth: 430, margin: '0 auto' }}

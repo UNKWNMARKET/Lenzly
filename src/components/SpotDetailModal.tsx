@@ -33,7 +33,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-[60]"
       style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0, overflow: 'hidden' }}
     >
       {/* Scrim */}
