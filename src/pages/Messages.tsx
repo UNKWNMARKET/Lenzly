@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Edit2, Search, MessageCircle, X, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Edit2, Search, MessageCircle, X, ChevronRight, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -186,37 +186,6 @@ export default function Messages() {
     toast.success('Conversation deleted')
   }
 
-  // Gesture detection for delete — the row itself never translates, so it can
-  // never get stuck open or swallow taps. A left-swipe or long-press opens the
-  // centered delete confirmation; a plain tap always opens the chat.
-  const touch = useRef<{ x: number; y: number; dx: number; moved: boolean; timer: ReturnType<typeof setTimeout> | null } | null>(null)
-  const suppressClick = useRef(false)
-
-  const clearLongPress = () => { if (touch.current?.timer) { clearTimeout(touch.current.timer); touch.current.timer = null } }
-
-  const onRowTouchStart = (id: string, e: React.TouchEvent) => {
-    suppressClick.current = false
-    const t = e.touches[0]
-    const timer = setTimeout(() => { suppressClick.current = true; setDeleting(id) }, 550)
-    touch.current = { x: t.clientX, y: t.clientY, dx: 0, moved: false, timer }
-  }
-
-  const onRowTouchMove = (e: React.TouchEvent) => {
-    if (!touch.current) return
-    const t = e.touches[0]
-    touch.current.dx = t.clientX - touch.current.x
-    const dy = Math.abs(t.clientY - touch.current.y)
-    if (Math.abs(touch.current.dx) > 8 || dy > 8) { touch.current.moved = true; clearLongPress() }
-  }
-
-  const onRowTouchEnd = (id: string) => {
-    const t = touch.current
-    touch.current = null
-    if (!t) return
-    if (t.timer) clearTimeout(t.timer)
-    if (t.dx < -50) { suppressClick.current = true; setDeleting(id) }  // decisive left-swipe
-  }
-
   return (
     <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-6">
@@ -266,22 +235,12 @@ export default function Messages() {
           {conversations.map(c => (
             <div
               key={c.id}
-              className="relative rounded-2xl"
-              onTouchStart={e => onRowTouchStart(c.id, e)}
-              onTouchMove={onRowTouchMove}
-              onTouchEnd={() => onRowTouchEnd(c.id)}
+              className={cn('flex items-center rounded-2xl bg-lenz-bg', c.unread ? 'bg-white/5' : '')}
             >
+              {/* Tap anywhere on the row to open the chat */}
               <button
-                onClick={() => {
-                  // Suppress the click that follows a swipe/long-press gesture;
-                  // a real tap always opens the chat.
-                  if (suppressClick.current) { suppressClick.current = false; return }
-                  navigate(`/chat/${c.id}`)
-                }}
-                className={cn(
-                  'flex items-center gap-3 p-3 rounded-2xl transition-colors w-full text-left relative bg-lenz-bg',
-                  c.unread ? 'bg-white/5' : ''
-                )}
+                onClick={() => navigate(`/chat/${c.id}`)}
+                className="flex items-center gap-3 p-3 flex-1 min-w-0 text-left"
               >
                 {/* Avatar */}
                 <div className={cn(
@@ -309,12 +268,16 @@ export default function Messages() {
                     {c.last_message ?? 'Start the conversation…'}
                   </p>
                 </div>
-                {c.unread
-                  ? <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />
-                  : <ChevronRight size={14} className="text-white/15 flex-shrink-0" />
-                }
+                {c.unread && <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />}
               </button>
-
+              {/* Explicit delete button — no swipe gymnastics */}
+              <button
+                onClick={() => setDeleting(c.id)}
+                className="p-3 mr-1 text-white/20 hover:text-rose-400 transition-colors flex-shrink-0"
+                aria-label="Delete conversation"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           ))}
         </div>
