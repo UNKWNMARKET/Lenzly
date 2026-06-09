@@ -446,7 +446,7 @@ function SignupForm() {
 }
 
 const perks = [
-  { icon: Search, title: 'Smart Talent Discovery', desc: 'Search 14,000+ verified photographers by specialty, location, style, and availability.' },
+  { icon: Search, title: 'Smart Talent Discovery', desc: 'Search photographers by specialty, location, style, and availability.' },
   { icon: Shield, title: 'Fully Vetted Professionals', desc: 'Every PRO is identity-verified and portfolio-reviewed by our curation team.' },
   { icon: MapPin, title: 'Global Location Search', desc: 'Find the right photographer in any city or region, instantly.' },
   { icon: TrendingUp, title: 'Direct Booking', desc: 'Send hire requests directly. No agency fees, no middleman, no commission.' },
@@ -486,7 +486,7 @@ export default function Brands() {
               Hire world-class<br /><em className="gold-text">photographers.</em>
             </h1>
             <p className="text-lg md:text-xl text-white/40 max-w-xl mx-auto leading-relaxed font-light mb-10">
-              Connect with 14,000+ verified PRO photographers for editorial, commercial, and brand campaigns. Direct access, no agency.
+              Connect with PRO photographers for editorial, commercial, and brand campaigns. Direct access, no agency.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a href="#discover" className="btn-gold text-[15px] px-9 py-4">

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform, AnimatePresence, type Variants } from 'framer-motion'
 import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap, Users, CheckCircle, Play, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useInView } from '../hooks/useInView'
 
 interface Post { id: string; image_url: string; caption: string | null; profiles?: { name: string; avatar_url: string | null } }
 
@@ -13,23 +12,6 @@ const fadeUp: Variants = {
 }
 const stagger: Variants = { show: { transition: { staggerChildren: 0.1 } } }
 
-function AnimatedNumber({ target, suffix = '' }: { target: number; suffix?: string }) {
-  const [count, setCount] = useState(0)
-  const { ref, inView } = useInView()
-  useEffect(() => {
-    if (!inView) return
-    let start = 0
-    const step = target / 60
-    const timer = setInterval(() => {
-      start += step
-      if (start >= target) { setCount(target); clearInterval(timer) }
-      else setCount(Math.floor(start))
-    }, 16)
-    return () => clearInterval(timer)
-  }, [inView, target])
-  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
-}
-
 const features = [
   { icon: MapPin, title: 'Community Discovered Locations', desc: 'Photographers tag real shoot spots when they post. Browse the interactive map, see live weather, and get directions to your next location.', tag: 'Discover', color: '#ecc85c' },
   { icon: Briefcase, title: 'Get Hired by Brands', desc: 'Build a PRO profile that clients find. Let brands search and book you directly — no agency, no middleman, no commission cuts.', tag: 'Grow', color: '#ecc85c' },
@@ -37,20 +19,12 @@ const features = [
   { icon: Camera, title: 'Stories & Feed', desc: 'Share your work in a community built for photography. No algorithm hiding your posts, no ads diluting your audience.', tag: 'Share', color: '#ecc85c' },
 ]
 
-const stats = [
-  { value: 14000, suffix: '+', label: 'Photographers' },
-  { value: 48000, suffix: '+', label: 'Posts Shared' },
-  { value: 2000, suffix: '+', label: 'Hires Made' },
-  { value: 56, suffix: '+', label: 'Spots Mapped' },
+const highlights = [
+  { value: 'Free', label: 'Forever' },
+  { value: 'AES-256', label: 'Encrypted DMs' },
+  { value: 'GPS', label: 'Location Maps' },
+  { value: 'Direct', label: 'No Commission' },
 ]
-
-const testimonials = [
-  { name: 'Marcus T.', role: 'Wedding Photographer, NYC', text: 'Landed three brand deals in my first month. The PRO profile actually converts — brands reach out to me now instead of the other way around.', avatar: 'M', rating: 5 },
-  { name: 'Sofia R.', role: 'Fashion Photographer, LA', text: 'The location map alone is worth downloading. I found spots I never would have discovered. The community here actually cares about craft.', avatar: 'S', rating: 5 },
-  { name: 'James K.', role: 'Commercial Photographer', text: 'Finally a platform that gets it. The encrypted messaging means I can share contracts and previews without worrying about leaks. Game changer.', avatar: 'J', rating: 5 },
-]
-
-const trustedBy = ['Nike', 'Vogue', 'Condé Nast', 'Apple', 'LVMH', 'Netflix', 'Spotify', 'BMW']
 
 const howItWorks = [
   { step: '01', title: 'Create your PRO profile', desc: 'Build your portfolio, set your specialties, and list your availability. Takes under 5 minutes.' },
@@ -140,19 +114,17 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Stats */}
+          {/* Highlights */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.6 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1C1C1C] rounded-2xl overflow-hidden max-w-2xl mx-auto border border-[#1C1C1C]"
           >
-            {stats.map(s => (
-              <div key={s.label} className="bg-[#0b0b0d] px-6 py-6 text-center">
-                <p className="text-2xl md:text-3xl font-bold gold-text mb-1">
-                  <AnimatedNumber target={s.value} suffix={s.suffix} />
-                </p>
-                <p className="text-[11px] text-white/25 font-medium tracking-widest uppercase">{s.label}</p>
+            {highlights.map(h => (
+              <div key={h.label} className="bg-[#0b0b0d] px-6 py-6 text-center">
+                <p className="text-lg md:text-xl font-bold gold-text mb-1">{h.value}</p>
+                <p className="text-[11px] text-white/25 font-medium tracking-widest uppercase">{h.label}</p>
               </div>
             ))}
           </motion.div>
@@ -169,18 +141,6 @@ export default function Home() {
             <motion.div className="w-1 h-1.5 rounded-full bg-[#ecc85c]" animate={{ y: [0, 10, 0] }} transition={{ duration: 1.8, repeat: Infinity }} />
           </motion.div>
         </motion.div>
-      </section>
-
-      {/* ── Trusted by marquee ── */}
-      <section className="py-14 overflow-hidden border-y border-white/5">
-        <p className="text-center text-xs text-white/20 tracking-widest uppercase mb-8 font-medium">Trusted by teams at</p>
-        <div className="relative">
-          <div className="flex gap-16 animate-marquee whitespace-nowrap">
-            {[...trustedBy, ...trustedBy].map((b, i) => (
-              <span key={i} className="text-white/20 font-bold text-sm tracking-widest uppercase">{b}</span>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* ── Features ── */}
@@ -312,46 +272,12 @@ export default function Home() {
             <div>
               <p className="section-label mb-5">For brands</p>
               <h3 className="text-2xl font-serif text-white mb-4 leading-snug">Find the perfect photographer in minutes.</h3>
-              <p className="text-sm text-white/40 leading-relaxed">Search 14,000+ verified professionals. Filter by specialty, location, and availability. Hire directly.</p>
+              <p className="text-sm text-white/40 leading-relaxed">Search photographers by specialty, location, and availability. Hire directly — no agency, no commission.</p>
             </div>
             <Link to="/brands" className="btn-outline mt-8 w-fit text-sm py-3 px-6">
               Access Brand Portal <ArrowRight size={14} />
             </Link>
           </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ── Testimonials ── */}
-      <section className="max-w-6xl mx-auto px-6 py-24">
-        <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
-          <motion.div variants={fadeUp} className="text-center mb-14">
-            <p className="section-label mb-5">Testimonials</p>
-            <h2 className="text-3xl md:text-4xl font-serif text-white">Photographers love Lenzly.</h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: i * 0.12 }}
-                viewport={{ once: true }}
-                className="card-premium card-glow p-7 flex flex-col"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(t.rating)].map((_, i) => <Star key={i} size={12} className="text-[#ecc85c] fill-[#ecc85c]" />)}
-                </div>
-                <p className="text-sm text-white/60 leading-relaxed mb-6 flex-1 italic">"{t.text}"</p>
-                <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#ecc85c]/12 border border-[#ecc85c]/20 flex items-center justify-center text-sm font-bold text-[#ecc85c]">{t.avatar}</div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{t.name}</p>
-                    <p className="text-xs text-white/30">{t.role}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
       </section>
 
@@ -365,7 +291,7 @@ export default function Home() {
             { icon: Shield, title: 'AES-256 Encryption', desc: 'All messages encrypted end-to-end' },
             { icon: CheckCircle, title: 'Verified PROs', desc: 'Every PRO account is manually reviewed' },
             { icon: Zap, title: 'No Algorithm', desc: 'Your posts reach 100% of followers' },
-            { icon: Users, title: '14K+ Photographers', desc: 'The largest photography community' },
+            { icon: Users, title: 'Built for Pros', desc: 'A community focused on photography' },
           ].map(({ icon: Icon, title, desc }) => (
             <motion.div key={title} variants={fadeUp} className="card p-5 text-center card-glow">
               <div className="w-10 h-10 rounded-xl bg-[#ecc85c]/8 border border-[#ecc85c]/10 flex items-center justify-center mx-auto mb-3">
@@ -396,7 +322,7 @@ export default function Home() {
           <div className="relative">
             <p className="section-label mb-6">Free forever</p>
             <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">Ready to shoot?</h2>
-            <p className="text-lg text-white/40 mb-12 max-w-md mx-auto font-light leading-relaxed">Join 14,000+ photographers already building their careers on Lenzly. No credit card, no commitments.</p>
+            <p className="text-lg text-white/40 mb-12 max-w-md mx-auto font-light leading-relaxed">Join photographers building their careers on Lenzly. No credit card, no commitments.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/signup" className="btn-gold text-[15px] px-10 py-4">
                 <Download size={17} /> Join Lenzly Free
