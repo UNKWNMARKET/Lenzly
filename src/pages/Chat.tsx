@@ -15,7 +15,8 @@ import Spinner from '@/components/Spinner'
 // ── Hire proposal card ───────────────────────────────────────────────────────
 function safeStr(v: unknown): string { return typeof v === 'string' ? v.slice(0, 500) : '' }
 
-function HireProposalCard({ content, isMine }: { content: string; isMine: boolean }) {
+function HireProposalCard({ content, isMine, onRespond }: { content: string; isMine: boolean; onRespond?: (accepted: boolean) => void }) {
+  const [responded, setResponded] = useState<null | boolean>(null)
   let raw: unknown = {}
   try { raw = JSON.parse(content) } catch { return <span className="text-white/50 text-xs">Proposal (unreadable)</span> }
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return <span className="text-white/50 text-xs">Proposal (invalid)</span>
@@ -25,6 +26,12 @@ function HireProposalCard({ content, isMine }: { content: string; isMine: boolea
     budget: safeStr((raw as any).budget),
     details: safeStr((raw as any).details),
     photographerName: safeStr((raw as any).photographerName),
+  }
+
+  const respond = (accepted: boolean) => {
+    if (responded !== null) return
+    setResponded(accepted)
+    onRespond?.(accepted)
   }
 
   return (
@@ -67,12 +74,28 @@ function HireProposalCard({ content, isMine }: { content: string; isMine: boolea
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-gold/15"
-        style={{ background: 'rgba(201,168,76,0.04)' }}>
-        <p className="text-[10px] text-gold/50 font-medium">
-          {isMine ? `Sent to ${proposal.photographerName}` : 'Reply to discuss availability'}
-        </p>
-      </div>
+      {isMine ? (
+        <div className="px-4 py-2.5 border-t border-gold/15" style={{ background: 'rgba(201,168,76,0.04)' }}>
+          <p className="text-[10px] text-gold/50 font-medium">Sent to {proposal.photographerName}</p>
+        </div>
+      ) : responded !== null ? (
+        <div className="px-4 py-2.5 border-t border-gold/15" style={{ background: 'rgba(201,168,76,0.04)' }}>
+          <p className={cn('text-[11px] font-bold', responded ? 'text-green-400' : 'text-rose-400')}>
+            {responded ? '✓ Accepted' : '✕ Declined'}
+          </p>
+        </div>
+      ) : (
+        <div className="px-3 py-3 border-t border-gold/15 flex gap-2" style={{ background: 'rgba(201,168,76,0.04)' }}>
+          <button onClick={() => respond(false)}
+            className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-bold active:scale-95 transition-transform">
+            Decline
+          </button>
+          <button onClick={() => respond(true)}
+            className="flex-1 py-2 rounded-xl gold-gradient text-lenz-bg text-xs font-bold active:scale-95 transition-transform">
+            Accept
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -494,7 +517,10 @@ export default function Chat() {
                 style={{ touchAction: 'manipulation', userSelect: 'none' }}
               >
                 {msg.unsent ? '🚫 Message unsent'
-                  : isProposal ? <HireProposalCard content={msg.content} isMine={isMine} />
+                  : isProposal ? <HireProposalCard content={msg.content} isMine={isMine}
+                      onRespond={(accepted) => sendMessage(accepted
+                        ? `✅ Hire request accepted — let's lock in the details!`
+                        : `❌ Hire request declined. Thanks for reaching out.`)} />
                   : msg.image_url ? (
                     msg.image_url.endsWith('.enc')
                       ? <EncryptedImage src={msg.image_url} convKey={convKey} />

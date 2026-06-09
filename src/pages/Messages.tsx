@@ -207,12 +207,10 @@ export default function Messages() {
 
   const onRowTouchEnd = (id: string) => {
     const offset = swipeOffsets[id] ?? 0
-    if (offset < -40) {
-      setSwipeOffsets(prev => ({ ...prev, [id]: -80 }))
-      setDeleting(id)
-    } else {
-      setSwipeOffsets(prev => ({ ...prev, [id]: 0 }))
-    }
+    // Always snap the row back to 0 so it can never get stuck open / untappable.
+    setSwipeOffsets(prev => ({ ...prev, [id]: 0 }))
+    // A decisive left-swipe opens the centered delete confirmation instead.
+    if (offset < -40) setDeleting(id)
   }
 
   return (
@@ -323,24 +321,25 @@ export default function Messages() {
                 }
               </button>
 
-              {/* Confirm delete overlay (appears when fully swiped) */}
-              {deleting === c.id && (
-                <div
-                  style={{ transform: `translateX(${swipeOffsets[c.id] ?? 0}px)` }}
-                  className="absolute inset-0 flex items-center justify-end pr-3 gap-2 pointer-events-none"
-                >
-                  <button
-                    className="pointer-events-auto px-3 py-1.5 rounded-xl bg-rose-500 text-white text-xs font-bold"
-                    onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
-                  >Delete</button>
-                  <button
-                    className="pointer-events-auto px-3 py-1.5 rounded-xl bg-lenz-card border border-lenz-border text-white/60 text-xs"
-                    onClick={e => { e.stopPropagation(); setDeleting(null); setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 })) }}
-                  >Cancel</button>
-                </div>
-              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete confirmation — fixed & centered, never tied to a row's position */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-8"
+          onClick={() => setDeleting(null)}>
+          <div className="w-full max-w-xs bg-lenz-card border border-lenz-border rounded-2xl p-5 text-center" onClick={e => e.stopPropagation()}>
+            <p className="text-white font-semibold text-sm mb-1">Delete conversation?</p>
+            <p className="text-white/40 text-xs mb-5">This removes the chat and its messages for you.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleting(null)}
+                className="flex-1 py-2.5 rounded-xl bg-lenz-bg border border-lenz-border text-white/60 text-sm font-medium">Cancel</button>
+              <button onClick={() => { const id = deleting; if (id) deleteConversation(id) }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold">Delete</button>
+            </div>
+          </div>
         </div>
       )}
 
