@@ -291,14 +291,10 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    try {
-      const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Invalid credentials'); setLoading(false); return }
-      localStorage.setItem('lenzly_brand', JSON.stringify({ ...data, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }))
-      onSuccess()
-    } catch { setError('Cannot connect to server') }
-    setLoading(false)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError(error.message); setLoading(false); return }
+    onSuccess()
+    window.location.href = '/business'
   }
 
   return (

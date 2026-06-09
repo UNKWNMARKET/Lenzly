@@ -120,16 +120,14 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.45 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
           >
-            <a href="https://apps.apple.com" className="btn-gold text-[15px] px-9 py-4">
+            <Link to="/signup" className="btn-gold text-[15px] px-9 py-4">
               <Download size={16} />
-              Download Free — App Store
-            </a>
-            <button onClick={() => setVideoOpen(true)} className="btn-outline text-[15px] px-9 py-4">
-              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                <Play size={9} className="fill-white ml-0.5" />
-              </div>
-              Watch the demo
-            </button>
+              Join Free
+            </Link>
+            <Link to="/login" className="btn-outline text-[15px] px-9 py-4">
+              Open Web App
+              <ArrowRight size={16} />
+            </Link>
           </motion.div>
 
           {/* Stats */}
@@ -295,9 +293,9 @@ export default function Home() {
               <h3 className="text-2xl font-serif text-white mb-4 leading-snug">Your work. Your clients. Your rules.</h3>
               <p className="text-sm text-white/40 leading-relaxed">No gatekeepers. No commissions. Build your business on a platform that works for you, not against you.</p>
             </div>
-            <a href="https://apps.apple.com" className="btn-gold mt-8 w-fit text-sm py-3 px-6">
-              <Download size={14} /> Download Free
-            </a>
+            <Link to="/signup" className="btn-gold mt-8 w-fit text-sm py-3 px-6">
+              <Download size={14} /> Join Free
+            </Link>
           </motion.div>
 
           <motion.div variants={fadeUp} className="card-premium p-10 flex flex-col justify-between min-h-[280px]">
@@ -390,10 +388,10 @@ export default function Home() {
             <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">Ready to shoot?</h2>
             <p className="text-lg text-white/40 mb-12 max-w-md mx-auto font-light leading-relaxed">Join 14,000+ photographers already building their careers on Lenzly. No credit card, no commitments.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="https://apps.apple.com" className="btn-gold text-[15px] px-10 py-4">
-                <Download size={17} /> Download on the App Store
-              </a>
-              <Link to="/brands" className="btn-outline text-[15px] px-10 py-4">
+              <Link to="/signup" className="btn-gold text-[15px] px-10 py-4">
+                <Download size={17} /> Join Lenzly Free
+              </Link>
+              <Link to="/business/login" className="btn-outline text-[15px] px-10 py-4">
                 I'm a brand <ArrowRight size={15} />
               </Link>
             </div>
