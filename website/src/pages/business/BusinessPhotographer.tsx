@@ -42,20 +42,22 @@ export default function BusinessPhotographer() {
       const { data: convId, error: rpcErr } = await supabase.rpc('get_or_create_dm', { other_user: profile.id })
       if (rpcErr || !convId) throw rpcErr ?? new Error('Could not start conversation')
 
-      // Compose the hire request as a real message they receive in-app
+      // Send in the app's native hire_proposal format so iOS renders its
+      // HireProposalCard (plain text breaks the card UI and list preview)
       const brandName = me?.name || 'A brand'
-      const lines = [
-        `📸 New Hire Request from ${brandName}`,
-        ``,
-        `Project: ${form.projectType}`,
-        form.budget ? `Budget: ${form.budget}` : '',
-        form.date ? `Date: ${form.date}` : '',
-        ``,
-        form.message,
-      ].filter(l => l !== undefined && l !== null)
+      const proposal = {
+        type: 'hire_proposal',
+        projectType: form.projectType,
+        date: form.date || null,
+        budget: form.budget || null,
+        details: form.message || null,
+        photographerName: profile.name,
+        brandName,
+        sentAt: new Date().toISOString(),
+      }
 
       const { error: msgErr } = await supabase.from('messages')
-        .insert({ conversation_id: convId, sender_id: user.id, content: lines.join('\n').trim() })
+        .insert({ conversation_id: convId, sender_id: user.id, content: JSON.stringify(proposal) })
       if (msgErr) throw msgErr
 
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId)

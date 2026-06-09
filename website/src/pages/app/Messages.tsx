@@ -31,7 +31,10 @@ export default function Messages() {
           other = prof ?? undefined
         }
         const { data: lastMsg } = await supabase.from('messages').select('content, image_url').eq('conversation_id', c.id).order('sent_at', { ascending: false }).limit(1)
-        result.push({ id: c.id, updated_at: c.updated_at, other, last: lastMsg?.[0]?.content ?? (lastMsg?.[0]?.image_url ? '📷 Photo' : null) })
+        const rawLast = lastMsg?.[0]?.content
+        const last = rawLast?.startsWith('{"type":"hire_proposal"') ? '📋 Hire Opportunity'
+          : rawLast ?? (lastMsg?.[0]?.image_url ? '📷 Photo' : null)
+        result.push({ id: c.id, updated_at: c.updated_at, other, last })
       }
       setConvs(result); setLoading(false)
     }

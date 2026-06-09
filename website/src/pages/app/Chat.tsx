@@ -6,6 +6,33 @@ import { useAuth } from '../../contexts/AuthContext'
 
 interface Msg { id: string; sender_id: string; content: string | null; image_url: string | null; sent_at: string; unsent: boolean }
 
+function HireProposalCard({ content }: { content: string }) {
+  let p: any = {}
+  try { p = JSON.parse(content) } catch { return <span className="text-white/50 text-xs">Proposal (unreadable)</span> }
+  const field = (label: string, value?: string | null) => value ? (
+    <div className="flex items-start gap-2">
+      <span className="text-[9px] font-bold tracking-widest uppercase text-gold/50 w-14 pt-0.5 shrink-0">{label}</span>
+      <span className="text-[13px] text-white/80 leading-snug">{value}</span>
+    </div>
+  ) : null
+  return (
+    <div className="w-[260px] rounded-2xl overflow-hidden border border-gold/35"
+      style={{ background: 'linear-gradient(135deg,#1a1200 0%,#2b1e00 100%)' }}>
+      <div className="px-4 pt-4 pb-3 border-b border-gold/20"
+        style={{ background: 'linear-gradient(135deg,rgba(236,200,92,0.18) 0%,rgba(236,200,92,0.06) 100%)' }}>
+        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-gold/80">📋 Hire Opportunity</span>
+        <p className="text-white font-bold text-[15px] leading-snug mt-1">{p.projectType ?? 'Project'}</p>
+      </div>
+      <div className="px-4 py-3 space-y-2.5">
+        {field('Date', p.date)}
+        {field('Budget', p.budget)}
+        {field('Brief', p.details)}
+        {field('From', p.brandName)}
+      </div>
+    </div>
+  )
+}
+
 export default function Chat() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -60,10 +87,12 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {msgs.map(m => {
           const mine = m.sender_id === user?.id
+          const isProposal = !m.unsent && !m.image_url && (m.content ?? '').startsWith('{"type":"hire_proposal"')
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${mine ? 'bg-gold text-lenz-bg' : 'bg-lenz-card2 text-white'}`}>
+              <div className={isProposal ? '' : `max-w-[75%] rounded-2xl px-4 py-2.5 ${mine ? 'bg-gold text-lenz-bg' : 'bg-lenz-card2 text-white'}`}>
                 {m.unsent ? <span className="italic opacity-50 text-sm">Unsent</span> :
+                  isProposal ? <HireProposalCard content={m.content!} /> :
                   m.image_url ? <img src={m.image_url} className="rounded-lg max-w-full" /> :
                   <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{m.content}</p>}
               </div>
