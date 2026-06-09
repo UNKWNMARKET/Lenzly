@@ -276,11 +276,10 @@ export default function Messages() {
 
               <button
                 onClick={() => {
-                  if ((swipeOffsets[c.id] ?? 0) < -20) {
-                    setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 }))
-                    setDeleting(null)
-                    return
-                  }
+                  // A tap on the row body always opens the chat. Swiping only
+                  // reveals the Delete button; it never blocks opening.
+                  setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 }))
+                  setDeleting(null)
                   navigate(`/chat/${c.id}`)
                 }}
                 style={{
