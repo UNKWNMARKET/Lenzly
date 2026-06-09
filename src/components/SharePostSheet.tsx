@@ -69,36 +69,10 @@ export default function SharePostSheet({
     if (!user || sending) return
     setSending(recipient.id)
 
-    // Find or create a conversation with this user
-    let convId: string | null = null
-    const { data: myConvs } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id)
-
-    if (myConvs && myConvs.length > 0) {
-      const { data: shared } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', recipient.id)
-        .in('conversation_id', myConvs.map(c => c.conversation_id))
-        .limit(1)
-      if (shared && shared[0]) convId = shared[0].conversation_id
-    }
-
-    if (!convId) {
-      const { data: conv, error } = await supabase
-        .from('conversations')
-        .insert({ created_by: user.id, bg: '#0A0804' })
-        .select()
-        .single()
-      if (error || !conv) { setSending(null); toast.error('Could not share'); return }
-      await supabase.from('conversation_participants').insert([
-        { conversation_id: conv.id, user_id: user.id },
-        { conversation_id: conv.id, user_id: recipient.id },
-      ])
-      convId = conv.id
-    }
+    // Find or create a conversation with this user (RPC handles both
+    // participant inserts atomically and bypasses participant-RLS)
+    const { data: convId, error: convErr } = await supabase.rpc('get_or_create_dm', { other_user: recipient.id })
+    if (convErr || !convId) { setSending(null); toast.error('Could not share'); return }
 
     // Send the post as a message with a link + preview caption
     const postUrl = `${window.location.origin}/post/${postId}`

@@ -160,44 +160,12 @@ export default function Messages() {
   const startConversation = async (otherUser: ProfileRow) => {
     if (!user) return
 
-    // Check if conversation already exists
-    const { data: existing } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id)
-
-    if (existing && existing.length > 0) {
-      const ids = existing.map(e => e.conversation_id)
-      const { data: shared } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', otherUser.id)
-        .in('conversation_id', ids)
-        .limit(1)
-
-      if (shared && shared[0]) {
-        setShowNewModal(false)
-        navigate(`/chat/${shared[0].conversation_id}`)
-        return
-      }
-    }
-
-    // Create new conversation
-    const { data: conv, error } = await supabase
-      .from('conversations')
-      .insert({ created_by: user.id, bg: '#0A0804' })
-      .select()
-      .single()
-
-    if (error || !conv) { toast.error(error?.message ?? 'conv null'); return }
-
-    await supabase.from('conversation_participants').insert([
-      { conversation_id: conv.id, user_id: user.id },
-      { conversation_id: conv.id, user_id: otherUser.id },
-    ])
+    // Find-or-create atomically via SECURITY DEFINER RPC (avoids participant RLS)
+    const { data: convId, error } = await supabase.rpc('get_or_create_dm', { other_user: otherUser.id })
+    if (error || !convId) { toast.error(error?.message ?? 'Could not start conversation'); return }
 
     setShowNewModal(false)
-    navigate(`/chat/${conv.id}`)
+    navigate(`/chat/${convId}`)
   }
 
   const deleteConversation = async (id: string) => {

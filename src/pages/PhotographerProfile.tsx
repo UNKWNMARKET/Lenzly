@@ -316,31 +316,10 @@ export default function PhotographerProfile() {
 
   const handleMessageStart = async () => {
     if (!user) { navigate('/auth/login'); return }
-    // Find existing conversation or create one, then open chat directly
-    const { data: myParts } = await supabase
-      .from('conversation_participants').select('conversation_id').eq('user_id', user.id)
-    const myIds = (myParts ?? []).map((r: any) => r.conversation_id)
-    let convId: string | null = null
-    if (myIds.length > 0) {
-      const { data: shared } = await supabase
-        .from('conversation_participants').select('conversation_id')
-        .eq('user_id', p.id).in('conversation_id', myIds).limit(1)
-      if (shared && shared[0]) convId = shared[0].conversation_id
-    }
-    if (!convId) {
-      const { data: newConv, error: convErr } = await supabase.from('conversations').insert({ created_by: user.id, bg: '#0A0804' }).select('id').single()
-      if (convErr) { toast.error(convErr.message); return }
-      if (newConv) {
-        convId = newConv.id
-        const { error: partErr } = await supabase.from('conversation_participants').insert([
-          { conversation_id: convId, user_id: user.id },
-          { conversation_id: convId, user_id: p.id },
-        ])
-        if (partErr) { toast.error(partErr.message); return }
-      }
-    }
-    if (convId) navigate(`/chat/${convId}`)
-    else { toast.error('No conv id'); navigate('/messages') }
+    // Find-or-create conversation atomically via RPC, then open chat
+    const { data: convId, error } = await supabase.rpc('get_or_create_dm', { other_user: p.id })
+    if (error || !convId) { toast.error(error?.message ?? 'Could not start conversation'); navigate('/messages'); return }
+    navigate(`/chat/${convId}`)
   }
 
   const handleHireSend = async () => {
@@ -349,39 +328,7 @@ export default function PhotographerProfile() {
     setSending(true)
     try {
       // Find or create conversation FIRST so notification includes conversation_id
-      const { data: myParts } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', user.id)
-
-      const myConvIds = (myParts ?? []).map((r: any) => r.conversation_id)
-
-      let conversationId: string | null = null
-      if (myConvIds.length > 0) {
-        const { data: theirParts } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', p.id)
-          .in('conversation_id', myConvIds)
-        if (theirParts && theirParts.length > 0) {
-          conversationId = theirParts[0].conversation_id
-        }
-      }
-
-      if (!conversationId) {
-        const { data: newConv } = await supabase
-          .from('conversations')
-          .insert({})
-          .select('id')
-          .single()
-        if (newConv) {
-          conversationId = newConv.id
-          await supabase.from('conversation_participants').insert([
-            { conversation_id: conversationId, user_id: user.id },
-            { conversation_id: conversationId, user_id: p.id },
-          ])
-        }
-      }
+      const { data: conversationId } = await supabase.rpc('get_or_create_dm', { other_user: p.id })
 
       if (conversationId) {
         const proposal = {
