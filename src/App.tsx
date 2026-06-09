@@ -51,6 +51,14 @@ import AdminPosts from './pages/admin/AdminPosts'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminSettings from './pages/admin/AdminSettings'
 import { useAdminAuth } from './contexts/AdminAuthContext'
+import { BrandAuthProvider, useBrandAuth } from './contexts/BrandAuthContext'
+import BrandLogin from './pages/brand/BrandLogin'
+import BrandDashboard from './pages/brand/BrandDashboard'
+import BrandSearch from './pages/brand/BrandSearch'
+import BrandHireRequest from './pages/brand/BrandHireRequest'
+import BrandShortlist from './pages/brand/BrandShortlist'
+import BrandRequests from './pages/brand/BrandRequests'
+import BrandSettings from './pages/brand/BrandSettings'
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { admin } = useAdminAuth()
@@ -60,6 +68,13 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
       <Component />
     </AdminLayout>
   )
+}
+
+function BrandRoute({ component: Component }: { component: React.ComponentType }) {
+  const { brand } = useBrandAuth()
+  const [, navigate] = useLocation()
+  if (!brand) { navigate('/brand-portal/login'); return null }
+  return <Component />
 }
 
 function ProtectedRoute({ component: Component, skipOnboarding }: { component: React.ComponentType; skipOnboarding?: boolean }) {
@@ -121,6 +136,15 @@ function Router() {
       <Route path="/weddings">{() => <ProtectedRoute component={Weddings} />}</Route>
       <Route path="/story-archive">{() => <ProtectedRoute component={StoryArchive} />}</Route>
       <Route path="/brands" component={BrandsPage} />
+
+      {/* Brand portal */}
+      <Route path="/brand-portal/login" component={BrandLogin} />
+      <Route path="/brand-portal">{() => <BrandRoute component={BrandDashboard} />}</Route>
+      <Route path="/brand-portal/search">{() => <BrandRoute component={BrandSearch} />}</Route>
+      <Route path="/brand-portal/shortlist">{() => <BrandRoute component={BrandShortlist} />}</Route>
+      <Route path="/brand-portal/requests">{() => <BrandRoute component={BrandRequests} />}</Route>
+      <Route path="/brand-portal/settings">{() => <BrandRoute component={BrandSettings} />}</Route>
+      <Route path="/brand-portal/hire/:id">{() => <BrandRoute component={BrandHireRequest} />}</Route>
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
 
@@ -145,6 +169,7 @@ export default function App() {
         <AuthProvider>
           <ProProvider>
           <AdminAuthProvider>
+          <BrandAuthProvider>
           <SpotModalProvider>
             <SwipeWrapper>
               <OfflineBanner />
@@ -166,6 +191,7 @@ export default function App() {
               }}
             />
           </SpotModalProvider>
+          </BrandAuthProvider>
           </AdminAuthProvider>
           </ProProvider>
         </AuthProvider>

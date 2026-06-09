@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, ChevronRight, Zap, Shield, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, ChevronRight, Shield, TrendingUp } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { photographers } from '@/data/mockData'
-import { formatCount } from '@/lib/utils'
+import { toast } from 'sonner'
 
+const API = 'http://localhost:3001/api/brand'
 const brandLogos = ['WildScope', 'Maison Élite', 'Lumière', 'ApexGear', 'Nexar', 'Meridian']
 
 const perks = [
@@ -16,6 +17,35 @@ const perks = [
 export default function BrandsPage() {
   const [, navigate] = useLocation()
   const [activeTab, setActiveTab] = useState<'discover' | 'signup'>('discover')
+  const [company, setCompany] = useState('')
+  const [email, setEmail] = useState('')
+  const [website, setWebsite] = useState('')
+  const [selectedNeeds, setSelectedNeeds] = useState<string[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  function toggleNeed(need: string) {
+    setSelectedNeeds(prev => prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need])
+  }
+
+  async function handleApply(e: React.FormEvent) {
+    e.preventDefault()
+    if (!company.trim() || !email.trim()) { toast.error('Company name and email are required'); return }
+    setSubmitting(true)
+    try {
+      const res = await fetch(`${API}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: company.trim(), email: email.trim(), website: website.trim(), needs: selectedNeeds }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed to submit'); setSubmitting(false); return }
+      setSubmitted(true)
+    } catch {
+      toast.error('Could not connect to server')
+    }
+    setSubmitting(false)
+  }
 
   return (
     <div className="fixed inset-0 overflow-y-auto overscroll-none">
@@ -158,7 +188,19 @@ export default function BrandsPage() {
         </div>
       ) : (
         <div className="px-4 animate-fade-in">
-          <div className="card p-5 space-y-4">
+          {submitted ? (
+            <div className="card p-6 text-center space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-green-950/30 border border-green-500/20 flex items-center justify-center mx-auto">
+                <CheckCircle size={26} className="text-green-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Application Submitted!</h3>
+              <p className="text-sm text-white/50">We'll review your request and send login credentials to <span className="text-white">{email}</span> within 24 hours.</p>
+              <button onClick={() => navigate('/brand-portal/login')} className="w-full btn-primary py-3 text-sm mt-2">
+                Go to Brand Portal
+              </button>
+            </div>
+          ) : (
+          <form onSubmit={handleApply} className="card p-5 space-y-4">
             <div className="text-center mb-2">
               <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
                 <Building2 size={26} className="text-lenz-bg" />
@@ -167,39 +209,46 @@ export default function BrandsPage() {
               <p className="text-xs text-white/30 mt-1">Start hiring photographers today</p>
             </div>
 
-            {[
-              { label: 'Company Name', placeholder: 'Your company name...', type: 'text' },
-              { label: 'Work Email', placeholder: 'you@company.com', type: 'email' },
-              { label: 'Website', placeholder: 'company.com', type: 'url' },
-            ].map(({ label, placeholder, type }) => (
-              <div key={label}>
-                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">{label}</label>
-                <input
-                  type={type}
-                  placeholder={placeholder}
-                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
-                />
-              </div>
-            ))}
+            <div>
+              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Company Name *</label>
+              <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Your company name..." required
+                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Work Email *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required
+                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Website</label>
+              <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="company.com"
+                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
+            </div>
 
             <div>
               <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
               <div className="grid grid-cols-2 gap-2">
                 {['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign'].map(need => (
-                  <button key={need} className="text-xs text-white/50 bg-lenz-muted border border-lenz-border py-2 rounded-lg hover:border-gold/40 hover:text-gold transition-all">
+                  <button type="button" key={need} onClick={() => toggleNeed(need)}
+                    className={`text-xs py-2 rounded-lg border transition-all ${
+                      selectedNeeds.includes(need)
+                        ? 'bg-gold/15 border-gold/40 text-gold'
+                        : 'text-white/50 bg-lenz-muted border-lenz-border hover:border-gold/40 hover:text-gold'
+                    }`}>
                     {need}
                   </button>
                 ))}
               </div>
             </div>
 
-            <button className="w-full btn-primary py-3.5 text-sm">
-              Request Brand Access
+            <button type="submit" disabled={submitting} className="w-full btn-primary py-3.5 text-sm disabled:opacity-50">
+              {submitting ? 'Submitting…' : 'Request Brand Access'}
             </button>
             <p className="text-[10px] text-white/20 text-center">
               Our team will review your request within 24 hours.
             </p>
-          </div>
+          </form>
+          )}
         </div>
       )}
     </div>

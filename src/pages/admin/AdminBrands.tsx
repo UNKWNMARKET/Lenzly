@@ -41,8 +41,17 @@ export default function AdminBrands() {
       body: JSON.stringify({ status }),
     })
     if (res.ok) {
+      const data = await res.json()
       setBrands(prev => prev.map(b => b.id === id ? { ...b, status } : b))
-      toast.success(`Application ${status}`)
+      if (status === 'approved' && data.tempPassword) {
+        // Show credentials to admin so they can share with the brand
+        toast.success(
+          `Approved! Login credentials:\nEmail: ${data.email}\nTemp password: ${data.tempPassword}`,
+          { duration: 15000 }
+        )
+      } else {
+        toast.success(`Application ${status}`)
+      }
     }
   }
 
