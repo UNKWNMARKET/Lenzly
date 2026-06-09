@@ -15,33 +15,39 @@ export default function BusinessDiscover() {
   const [specs, setSpecs] = useState<string[]>([])
   const [location, setLocation] = useState('')
   const [availableOnly, setAvailableOnly] = useState(false)
+  const [proOnly, setProOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
+    // Show every photographer in the community (not just PRO). PROs are sorted first.
     let q = supabase.from('profiles')
       .select('id, username, name, avatar_url, cover_url, bio, specialty, location, is_pro, available, second_shooter, price_range, followers_count, following_count, posts_count, created_at, website')
-      .eq('is_pro', true).order('followers_count', { ascending: false }).limit(40)
+      .order('followers_count', { ascending: false }).limit(60)
+    if (proOnly) q = q.eq('is_pro', true)
     if (availableOnly) q = q.eq('available', true)
     if (location) q = q.ilike('location', `%${location}%`)
     if (search) q = q.or(`name.ilike.%${search}%,username.ilike.%${search}%,bio.ilike.%${search}%`)
-    const { data } = await q
+    const { data, error } = await q
+    if (error) console.error('[Discover] load error:', error.message)
     let res = (data ?? []) as Profile[]
     if (specs.length) res = res.filter(p => specs.some(s => (p.specialty ?? []).includes(s)))
+    // PRO accounts first, then by followers (already ordered)
+    res = [...res].sort((a, b) => Number(b.is_pro) - Number(a.is_pro))
     setPhotographers(res); setLoading(false)
-  }, [search, specs, location, availableOnly])
+  }, [search, specs, location, availableOnly, proOnly])
 
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t) }, [load])
 
   const toggleSpec = (s: string) => setSpecs(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])
-  const activeFilters = specs.length + (location ? 1 : 0) + (availableOnly ? 1 : 0)
+  const activeFilters = specs.length + (location ? 1 : 0) + (availableOnly ? 1 : 0) + (proOnly ? 1 : 0)
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
       <div className="mb-6">
         <p className="section-label mb-2">Discover</p>
         <h1 className="text-3xl font-serif text-white mb-2">Find your photographer.</h1>
-        <p className="text-sm text-white/40">Browse {photographers.length} verified professionals from the Lenzly community.</p>
+        <p className="text-sm text-white/40">Browse {photographers.length} photographers from the Lenzly community.</p>
       </div>
 
       <div className="flex gap-3 mb-4">
@@ -73,13 +79,17 @@ export default function BusinessDiscover() {
                 <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Any city…" className="w-full bg-lenz-bg border border-lenz-border rounded-lg pl-8 pr-3 py-2 text-xs text-white outline-none focus:border-gold/40" />
               </div>
-              <button onClick={() => setAvailableOnly(v => !v)} className={`flex items-center gap-2 text-sm transition-colors ${availableOnly ? 'text-white' : 'text-white/40'}`}>
+              <button onClick={() => setAvailableOnly(v => !v)} className={`flex items-center gap-2 text-sm transition-colors mb-2 ${availableOnly ? 'text-white' : 'text-white/40'}`}>
                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${availableOnly ? 'bg-gold border-gold' : 'border-white/20'}`}>{availableOnly && <CheckCircle size={10} className="text-lenz-bg" />}</div>
                 Available for hire only
               </button>
+              <button onClick={() => setProOnly(v => !v)} className={`flex items-center gap-2 text-sm transition-colors ${proOnly ? 'text-white' : 'text-white/40'}`}>
+                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${proOnly ? 'bg-gold border-gold' : 'border-white/20'}`}>{proOnly && <CheckCircle size={10} className="text-lenz-bg" />}</div>
+                PRO accounts only
+              </button>
             </div>
           </div>
-          {activeFilters > 0 && <button onClick={() => { setSpecs([]); setLocation(''); setAvailableOnly(false) }} className="mt-4 text-xs text-white/30 hover:text-white/60 flex items-center gap-1"><X size={12} /> Clear filters</button>}
+          {activeFilters > 0 && <button onClick={() => { setSpecs([]); setLocation(''); setAvailableOnly(false); setProOnly(false) }} className="mt-4 text-xs text-white/30 hover:text-white/60 flex items-center gap-1"><X size={12} /> Clear filters</button>}
         </div>
       )}
 
