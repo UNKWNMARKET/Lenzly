@@ -1,252 +1,437 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap } from 'lucide-react'
+import { motion, useScroll, useTransform, AnimatePresence, type Variants } from 'framer-motion'
+import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap, Users, CheckCircle, Play, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useInView } from '../hooks/useInView'
 
 interface Post { id: string; image_url: string; caption: string | null; profiles?: { name: string; avatar_url: string | null } }
 
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.4, 0, 0.2, 1] } }
+}
+const stagger: Variants = { show: { transition: { staggerChildren: 0.1 } } }
+
+function AnimatedNumber({ target, suffix = '' }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  const { ref, inView } = useInView()
+  useEffect(() => {
+    if (!inView) return
+    let start = 0
+    const step = target / 60
+    const timer = setInterval(() => {
+      start += step
+      if (start >= target) { setCount(target); clearInterval(timer) }
+      else setCount(Math.floor(start))
+    }, 16)
+    return () => clearInterval(timer)
+  }, [inView, target])
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
+}
+
 const features = [
-  {
-    icon: MapPin,
-    title: 'Community Discovered Locations',
-    desc: 'Photographers tag real shoot spots when they post. Browse the interactive map, check live weather conditions, and get one-tap directions to your next location.',
-    tag: 'Discover',
-  },
-  {
-    icon: Briefcase,
-    title: 'Get Hired by Brands',
-    desc: 'Build a PRO profile that clients actually find. Let brands search and book you directly — no agency fees, no middleman taking a cut of your work.',
-    tag: 'Grow',
-  },
-  {
-    icon: Lock,
-    title: 'End-to-End Encrypted Messaging',
-    desc: 'Every conversation is end-to-end encrypted. Discuss rates, share contracts, send previews. Only you and your client can ever read them.',
-    tag: 'Private',
-  },
-  {
-    icon: Camera,
-    title: 'Stories & Community Feed',
-    desc: 'Share your work in a community built around photography. No algorithm suppressing your posts, no ads competing with your art.',
-    tag: 'Share',
-  },
+  { icon: MapPin, title: 'Community Discovered Locations', desc: 'Photographers tag real shoot spots when they post. Browse the interactive map, see live weather, and get directions to your next location.', tag: 'Discover', color: '#C9A84C' },
+  { icon: Briefcase, title: 'Get Hired by Brands', desc: 'Build a PRO profile that clients find. Let brands search and book you directly — no agency, no middleman, no commission cuts.', tag: 'Grow', color: '#C9A84C' },
+  { icon: Lock, title: 'End-to-End Encryption', desc: 'Every message is AES-256 encrypted. Discuss rates, share contracts, send previews. Only you and your client can read them.', tag: 'Private', color: '#C9A84C' },
+  { icon: Camera, title: 'Stories & Feed', desc: 'Share your work in a community built for photography. No algorithm hiding your posts, no ads diluting your audience.', tag: 'Share', color: '#C9A84C' },
 ]
 
 const stats = [
-  { value: '14K+', label: 'Photographers' },
-  { value: '48K+', label: 'Posts Shared' },
-  { value: '2K+', label: 'Hires Made' },
-  { value: '56+', label: 'Spots Mapped' },
+  { value: 14000, suffix: '+', label: 'Photographers' },
+  { value: 48000, suffix: '+', label: 'Posts Shared' },
+  { value: 2000, suffix: '+', label: 'Hires Made' },
+  { value: 56, suffix: '+', label: 'Spots Mapped' },
 ]
 
 const testimonials = [
-  { name: 'Marcus T.', role: 'Wedding Photographer', text: 'Landed three brand deals in my first month. The PRO profile actually works.', avatar: 'M' },
-  { name: 'Sofia R.', role: 'Fashion Photographer', text: 'The location map alone is worth it. Found spots I never would have discovered on my own.', avatar: 'S' },
-  { name: 'James K.', role: 'Commercial Photographer', text: 'Finally a platform that gets photographers. No noise, just the community.', avatar: 'J' },
+  { name: 'Marcus T.', role: 'Wedding Photographer, NYC', text: 'Landed three brand deals in my first month. The PRO profile actually converts — brands reach out to me now instead of the other way around.', avatar: 'M', rating: 5 },
+  { name: 'Sofia R.', role: 'Fashion Photographer, LA', text: 'The location map alone is worth downloading. I found spots I never would have discovered. The community here actually cares about craft.', avatar: 'S', rating: 5 },
+  { name: 'James K.', role: 'Commercial Photographer', text: 'Finally a platform that gets it. The encrypted messaging means I can share contracts and previews without worrying about leaks. Game changer.', avatar: 'J', rating: 5 },
+]
+
+const trustedBy = ['Nike', 'Vogue', 'Condé Nast', 'Apple', 'LVMH', 'Netflix', 'Spotify', 'BMW']
+
+const howItWorks = [
+  { step: '01', title: 'Create your PRO profile', desc: 'Build your portfolio, set your specialties, and list your availability. Takes under 5 minutes.' },
+  { step: '02', title: 'Get discovered by brands', desc: 'Verified brand clients search for photographers by location, style, and specialty. Your profile does the work.' },
+  { step: '03', title: 'Connect privately & get paid', desc: 'All negotiations happen in end-to-end encrypted messages. No middleman, no commission.' },
 ]
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
+  const [videoOpen, setVideoOpen] = useState(false)
+  const heroRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
 
   useEffect(() => {
     supabase
       .from('posts')
       .select('id, image_url, caption, profiles:user_id(name, avatar_url)')
       .order('created_at', { ascending: false })
-      .limit(6)
+      .limit(9)
       .then(({ data }) => { if (data) setPosts(data as any) })
   }, [])
 
   return (
     <div className="overflow-x-hidden">
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center pt-16">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060606]/50 to-[#060606]" />
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#C9A84C]/4 blur-[150px]" />
-          <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full bg-[#C9A84C]/3 blur-[100px]" />
-        </div>
+      {/* ── Hero ── */}
+      <section ref={heroRef} className="relative min-h-[100svh] flex items-center pt-16 overflow-hidden">
+        {/* Background layers */}
+        <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 grid-bg" />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%)' }} />
+          <div className="absolute bottom-0 left-0 right-0 h-48" style={{ background: 'linear-gradient(to top, #050505, transparent)' }} />
+          <motion.div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#C9A84C]/5 blur-[120px]" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
+        </motion.div>
 
-        <div className="relative max-w-6xl mx-auto px-6 py-24 text-center">
-          <div className="inline-flex items-center gap-2.5 bg-[#C9A84C]/8 border border-[#C9A84C]/15 rounded-full px-5 py-2.5 mb-10">
-            <Star size={11} className="text-[#C9A84C] fill-[#C9A84C]" />
-            <span className="text-xs text-[#C9A84C] font-medium tracking-wider">Built for photographers, by photographers</span>
-          </div>
+        <motion.div style={{ opacity: heroOpacity }} className="relative w-full max-w-6xl mx-auto px-6 py-24 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="badge mb-8 mx-auto">
+              <Star size={10} className="fill-[#C9A84C]" />
+              Built for photographers, by photographers
+            </div>
+          </motion.div>
 
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-normal text-white leading-[1.05] mb-7 tracking-tight">
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15 }}
+            className="text-6xl md:text-7xl lg:text-[88px] font-serif font-normal text-white leading-[1.02] mb-7 tracking-tight"
+          >
             Your lens.<br />
-            <span className="shimmer italic">Your community.</span>
-          </h1>
+            <em className="shimmer-text not-italic">Your community.</em>
+          </motion.h1>
 
-          <p className="text-lg md:text-xl text-white/45 max-w-xl mx-auto leading-relaxed mb-12 font-light">
-            Discover real photo locations, get hired by brands, and message clients privately. The photography platform that actually works for you.
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-lg md:text-xl text-white/45 max-w-lg mx-auto leading-relaxed mb-12 font-light"
+          >
+            Discover real photo locations, get hired by brands, and message clients with military-grade encryption. Free, always.
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-            <a href="https://apps.apple.com" className="btn-gold text-[15px] px-8 py-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.45 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+          >
+            <a href="https://apps.apple.com" className="btn-gold text-[15px] px-9 py-4">
               <Download size={16} />
-              Download Free on App Store
+              Download Free — App Store
             </a>
-            <Link to="/feed" className="btn-outline text-[15px] px-8 py-4">
-              Browse the community
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1A1A1A] rounded-2xl overflow-hidden max-w-2xl mx-auto border border-[#1A1A1A]">
-            {stats.map(({ value, label }) => (
-              <div key={label} className="bg-[#060606] px-6 py-6 text-center">
-                <p className="text-2xl font-bold gold-text mb-1">{value}</p>
-                <p className="text-[11px] text-white/30 font-medium tracking-wide uppercase">{label}</p>
+            <button onClick={() => setVideoOpen(true)} className="btn-outline text-[15px] px-9 py-4">
+              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
+                <Play size={9} className="fill-white ml-0.5" />
               </div>
+              Watch the demo
+            </button>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.6 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1C1C1C] rounded-2xl overflow-hidden max-w-2xl mx-auto border border-[#1C1C1C]"
+          >
+            {stats.map(s => (
+              <div key={s.label} className="bg-[#050505] px-6 py-6 text-center">
+                <p className="text-2xl md:text-3xl font-bold gold-text mb-1">
+                  <AnimatedNumber target={s.value} suffix={s.suffix} />
+                </p>
+                <p className="text-[11px] text-white/25 font-medium tracking-widest uppercase">{s.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        >
+          <motion.div className="w-5 h-8 rounded-full border border-white/15 flex items-start justify-center p-1.5">
+            <motion.div className="w-1 h-1.5 rounded-full bg-[#C9A84C]" animate={{ y: [0, 10, 0] }} transition={{ duration: 1.8, repeat: Infinity }} />
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ── Trusted by marquee ── */}
+      <section className="py-14 overflow-hidden border-y border-white/5">
+        <p className="text-center text-xs text-white/20 tracking-widest uppercase mb-8 font-medium">Trusted by teams at</p>
+        <div className="relative">
+          <div className="flex gap-16 animate-marquee whitespace-nowrap">
+            {[...trustedBy, ...trustedBy].map((b, i) => (
+              <span key={i} className="text-white/20 font-bold text-sm tracking-widest uppercase">{b}</span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Features ── */}
       <section id="features" className="max-w-6xl mx-auto px-6 py-28">
-        <div className="text-center mb-20">
-          <p className="section-label mb-5">Everything you need</p>
-          <h2 className="text-4xl md:text-5xl font-serif text-white mb-5 leading-tight">
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}
+          className="text-center mb-20"
+        >
+          <motion.p variants={fadeUp} className="section-label mb-5">Everything you need</motion.p>
+          <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-serif text-white mb-5 leading-tight">
             Built for photographers<br /><em className="gold-text">who are serious.</em>
-          </h2>
-          <p className="text-base text-white/40 max-w-md mx-auto">Every feature was designed with working photographers in mind.</p>
-        </div>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-base text-white/35 max-w-md mx-auto leading-relaxed">Every feature was designed with working photographers in mind — not hobbyists, not influencers.</motion.p>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-5">
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} variants={stagger}
+          className="grid md:grid-cols-2 gap-5"
+        >
           {features.map(({ icon: Icon, title, desc, tag }) => (
-            <div key={title} className="card card-hover p-8 group">
+            <motion.div key={title} variants={fadeUp} className="card-premium card-glow p-8 group cursor-default">
               <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-[#C9A84C]/10 border border-[#C9A84C]/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-[#C9A84C]/10 border border-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/15 group-hover:border-[#C9A84C]/20 transition-all duration-300">
                   <Icon size={20} className="text-[#C9A84C]" />
                 </div>
-                <span className="text-[10px] font-bold tracking-widest text-[#C9A84C]/50 uppercase border border-[#C9A84C]/15 px-2.5 py-1 rounded-full bg-[#C9A84C]/5">{tag}</span>
+                <span className="text-[10px] font-bold tracking-widest text-[#C9A84C]/45 uppercase border border-[#C9A84C]/12 px-2.5 py-1 rounded-full bg-[#C9A84C]/4">{tag}</span>
               </div>
               <h3 className="text-[17px] font-semibold text-white mb-3 leading-snug">{title}</h3>
-              <p className="text-sm text-white/45 leading-relaxed">{desc}</p>
-            </div>
+              <p className="text-sm text-white/40 leading-relaxed">{desc}</p>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
-      {/* Why Lenzly */}
-      <section className="max-w-6xl mx-auto px-6 py-8">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0E0E0E] to-[#060606] border border-[#1C1C1C] p-12 md:p-16">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#C9A84C]/4 blur-[120px] rounded-full" />
-          </div>
-          <div className="relative grid md:grid-cols-3 gap-10">
-            <div>
-              <p className="section-label mb-5">Why Lenzly</p>
-              <h2 className="text-3xl font-serif text-white leading-tight">The platform photographers actually trust.</h2>
-            </div>
-            <div className="md:col-span-2 grid sm:grid-cols-2 gap-6">
-              {[
-                { icon: Shield, title: 'Privacy First', desc: 'All messages are end-to-end encrypted. Your conversations stay between you and your clients.' },
-                { icon: Zap, title: 'No Algorithm', desc: 'Your posts reach your followers. No pay-to-play, no shadowbanning, no surprises.' },
-                { icon: Briefcase, title: 'Real Clients', desc: 'Verified brand accounts only. Every hire request comes from a real business.' },
-                { icon: MapPin, title: 'Real Locations', desc: 'Every pin on the map was tagged by a photographer who actually shot there.' },
-              ].map(({ icon: Icon, title, desc }) => (
-                <div key={title} className="flex gap-4">
-                  <div className="w-9 h-9 rounded-xl bg-[#C9A84C]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon size={16} className="text-[#C9A84C]" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white mb-1">{title}</p>
-                    <p className="text-xs text-white/40 leading-relaxed">{desc}</p>
-                  </div>
-                </div>
+      {/* ── How it works ── */}
+      <section className="max-w-6xl mx-auto px-6 py-12">
+        <div className="relative rounded-3xl overflow-hidden border border-[#1C1C1C] p-12 md:p-16" style={{ background: 'linear-gradient(135deg, #0D0D0D 0%, #080808 100%)' }}>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/20 to-transparent" />
+          <div className="absolute inset-0 grid-bg-sm opacity-60 pointer-events-none" />
+
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
+            <motion.p variants={fadeUp} className="section-label mb-5">How it works</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-serif text-white mb-16 max-w-md leading-tight">
+              From download to first hire in under a week.
+            </motion.h2>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {howItWorks.map((s, i) => (
+                <motion.div key={s.step} variants={fadeUp} className="relative">
+                  {i < howItWorks.length - 1 && (
+                    <div className="hidden md:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-[#C9A84C]/20 to-transparent -translate-x-4 pointer-events-none" />
+                  )}
+                  <div className="text-4xl font-serif gold-text mb-4 leading-none">{s.step}</div>
+                  <h3 className="text-[16px] font-semibold text-white mb-2">{s.title}</h3>
+                  <p className="text-sm text-white/35 leading-relaxed">{s.desc}</p>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Community preview */}
+      {/* ── Community preview ── */}
       {posts.length > 0 && (
-        <section className="max-w-6xl mx-auto px-6 py-20">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p className="section-label mb-3">Real photographers, real work</p>
-              <h2 className="text-3xl md:text-4xl font-serif text-white">From the community</h2>
-            </div>
-            <Link to="/feed" className="hidden md:flex items-center gap-2 text-sm text-[#C9A84C] hover:text-white transition-colors font-medium">
-              View all posts <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {posts.map(p => (
-              <Link key={p.id} to={`/post/${p.id}`} className="aspect-square rounded-2xl overflow-hidden bg-[#141414] group relative">
-                <img src={p.image_url} alt={p.caption ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
-                    {p.profiles?.avatar_url
-                      ? <img src={p.profiles.avatar_url} className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
-                      : <div className="w-7 h-7 rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center text-[10px] font-bold text-[#C9A84C] shrink-0">{p.profiles?.name?.[0]}</div>
-                    }
-                    <span className="text-xs text-white font-medium truncate">{p.profiles?.name}</span>
-                  </div>
-                </div>
+        <section className="max-w-6xl mx-auto px-6 py-24">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
+            <motion.div variants={fadeUp} className="flex items-end justify-between mb-10">
+              <div>
+                <p className="section-label mb-3">Real photographers, real work</p>
+                <h2 className="text-3xl md:text-4xl font-serif text-white">From the community</h2>
+              </div>
+              <Link to="/feed" className="hidden md:flex items-center gap-2 text-sm text-[#C9A84C] hover:text-white transition-colors font-medium">
+                View all <ChevronRight size={14} />
               </Link>
-            ))}
-          </div>
-          <div className="text-center mt-6 md:hidden">
-            <Link to="/feed" className="btn-outline text-sm py-3 px-6">View all posts</Link>
-          </div>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-2">
+              {posts.slice(0, 9).map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: i * 0.05 }}
+                  viewport={{ once: true }}
+                >
+                  <Link to={`/post/${p.id}`} className={`block overflow-hidden rounded-xl md:rounded-2xl bg-[#141414] group relative ${i === 0 ? 'row-span-2 aspect-[1/2] md:aspect-square' : 'aspect-square'}`}>
+                    <img src={p.image_url} alt={p.caption ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
+                        {p.profiles?.avatar_url
+                          ? <img src={p.profiles.avatar_url} className="w-6 h-6 rounded-full object-cover border border-white/20 shrink-0" />
+                          : <div className="w-6 h-6 rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center text-[9px] font-bold text-[#C9A84C] shrink-0">{p.profiles?.name?.[0]}</div>
+                        }
+                        <span className="text-xs text-white font-medium truncate">{p.profiles?.name}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="text-center mt-8">
+              <Link to="/feed" className="btn-outline text-sm py-3 px-8">
+                Explore the full feed <ArrowRight size={14} />
+              </Link>
+            </motion.div>
+          </motion.div>
         </section>
       )}
 
-      {/* Testimonials */}
+      {/* ── Why Lenzly ── */}
       <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <p className="section-label mb-4">Testimonials</p>
-          <h2 className="text-3xl font-serif text-white">Photographers love it.</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          {testimonials.map(t => (
-            <div key={t.name} className="card card-hover p-6">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => <Star key={i} size={12} className="text-[#C9A84C] fill-[#C9A84C]" />)}
-              </div>
-              <p className="text-sm text-white/60 leading-relaxed mb-5 italic">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#C9A84C]/15 border border-[#C9A84C]/20 flex items-center justify-center text-sm font-bold text-[#C9A84C]">{t.avatar}</div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/35">{t.role}</p>
-                </div>
-              </div>
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}
+          className="grid md:grid-cols-2 gap-6"
+        >
+          <motion.div variants={fadeUp} className="card-premium p-10 flex flex-col justify-between min-h-[280px]">
+            <div>
+              <p className="section-label mb-5">For photographers</p>
+              <h3 className="text-2xl font-serif text-white mb-4 leading-snug">Your work. Your clients. Your rules.</h3>
+              <p className="text-sm text-white/40 leading-relaxed">No gatekeepers. No commissions. Build your business on a platform that works for you, not against you.</p>
             </div>
-          ))}
-        </div>
+            <a href="https://apps.apple.com" className="btn-gold mt-8 w-fit text-sm py-3 px-6">
+              <Download size={14} /> Download Free
+            </a>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="card-premium p-10 flex flex-col justify-between min-h-[280px]">
+            <div>
+              <p className="section-label mb-5">For brands</p>
+              <h3 className="text-2xl font-serif text-white mb-4 leading-snug">Find the perfect photographer in minutes.</h3>
+              <p className="text-sm text-white/40 leading-relaxed">Search 14,000+ verified professionals. Filter by specialty, location, and availability. Hire directly.</p>
+            </div>
+            <Link to="/brands" className="btn-outline mt-8 w-fit text-sm py-3 px-6">
+              Access Brand Portal <ArrowRight size={14} />
+            </Link>
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* CTA banner */}
-      <section className="max-w-6xl mx-auto px-6 py-16 pb-24">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#1A1200] via-[#0E0A00] to-[#060606] border border-[#C9A84C]/15 p-12 md:p-20 text-center">
+      {/* ── Testimonials ── */}
+      <section className="max-w-6xl mx-auto px-6 py-24">
+        <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
+          <motion.div variants={fadeUp} className="text-center mb-14">
+            <p className="section-label mb-5">Testimonials</p>
+            <h2 className="text-3xl md:text-4xl font-serif text-white">Photographers love Lenzly.</h2>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: i * 0.12 }}
+                viewport={{ once: true }}
+                className="card-premium card-glow p-7 flex flex-col"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(t.rating)].map((_, i) => <Star key={i} size={12} className="text-[#C9A84C] fill-[#C9A84C]" />)}
+                </div>
+                <p className="text-sm text-white/60 leading-relaxed mb-6 flex-1 italic">"{t.text}"</p>
+                <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-[#C9A84C]/12 border border-[#C9A84C]/20 flex items-center justify-center text-sm font-bold text-[#C9A84C]">{t.avatar}</div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{t.name}</p>
+                    <p className="text-xs text-white/30">{t.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── Trust indicators ── */}
+      <section className="max-w-6xl mx-auto px-6 py-8">
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          {[
+            { icon: Shield, title: 'AES-256 Encryption', desc: 'All messages encrypted end-to-end' },
+            { icon: CheckCircle, title: 'Verified PROs', desc: 'Every PRO account is manually reviewed' },
+            { icon: Zap, title: 'No Algorithm', desc: 'Your posts reach 100% of followers' },
+            { icon: Users, title: '14K+ Photographers', desc: 'The largest photography community' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <motion.div key={title} variants={fadeUp} className="card p-5 text-center card-glow">
+              <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/8 border border-[#C9A84C]/10 flex items-center justify-center mx-auto mb-3">
+                <Icon size={18} className="text-[#C9A84C]" />
+              </div>
+              <p className="text-xs font-semibold text-white mb-1">{title}</p>
+              <p className="text-[11px] text-white/30 leading-relaxed">{desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="max-w-6xl mx-auto px-6 py-20 pb-28">
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="relative rounded-3xl overflow-hidden border border-[#C9A84C]/12 p-12 md:p-24 text-center"
+          style={{ background: 'linear-gradient(135deg, #120E00 0%, #0A0800 50%, #050505 100%)' }}
+        >
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-[#C9A84C]/10 blur-[80px]" />
-            <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(201,168,76,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.02) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-[#C9A84C]/8 blur-[100px]" />
+            <div className="absolute inset-0 grid-bg-sm opacity-50" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/30 to-transparent" />
           </div>
           <div className="relative">
-            <p className="section-label mb-5">Free forever</p>
-            <h2 className="text-4xl md:text-6xl font-serif text-white mb-5 leading-tight">Ready to shoot?</h2>
-            <p className="text-lg text-white/45 mb-10 max-w-md mx-auto font-light">Join thousands of photographers already building their careers on Lenzly.</p>
+            <p className="section-label mb-6">Free forever</p>
+            <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">Ready to shoot?</h2>
+            <p className="text-lg text-white/40 mb-12 max-w-md mx-auto font-light leading-relaxed">Join 14,000+ photographers already building their careers on Lenzly. No credit card, no commitments.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a href="https://apps.apple.com" className="btn-gold text-[15px] px-10 py-4">
-                <Download size={17} />
-                Download on the App Store
+                <Download size={17} /> Download on the App Store
               </a>
-              <Link to="/feed" className="btn-outline text-[15px] px-10 py-4">
-                Explore the community
-                <ArrowRight size={16} />
+              <Link to="/brands" className="btn-outline text-[15px] px-10 py-4">
+                I'm a brand <ArrowRight size={15} />
               </Link>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
+
+      {/* Video modal */}
+      <AnimatePresence>
+        {videoOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6"
+            onClick={() => setVideoOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full max-w-3xl aspect-video bg-[#0C0C0C] rounded-2xl border border-[#1C1C1C] flex items-center justify-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-[#C9A84C]/15 border border-[#C9A84C]/20 flex items-center justify-center mx-auto mb-4">
+                  <Play size={24} className="fill-[#C9A84C] text-[#C9A84C] ml-1" />
+                </div>
+                <p className="text-white/40 text-sm">Demo video coming soon</p>
+              </div>
+            </motion.div>
+            <button onClick={() => setVideoOpen(false)} className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
