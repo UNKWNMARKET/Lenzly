@@ -16,8 +16,17 @@ export default function PostDetail() {
 
   useEffect(() => {
     if (!id) return
-    supabase.from('posts').select('*, profiles:user_id(id, name, username, avatar_url, is_pro)').eq('id', id).single()
-      .then(({ data }) => { if (data) setPost(data as Post); setLoading(false) })
+    // posts.user_id references auth.users (not profiles), so fetch the profile
+    // separately and attach it client-side.
+    supabase.from('posts').select('*').eq('id', id).single()
+      .then(async ({ data }) => {
+        if (data) {
+          const { data: prof } = await supabase.from('profiles')
+            .select('id, name, username, avatar_url, is_pro').eq('id', (data as any).user_id).single()
+          setPost({ ...(data as any), profiles: prof ?? null } as Post)
+        }
+        setLoading(false)
+      })
   }, [id])
 
   if (loading) return (

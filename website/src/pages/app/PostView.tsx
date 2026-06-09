@@ -21,10 +21,29 @@ export default function PostView() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    supabase.from('posts').select('*, profiles:user_id(id, username, name, avatar_url, is_pro)').eq('id', id).single()
-      .then(({ data }) => { setPost(data as Post); setLoading(false) })
-    supabase.from('comments').select('id, text, created_at, user_id, profiles:user_id(username, name, avatar_url)').eq('post_id', id).order('created_at', { ascending: true })
-      .then(({ data }) => setComments((data ?? []) as unknown as Comment[]))
+    // posts.user_id and comments.user_id reference auth.users (not profiles),
+    // so we fetch profiles separately and merge them client-side.
+    supabase.from('posts').select('*').eq('id', id).single()
+      .then(async ({ data }) => {
+        if (data) {
+          const { data: prof } = await supabase.from('profiles')
+            .select('id, username, name, avatar_url, is_pro').eq('id', (data as any).user_id).single()
+          setPost({ ...(data as any), profiles: prof ?? null } as Post)
+        } else {
+          setPost(null)
+        }
+        setLoading(false)
+      })
+    supabase.from('comments').select('id, text, created_at, user_id').eq('post_id', id).order('created_at', { ascending: true })
+      .then(async ({ data }) => {
+        const commentsData = (data ?? []) as any[]
+        const userIds = [...new Set(commentsData.map(c => c.user_id))]
+        const { data: profilesData } = await supabase.from('profiles')
+          .select('id, username, name, avatar_url').in('id', userIds)
+        const map: Record<string, any> = {}
+        for (const pr of profilesData ?? []) map[pr.id] = pr
+        setComments(commentsData.map(c => ({ ...c, profiles: map[c.user_id] ?? null })) as unknown as Comment[])
+      })
     if (user) {
       supabase.from('post_likes').select('id').eq('post_id', id).eq('user_id', user.id).maybeSingle().then(({ data }) => setLiked(!!data))
       supabase.from('saved_posts').select('id').eq('post_id', id).eq('user_id', user.id).maybeSingle().then(({ data }) => setSaved(!!data))
@@ -36,8 +55,12 @@ export default function PostView() {
     if (!user || !text.trim() || !id) return
     const body = text.trim(); setText('')
     const { data } = await supabase.from('comments').insert({ post_id: id, user_id: user.id, text: body })
-      .select('id, text, created_at, user_id, profiles:user_id(username, name, avatar_url)').single()
-    if (data) setComments(c => [...c, data as unknown as Comment])
+      .select('id, text, created_at, user_id').single()
+    if (data) {
+      const { data: prof } = await supabase.from('profiles')
+        .select('id, username, name, avatar_url').eq('id', (data as any).user_id).single()
+      setComments(c => [...c, { ...(data as any), profiles: prof ?? null } as unknown as Comment])
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-[60vh]"><div className="w-7 h-7 rounded-full border-2 border-gold/20 border-t-gold animate-spin" /></div>

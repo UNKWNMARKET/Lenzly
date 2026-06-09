@@ -67,12 +67,22 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
 
   useEffect(() => {
+    // posts.user_id references auth.users (not profiles), so fetch profiles
+    // separately and merge them client-side.
     supabase
       .from('posts')
-      .select('id, image_url, caption, profiles:user_id(name, avatar_url)')
+      .select('id, image_url, caption, user_id')
       .order('created_at', { ascending: false })
       .limit(9)
-      .then(({ data }) => { if (data) setPosts(data as any) })
+      .then(async ({ data }) => {
+        if (!data) return
+        const userIds = [...new Set(data.map((p: any) => p.user_id))]
+        const { data: profilesData } = await supabase.from('profiles')
+          .select('id, name, avatar_url').in('id', userIds)
+        const map: Record<string, any> = {}
+        for (const pr of profilesData ?? []) map[pr.id] = pr
+        setPosts(data.map((p: any) => ({ ...p, profiles: map[p.user_id] ?? null })) as any)
+      })
   }, [])
 
   return (

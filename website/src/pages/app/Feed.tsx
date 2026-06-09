@@ -7,6 +7,17 @@ import PostCard from '../../components/app/PostCard'
 
 const PAGE = 8
 
+// posts.user_id → auth.users, so we merge profiles in a second query.
+async function attachProfiles(postsData: any[]): Promise<Post[]> {
+  if (postsData.length === 0) return []
+  const userIds = [...new Set(postsData.map(p => p.user_id))]
+  const { data: profiles } = await supabase.from('profiles')
+    .select('id, username, name, avatar_url, is_pro').in('id', userIds)
+  const map: Record<string, any> = {}
+  for (const p of profiles ?? []) map[p.id] = p
+  return postsData.map(p => ({ ...p, profiles: map[p.user_id] ?? null })) as Post[]
+}
+
 export default function Feed() {
   const { user, profile } = useAuth()
   const [tab, setTab] = useState<'foryou' | 'following'>('foryou')
@@ -26,15 +37,19 @@ export default function Feed() {
       followingIds = (f ?? []).map(x => x.following_id)
       if (followingIds.length === 0) { setPosts([]); setHasMore(false); setLoading(false); return }
     }
+    // posts.user_id references auth.users (not profiles), so PostgREST can't
+    // embed profiles directly. Fetch posts, then merge profiles client-side —
+    // the same approach the iOS app uses.
     let q = supabase.from('posts')
-      .select('id, user_id, image_url, caption, location_name, likes_count, comments_count, category, created_at, profiles:user_id(id, username, name, avatar_url, is_pro)')
+      .select('id, user_id, image_url, caption, location_name, likes_count, comments_count, category, created_at')
       .order('created_at', { ascending: false })
       .range(pg * PAGE, (pg + 1) * PAGE - 1)
     if (t === 'following') q = q.in('user_id', followingIds)
-    const { data } = await q
-    const rows = (data ?? []) as unknown as Post[]
+    const { data: postsData, error } = await q
+    if (error) { console.error('[Feed] load error:', error.message); setHasMore(false); setLoading(false); return }
+    const rows = await attachProfiles(postsData ?? [])
     setPosts(prev => pg === 0 ? rows : [...prev, ...rows])
-    setHasMore(rows.length === PAGE)
+    setHasMore((postsData?.length ?? 0) === PAGE)
     setLoading(false)
   }, [user])
 
@@ -67,13 +82,13 @@ export default function Feed() {
         const row = payload.new as { id: string; user_id: string }
         // Only "For You" streams every new post; "Following" handled by the existing query on refresh
         if (tab !== 'foryou') return
-        // Fetch the full post with its author profile, then prepend
+        // Fetch the new post, attach its author profile, then prepend
         const { data } = await supabase.from('posts')
-          .select('id, user_id, image_url, caption, location_name, likes_count, comments_count, category, created_at, profiles:user_id(id, username, name, avatar_url, is_pro)')
+          .select('id, user_id, image_url, caption, location_name, likes_count, comments_count, category, created_at')
           .eq('id', row.id)
           .single()
         if (!data) return
-        const post = data as unknown as Post
+        const [post] = await attachProfiles([data])
         setPosts(prev => prev.some(p => p.id === post.id) ? prev : [post, ...prev])
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {

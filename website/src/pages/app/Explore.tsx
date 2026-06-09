@@ -12,10 +12,21 @@ export default function Explore() {
   useEffect(() => {
     setLoading(true)
     let q = supabase.from('posts')
-      .select('id, user_id, image_url, caption, likes_count, category, created_at, profiles:user_id(username, name, avatar_url, is_pro)')
+      .select('id, user_id, image_url, caption, likes_count, category, created_at')
       .order('created_at', { ascending: false }).limit(48)
     if (cat !== 'All') q = q.eq('category', cat)
-    q.then(({ data }) => { setPosts((data ?? []) as unknown as Post[]); setLoading(false) })
+    // posts.user_id references auth.users (not profiles), so fetch profiles
+    // separately and merge them client-side.
+    q.then(async ({ data }) => {
+      const postsData = (data ?? []) as any[]
+      const userIds = [...new Set(postsData.map(p => p.user_id))]
+      const { data: profilesData } = await supabase.from('profiles')
+        .select('id, username, name, avatar_url, is_pro').in('id', userIds)
+      const map: Record<string, any> = {}
+      for (const pr of profilesData ?? []) map[pr.id] = pr
+      setPosts(postsData.map(p => ({ ...p, profiles: map[p.user_id] ?? null })) as unknown as Post[])
+      setLoading(false)
+    })
   }, [cat])
 
   return (

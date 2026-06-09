@@ -24,12 +24,20 @@ export default function Feed() {
     setLoading(true)
     let q = supabase
       .from('posts')
-      .select('id, image_url, caption, location_name, likes_count, category, created_at, user_id, profiles:user_id(id, name, username, avatar_url, is_pro)')
+      .select('id, image_url, caption, location_name, likes_count, category, created_at, user_id')
       .order('created_at', { ascending: false })
       .range(pg * PAGE_SIZE, (pg + 1) * PAGE_SIZE - 1)
     if (cat !== 'All') q = q.eq('category', cat)
     const { data } = await q
-    const rows = (data ?? []) as unknown as Post[]
+    // posts.user_id references auth.users (not profiles), so we fetch profiles
+    // in a second query and merge them client-side.
+    const postsData = (data ?? []) as any[]
+    const userIds = [...new Set(postsData.map(p => p.user_id))]
+    const { data: profilesData } = await supabase.from('profiles')
+      .select('id, name, username, avatar_url, is_pro').in('id', userIds)
+    const map: Record<string, any> = {}
+    for (const pr of profilesData ?? []) map[pr.id] = pr
+    const rows = postsData.map(p => ({ ...p, profiles: map[p.user_id] ?? null })) as unknown as Post[]
     if (pg === 0) setPosts(rows)
     else setPosts(prev => [...prev, ...rows])
     setHasMore(rows.length === PAGE_SIZE)
