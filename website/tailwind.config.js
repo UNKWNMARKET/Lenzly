@@ -11,6 +11,13 @@ export default {
         card2: '#1b1b1f',
         border: '#26262b',
         muted: '#0f0f11',
+        lenz: {
+          bg: '#0b0b0d',
+          card: '#141417',
+          card2: '#1b1b1f',
+          border: '#26262b',
+          muted: '#0f0f11',
+        },
       },
       fontFamily: {
         serif: ['Fraunces', 'Georgia', 'serif'],
