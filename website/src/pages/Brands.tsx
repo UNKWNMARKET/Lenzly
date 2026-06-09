@@ -277,8 +277,11 @@ function DiscoveryPortal() {
   )
 }
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/brand'
 const NEEDS = ['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign']
+
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'brand'
+}
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('')
@@ -325,30 +328,73 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function SignupForm() {
-  const [form, setForm] = useState({ company: '', email: '', website: '' })
+  const [form, setForm] = useState({ company: '', email: '', website: '', password: '' })
   const [needs, setNeeds] = useState<string[]>([])
+  const [showPass, setShowPass] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState<'confirm' | 'ready' | null>(null)
   const toggle = (n: string) => setNeeds(p => p.includes(n) ? p.filter(x => x !== n) : [...p, n])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError('')
+    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setSubmitting(true)
-    try {
-      const res = await fetch(`${API}/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, needs }) })
-      if (res.ok) setSubmitted(true)
-      else { const d = await res.json(); alert(d.error ?? 'Failed to submit') }
-    } catch { alert('Cannot connect to server') }
+
+    // Generate a unique brand username from the company name
+    const username = `${slugify(form.company)}-${Math.random().toString(36).slice(2, 6)}`
+
+    const { data, error: signErr } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+      options: {
+        data: {
+          account_type: 'brand',
+          name: form.company.trim(),
+          username,
+          company: form.company.trim(),
+          website: form.website.trim(),
+          needs,
+        },
+      },
+    })
+
+    if (signErr) {
+      setError(signErr.message)
+      setSubmitting(false)
+      return
+    }
+
+    // Create the brand's profile row (best-effort; works once a session exists)
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        username,
+        name: form.company.trim(),
+      }, { onConflict: 'id' }).then(() => {}, () => {})
+    }
+
+    // If a session was returned, the brand is logged in immediately
+    if (data.session) {
+      window.location.href = '/business'
+      return
+    }
+
+    setResult('confirm')
     setSubmitting(false)
   }
 
-  if (submitted) return (
+  if (result === 'confirm') return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10 space-y-4">
       <div className="w-16 h-16 rounded-2xl bg-green-950/30 border border-green-500/20 flex items-center justify-center mx-auto">
         <CheckCircle size={28} className="text-green-400" />
       </div>
-      <h3 className="text-xl font-bold text-white">Application Submitted!</h3>
-      <p className="text-sm text-white/45 leading-relaxed max-w-xs mx-auto">We'll send login credentials to <span className="text-white font-medium">{form.email}</span> within 24 hours.</p>
+      <h3 className="text-xl font-bold text-white">Confirm your email</h3>
+      <p className="text-sm text-white/45 leading-relaxed max-w-xs mx-auto">
+        We sent a confirmation link to <span className="text-white font-medium">{form.email}</span>. Confirm it, then sign in to your Brand Portal.
+      </p>
+      <Link to="/business/login" className="btn-gold inline-flex mt-2">Go to Brand Login</Link>
     </motion.div>
   )
 
@@ -367,6 +413,17 @@ function SignupForm() {
           <label className="block text-xs font-semibold text-white/35 tracking-wider uppercase mb-2">Website</label>
           <input value={form.website} onChange={e => setForm(f => ({...f, website: e.target.value}))} placeholder="company.com" className="input-dark" />
         </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-semibold text-white/35 tracking-wider uppercase mb-2">Password *</label>
+          <div className="relative">
+            <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
+            <input type={showPass ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))}
+              placeholder="Create a password" required minLength={6} className="input-dark pl-9 pr-10" />
+            <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+              {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
+        </div>
       </div>
       <div>
         <label className="block text-xs font-semibold text-white/35 tracking-wider uppercase mb-2">Photography Needs</label>
@@ -379,10 +436,11 @@ function SignupForm() {
           ))}
         </div>
       </div>
+      {error && <div className="bg-red-950/30 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">{error}</div>}
       <button type="submit" disabled={submitting} className="w-full py-3.5 rounded-2xl btn-gold justify-center disabled:opacity-50">
-        {submitting ? 'Submitting…' : 'Request Brand Access'}
+        {submitting ? 'Creating account…' : 'Create Brand Account'}
       </button>
-      <p className="text-[11px] text-white/20 text-center">Our team reviews all applications within 24 hours.</p>
+      <p className="text-[11px] text-white/20 text-center">Instant access — start discovering photographers right away.</p>
     </form>
   )
 }
