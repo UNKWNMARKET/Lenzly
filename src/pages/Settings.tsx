@@ -201,7 +201,7 @@ export default function Settings() {
   }) => (
     <button
       onClick={onPress}
-      className="flex items-center gap-3 w-full pl-4 pr-5 py-4 border-b border-lenz-border/50 hover:bg-white/5 transition-colors active:bg-white/5"
+      className="flex items-center gap-3 w-full pl-4 pr-4 py-4 border-b border-lenz-border/50 hover:bg-white/5 transition-colors active:bg-white/5"
     >
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-500/10' : 'bg-white/5'}`}>
         <Icon size={17} className={danger ? 'text-red-400' : 'text-white/50'} />
