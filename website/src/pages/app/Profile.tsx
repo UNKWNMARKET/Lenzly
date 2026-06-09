@@ -50,22 +50,9 @@ export default function Profile() {
   }
 
   async function messageUser() {
-    if (!user || !profile) return
-    // find or create conversation
-    const { data: mine } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user.id)
-    const myConvs = (mine ?? []).map(c => c.conversation_id)
-    let convId: string | null = null
-    if (myConvs.length) {
-      const { data: shared } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', profile.id).in('conversation_id', myConvs)
-      convId = shared?.[0]?.conversation_id ?? null
-    }
-    if (!convId) {
-      const { data: conv } = await supabase.from('conversations').insert({ created_by: user.id }).select('id').single()
-      if (conv) {
-        convId = conv.id
-        await supabase.from('conversation_participants').insert([{ conversation_id: convId, user_id: user.id }, { conversation_id: convId, user_id: profile.id }])
-      }
-    }
+    if (!user || !profile || user.id === profile.id) return
+    // Atomic find-or-create via SECURITY DEFINER RPC (avoids participant RLS issues)
+    const { data: convId } = await supabase.rpc('get_or_create_dm', { other_user: profile.id })
     if (convId) navigate(`/app/messages/${convId}`)
   }
 

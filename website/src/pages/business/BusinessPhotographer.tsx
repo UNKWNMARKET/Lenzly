@@ -37,23 +37,10 @@ export default function BusinessPhotographer() {
     setSending(true)
 
     try {
-      // Find or create a conversation between the brand and the photographer
-      const { data: mine } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user.id)
-      const myConvs = (mine ?? []).map(c => c.conversation_id)
-      let convId: string | null = null
-      if (myConvs.length) {
-        const { data: shared } = await supabase.from('conversation_participants')
-          .select('conversation_id').eq('user_id', profile.id).in('conversation_id', myConvs)
-        convId = shared?.[0]?.conversation_id ?? null
-      }
-      if (!convId) {
-        const { data: conv, error: convErr } = await supabase.from('conversations').insert({ created_by: user.id }).select('id').single()
-        if (convErr || !conv) throw convErr ?? new Error('Could not start conversation')
-        convId = conv.id
-        const { error: partErr } = await supabase.from('conversation_participants')
-          .insert([{ conversation_id: convId, user_id: user.id }, { conversation_id: convId, user_id: profile.id }])
-        if (partErr) throw partErr
-      }
+      // Find or create the conversation atomically (SECURITY DEFINER RPC bypasses
+      // the per-row RLS that blocks adding the other participant directly)
+      const { data: convId, error: rpcErr } = await supabase.rpc('get_or_create_dm', { other_user: profile.id })
+      if (rpcErr || !convId) throw rpcErr ?? new Error('Could not start conversation')
 
       // Compose the hire request as a real message they receive in-app
       const brandName = me?.name || 'A brand'
