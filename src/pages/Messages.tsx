@@ -201,6 +201,15 @@ export default function Messages() {
   }
 
   const deleteConversation = async (id: string) => {
+    if (!user) return
+    // Verify user is a participant before deleting
+    const { data: participation } = await supabase
+      .from('conversation_participants')
+      .select('id')
+      .eq('conversation_id', id)
+      .eq('user_id', user.id)
+      .single()
+    if (!participation) { toast.error('Unauthorized'); return }
     setDeleting(null)
     setSwipeOffsets(prev => { const n = { ...prev }; delete n[id]; return n })
     await supabase.from('messages').delete().eq('conversation_id', id)

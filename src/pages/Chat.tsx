@@ -206,7 +206,11 @@ export default function Chat() {
   }, [convId, user])
 
   useEffect(() => {
-    if (!convId) return
+    if (!convId || !user) return
+    // Verify user is a participant before subscribing to this conversation's messages
+    supabase.from('conversation_participants')
+      .select('id').eq('conversation_id', convId).eq('user_id', user.id).single()
+      .then(({ data }) => { if (!data) navigate('/messages') })
     const ch = supabase.channel(`chat_${convId}`)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
@@ -336,19 +340,24 @@ export default function Chat() {
     e.target.value = ''
     setUploadingImage(true)
     try {
-      const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic']
-      const rawExt = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
-      if (!ALLOWED_EXTS.includes(rawExt)) throw new Error('Unsupported file type')
+      const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
+      const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif']
+      const rawExt = (file.name.split('.').pop() ?? '').toLowerCase()
+      // Validate both MIME type (harder to spoof) and extension
+      if (!ALLOWED_MIME.includes(file.type) || !ALLOWED_EXTS.includes(rawExt)) throw new Error('Unsupported file type')
 
       // Encrypt before upload — ciphertext stored in storage, not plaintext
       const key = convKey ?? await deriveConvKey(convId!)
       const encrypted = await encryptBlob(file, key)
-      const path = `${user.id}/msg_${Date.now()}.enc`
+      // Random filename — never expose user ID or timestamp in path
+      const rand = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')
+      const path = `${rand}.enc`
       const { error: upErr } = await supabase.storage
         .from('chat-photos').upload(path, encrypted, { contentType: 'application/octet-stream' })
       if (upErr) throw upErr
-      const { data: { publicUrl } } = supabase.storage.from('chat-photos').getPublicUrl(path)
-      await sendMessage('', publicUrl)
+      // Store the storage path — not a public URL (bucket is private)
+      const storageRef = `chat-photos/${path}`
+      await sendMessage('', storageRef)
     } catch (err: any) {
       toast.error(err.message ?? 'Could not send image')
     }

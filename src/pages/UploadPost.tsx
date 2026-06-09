@@ -420,6 +420,12 @@ export default function UploadPost() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
+    if (!ALLOWED_MIME.includes(file.type)) {
+      toast.error('Unsupported file type. Please select a photo.')
+      e.target.value = ''
+      return
+    }
     const reader = new FileReader()
     reader.onload = () => setRawSrc(reader.result as string)
     reader.readAsDataURL(file)

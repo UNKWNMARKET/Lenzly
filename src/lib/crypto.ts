@@ -8,12 +8,16 @@ const ALGO = 'AES-GCM'
 const KEY_LEN = 256
 const IV_LEN = 12 // bytes
 
-// Derive a stable AES key from a conversation ID (PBKDF2 with fixed salt per conv)
+// Derive a stable AES key from a conversation ID.
+// Salt is derived from the conv ID itself so each conversation has a unique salt,
+// avoiding the static-salt weakness while remaining deterministic for both parties.
 export async function deriveConvKey(convId: string): Promise<CryptoKey> {
   const enc = new TextEncoder()
+  // Use SHA-256 of the conv ID as the PBKDF2 salt — unique per conversation
+  const saltBuf = await crypto.subtle.digest('SHA-256', enc.encode(`lenzly-salt-v2:${convId}`))
   const baseKey = await crypto.subtle.importKey(
     'raw',
-    enc.encode(convId),
+    enc.encode(`lenzly-key-v2:${convId}`),
     'PBKDF2',
     false,
     ['deriveKey'],
@@ -21,8 +25,8 @@ export async function deriveConvKey(convId: string): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: enc.encode('lenzly-chat-photo-v1'),
-      iterations: 100_000,
+      salt: saltBuf,
+      iterations: 150_000,
       hash: 'SHA-256',
     },
     baseKey,
@@ -66,13 +70,16 @@ export async function decryptImageUrl(
   const cached = decryptedCache.get(url)
   if (cached) return cached
 
-  // Extract storage path from URL (works for both public and private buckets)
-  const match = url.match(/\/chat-photos\/(.+)$/)
+  // Accepts either a storage ref ("chat-photos/path.enc"), a URL containing
+  // "/chat-photos/", or any other URL. Always uses authenticated SDK download
+  // for chat-photos so the private bucket is accessible.
   let blob: Blob
-  if (match) {
-    // Use Supabase SDK download — handles auth automatically
+  const storagePrefixRef = url.match(/^chat-photos\/(.+)$/)
+  const storageUrlRef = url.match(/\/chat-photos\/(.+)$/)
+  const storagePath = storagePrefixRef?.[1] ?? storageUrlRef?.[1]
+  if (storagePath) {
     const { supabase } = await import('./supabase')
-    const { data, error } = await supabase.storage.from('chat-photos').download(match[1])
+    const { data, error } = await supabase.storage.from('chat-photos').download(storagePath)
     if (error || !data) throw new Error('Failed to fetch encrypted image')
     blob = data
   } else {

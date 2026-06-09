@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 const API = 'http://localhost:3001/api/admin'
+const SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
 
-interface AdminUser { username: string; token: string }
+interface AdminUser { username: string; token: string; expiresAt: number }
 interface AdminAuthCtx {
   admin: AdminUser | null
   login: (username: string, password: string) => Promise<string | null>
@@ -12,11 +13,24 @@ interface AdminAuthCtx {
 
 const Ctx = createContext<AdminAuthCtx>({} as AdminAuthCtx)
 
-export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [admin, setAdmin] = useState<AdminUser | null>(() => {
+function loadAdmin(): AdminUser | null {
+  try {
     const raw = localStorage.getItem('lenzly_admin')
-    return raw ? JSON.parse(raw) : null
-  })
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as AdminUser
+    if (!parsed.expiresAt || Date.now() > parsed.expiresAt) {
+      localStorage.removeItem('lenzly_admin')
+      return null
+    }
+    return parsed
+  } catch {
+    localStorage.removeItem('lenzly_admin')
+    return null
+  }
+}
+
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
+  const [admin, setAdmin] = useState<AdminUser | null>(loadAdmin)
 
   async function login(username: string, password: string): Promise<string | null> {
     try {
@@ -27,7 +41,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       })
       if (!res.ok) return 'Invalid username or password'
       const data = await res.json()
-      const user = { username: data.username, token: data.token }
+      const user: AdminUser = { username: data.username, token: data.token, expiresAt: Date.now() + SESSION_TTL_MS }
       setAdmin(user)
       localStorage.setItem('lenzly_admin', JSON.stringify(user))
       return null
@@ -42,6 +56,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }
 
   function api(path: string, opts: RequestInit = {}): Promise<Response> {
+    // Check session expiry before every request
+    if (admin && Date.now() > admin.expiresAt) {
+      logout()
+      return Promise.reject(new Error('Session expired'))
+    }
     return fetch(`${API}${path}`, {
       ...opts,
       headers: {
@@ -52,9 +71,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  // Verify token on mount
+  // Verify token on mount and expire stale sessions
   useEffect(() => {
     if (!admin) return
+    if (Date.now() > admin.expiresAt) { logout(); return }
     api('/verify').then(r => { if (!r.ok) logout() }).catch(() => {})
   }, [])
 
