@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Edit2, Search, MessageCircle, Trash2, X, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Edit2, Search, MessageCircle, X, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -179,7 +179,6 @@ export default function Messages() {
       .single()
     if (!participation) { toast.error('Unauthorized'); return }
     setDeleting(null)
-    setSwipeOffsets(prev => { const n = { ...prev }; delete n[id]; return n })
     await supabase.from('messages').delete().eq('conversation_id', id)
     await supabase.from('conversation_participants').delete().eq('conversation_id', id)
     await supabase.from('conversations').delete().eq('id', id)
@@ -187,30 +186,35 @@ export default function Messages() {
     toast.success('Conversation deleted')
   }
 
-  // Swipe-to-delete state
-  const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({})
-  const swipeTouchStart = useRef<Record<string, { x: number; y: number }>>({})
+  // Gesture detection for delete — the row itself never translates, so it can
+  // never get stuck open or swallow taps. A left-swipe or long-press opens the
+  // centered delete confirmation; a plain tap always opens the chat.
+  const touch = useRef<{ x: number; y: number; dx: number; moved: boolean; timer: ReturnType<typeof setTimeout> | null } | null>(null)
+  const suppressClick = useRef(false)
+
+  const clearLongPress = () => { if (touch.current?.timer) { clearTimeout(touch.current.timer); touch.current.timer = null } }
 
   const onRowTouchStart = (id: string, e: React.TouchEvent) => {
-    swipeTouchStart.current[id] = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    suppressClick.current = false
+    const t = e.touches[0]
+    const timer = setTimeout(() => { suppressClick.current = true; setDeleting(id) }, 550)
+    touch.current = { x: t.clientX, y: t.clientY, dx: 0, moved: false, timer }
   }
 
-  const onRowTouchMove = (id: string, e: React.TouchEvent) => {
-    const start = swipeTouchStart.current[id]
-    if (!start) return
-    const dx = e.touches[0].clientX - start.x
-    const dy = Math.abs(e.touches[0].clientY - start.y)
-    if (dy > 10 && Math.abs(dx) < dy) return // vertical scroll, ignore
-    if (dx < 0) setSwipeOffsets(prev => ({ ...prev, [id]: Math.max(dx, -80) }))
-    else if ((swipeOffsets[id] ?? 0) < 0) setSwipeOffsets(prev => ({ ...prev, [id]: Math.min(dx + (prev[id] ?? 0), 0) }))
+  const onRowTouchMove = (e: React.TouchEvent) => {
+    if (!touch.current) return
+    const t = e.touches[0]
+    touch.current.dx = t.clientX - touch.current.x
+    const dy = Math.abs(t.clientY - touch.current.y)
+    if (Math.abs(touch.current.dx) > 8 || dy > 8) { touch.current.moved = true; clearLongPress() }
   }
 
   const onRowTouchEnd = (id: string) => {
-    const offset = swipeOffsets[id] ?? 0
-    // Always snap the row back to 0 so it can never get stuck open / untappable.
-    setSwipeOffsets(prev => ({ ...prev, [id]: 0 }))
-    // A decisive left-swipe opens the centered delete confirmation instead.
-    if (offset < -40) setDeleting(id)
+    const t = touch.current
+    touch.current = null
+    if (!t) return
+    if (t.timer) clearTimeout(t.timer)
+    if (t.dx < -50) { suppressClick.current = true; setDeleting(id) }  // decisive left-swipe
   }
 
   return (
@@ -218,7 +222,7 @@ export default function Messages() {
     <div className="min-h-full pb-6">
       <header className="sticky top-0 z-40 glass-dark px-4 pb-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/')} className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center">
+          <button onClick={() => navigate('/')} className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center">
             <ArrowLeft size={20} className="text-white/70" />
           </button>
           <h1 className="text-base font-bold text-white tracking-wide">Messages</h1>
@@ -262,27 +266,17 @@ export default function Messages() {
           {conversations.map(c => (
             <div
               key={c.id}
-              className="relative overflow-hidden rounded-2xl"
+              className="relative rounded-2xl"
               onTouchStart={e => onRowTouchStart(c.id, e)}
-              onTouchMove={e => onRowTouchMove(c.id, e)}
+              onTouchMove={onRowTouchMove}
               onTouchEnd={() => onRowTouchEnd(c.id)}
             >
-              {/* Swipe-to-delete red bg */}
-              <div className="absolute inset-y-0 right-0 w-20 bg-rose-500 flex items-center justify-center rounded-2xl">
-                <Trash2 size={18} className="text-white" />
-              </div>
-
               <button
                 onClick={() => {
-                  // A tap on the row body always opens the chat. Swiping only
-                  // reveals the Delete button; it never blocks opening.
-                  setSwipeOffsets(prev => ({ ...prev, [c.id]: 0 }))
-                  setDeleting(null)
+                  // Suppress the click that follows a swipe/long-press gesture;
+                  // a real tap always opens the chat.
+                  if (suppressClick.current) { suppressClick.current = false; return }
                   navigate(`/chat/${c.id}`)
-                }}
-                style={{
-                  transform: `translateX(${swipeOffsets[c.id] ?? 0}px)`,
-                  transition: swipeOffsets[c.id] === 0 || swipeOffsets[c.id] === -80 ? 'transform 0.2s ease' : 'none',
                 }}
                 className={cn(
                   'flex items-center gap-3 p-3 rounded-2xl transition-colors w-full text-left relative bg-lenz-bg',

@@ -460,7 +460,7 @@ export default function Chat() {
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-top flex-shrink-0"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(20px)' }}>
-        <button onClick={() => window.history.length > 1 ? window.history.back() : navigate('/messages')}
+        <button onClick={() => navigate('/messages')}
           className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
           <ArrowLeft size={20} className="text-white/80" />
         </button>
