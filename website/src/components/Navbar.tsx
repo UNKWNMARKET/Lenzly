@@ -45,7 +45,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link to="/brands" className="text-sm text-white/40 hover:text-[#ecc85c] transition-colors font-medium">Brand Login</Link>
+            <Link to="/business/login" className="text-sm text-white/40 hover:text-[#ecc85c] transition-colors font-medium">Brand Login</Link>
             <a href="https://apps.apple.com" className="btn-gold text-xs py-2.5 px-5">
               <Download size={12} /> Download Free
             </a>
