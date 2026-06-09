@@ -3,19 +3,23 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Globe, CheckCircle, Bookmark, BookmarkCheck, Send, X } from 'lucide-react'
 import { supabase, type Profile, type Post } from '../../lib/supabase'
 import { useShortlist, useHireRequests } from '../../hooks/useBusiness'
+import { useAuth } from '../../contexts/AuthContext'
 import { formatCount } from '../../lib/utils'
 
 const PROJECT_TYPES = ['Editorial', 'Commercial', 'Event', 'Product', 'Fashion', 'Campaign', 'Wedding', 'Portrait']
 
 export default function BusinessPhotographer() {
   const { id } = useParams<{ id: string }>()
+  const { user, profile: me } = useAuth()
   const { has, toggle } = useShortlist()
   const { add } = useHireRequests()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [showHire, setShowHire] = useState(false)
+  const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({ projectType: 'Commercial', budget: '', date: '', message: '' })
 
   useEffect(() => {
@@ -24,12 +28,66 @@ export default function BusinessPhotographer() {
     supabase.from('posts').select('id, image_url, likes_count, created_at, user_id').eq('user_id', id).order('created_at', { ascending: false }).limit(12).then(({ data }) => setPosts((data ?? []) as Post[]))
   }, [id])
 
-  function submitHire(e: React.FormEvent) {
+  async function submitHire(e: React.FormEvent) {
     e.preventDefault()
     if (!profile) return
-    add({ photographerId: profile.id, photographerName: profile.name, photographerAvatar: profile.avatar_url, ...form })
-    setSent(true)
-    setTimeout(() => { setShowHire(false); setSent(false); setForm({ projectType: 'Commercial', budget: '', date: '', message: '' }) }, 1800)
+    if (!user) { setError('Please sign in to your brand account to send hire requests.'); return }
+    if (user.id === profile.id) { setError("You can't send a hire request to yourself."); return }
+    setError('')
+    setSending(true)
+
+    try {
+      // Find or create a conversation between the brand and the photographer
+      const { data: mine } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user.id)
+      const myConvs = (mine ?? []).map(c => c.conversation_id)
+      let convId: string | null = null
+      if (myConvs.length) {
+        const { data: shared } = await supabase.from('conversation_participants')
+          .select('conversation_id').eq('user_id', profile.id).in('conversation_id', myConvs)
+        convId = shared?.[0]?.conversation_id ?? null
+      }
+      if (!convId) {
+        const { data: conv, error: convErr } = await supabase.from('conversations').insert({ created_by: user.id }).select('id').single()
+        if (convErr || !conv) throw convErr ?? new Error('Could not start conversation')
+        convId = conv.id
+        const { error: partErr } = await supabase.from('conversation_participants')
+          .insert([{ conversation_id: convId, user_id: user.id }, { conversation_id: convId, user_id: profile.id }])
+        if (partErr) throw partErr
+      }
+
+      // Compose the hire request as a real message they receive in-app
+      const brandName = me?.name || 'A brand'
+      const lines = [
+        `📸 New Hire Request from ${brandName}`,
+        ``,
+        `Project: ${form.projectType}`,
+        form.budget ? `Budget: ${form.budget}` : '',
+        form.date ? `Date: ${form.date}` : '',
+        ``,
+        form.message,
+      ].filter(l => l !== undefined && l !== null)
+
+      const { error: msgErr } = await supabase.from('messages')
+        .insert({ conversation_id: convId, sender_id: user.id, content: lines.join('\n').trim() })
+      if (msgErr) throw msgErr
+
+      await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId)
+
+      // Best-effort: also drop a hire_request notification (ignored if RLS blocks it)
+      await supabase.from('notifications')
+        .insert({ user_id: profile.id, actor_id: user.id, type: 'hire_request', message: `${brandName} sent you a hire request` })
+        .then(() => {}, () => {})
+
+      // Keep a local copy for the brand's own Hire Requests tracker
+      add({ photographerId: profile.id, photographerName: profile.name, photographerAvatar: profile.avatar_url, ...form })
+
+      setSent(true)
+      setTimeout(() => { setShowHire(false); setSent(false); setForm({ projectType: 'Commercial', budget: '', date: '', message: '' }) }, 1800)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send hire request. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-[60vh]"><div className="w-7 h-7 rounded-full border-2 border-gold/20 border-t-gold animate-spin" /></div>
@@ -117,7 +175,8 @@ export default function BusinessPhotographer() {
                     <div><label className="block text-xs font-semibold text-white/35 uppercase tracking-wider mb-2">Date</label><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required className="input-dark py-2.5 text-sm" /></div>
                   </div>
                   <div><label className="block text-xs font-semibold text-white/35 uppercase tracking-wider mb-2">Message</label><textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={3} placeholder="Describe your project…" required className="input-dark resize-none text-sm" /></div>
-                  <button type="submit" className="w-full btn-gold justify-center py-3"><Send size={15} /> Send Hire Request</button>
+                  {error && <div className="bg-red-950/30 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">{error}</div>}
+                  <button type="submit" disabled={sending} className="w-full btn-gold justify-center py-3 disabled:opacity-50"><Send size={15} /> {sending ? 'Sending…' : 'Send Hire Request'}</button>
                 </form>
               </>
             )}
