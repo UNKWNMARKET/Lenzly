@@ -4,26 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        gold: {
-          DEFAULT: '#C9A84C',
-          light: '#E2C170',
-          dark: '#A88A35',
-          muted: 'rgba(201,168,76,0.15)',
-        },
-        bg: '#060606',
-        card: '#0E0E0E',
-        border: '#1A1A1A',
-        muted: '#141414',
-        lenz: {
-          bg: '#080808',
-          card: '#111111',
-          card2: '#161616',
-          border: '#1e1e1e',
-          muted: '#1a1a1a',
-        },
+        gold: '#ecc85c',
+        'gold-light': '#f4dd8e',
+        bg: '#0b0b0d',
+        card: '#141417',
+        card2: '#1b1b1f',
+        border: '#26262b',
+        muted: '#0f0f11',
       },
       fontFamily: {
-        serif: ['Playfair Display', 'Georgia', 'serif'],
+        serif: ['Fraunces', 'Georgia', 'serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },

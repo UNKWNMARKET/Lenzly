@@ -56,8 +56,8 @@ export default function Feed() {
             <button key={c} onClick={() => setCategory(c)}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                 category === c
-                  ? 'bg-[#C9A84C] text-[#050505] shadow-lg shadow-[#C9A84C]/20'
-                  : 'bg-[#0C0C0C] border border-[#1A1A1A] text-white/40 hover:border-[#C9A84C]/25 hover:text-white/70'
+                  ? 'bg-[#ecc85c] text-[#0b0b0d] shadow-lg shadow-[#ecc85c]/20'
+                  : 'bg-[#141417] border border-[#26262b] text-white/40 hover:border-[#ecc85c]/25 hover:text-white/70'
               }`}>
               {c}
             </button>
@@ -68,7 +68,7 @@ export default function Feed() {
         {loading && page === 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-2xl bg-[#0C0C0C] animate-pulse border border-[#1A1A1A]" style={{ animationDelay: `${i * 0.05}s` }} />
+              <div key={i} className="aspect-square rounded-2xl bg-[#141417] animate-pulse border border-[#26262b]" style={{ animationDelay: `${i * 0.05}s` }} />
             ))}
           </div>
         ) : posts.length === 0 ? (
@@ -94,19 +94,19 @@ export default function Feed() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4, delay: i < 12 ? i * 0.04 : 0 }}
                   >
-                    <Link to={`/post/${p.id}`} className="group relative aspect-square rounded-2xl overflow-hidden bg-[#0C0C0C] block border border-[#1A1A1A]">
+                    <Link to={`/post/${p.id}`} className="group relative aspect-square rounded-2xl overflow-hidden bg-[#141417] block border border-[#26262b]">
                       <img src={p.image_url} alt={p.caption ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <div className="flex items-center gap-2 mb-2">
                             {p.profiles?.avatar_url
                               ? <img src={p.profiles.avatar_url} className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0" />
-                              : <div className="w-7 h-7 rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center text-[10px] font-bold text-[#C9A84C] shrink-0">{p.profiles?.name?.[0]}</div>
+                              : <div className="w-7 h-7 rounded-full bg-[#ecc85c]/20 border border-[#ecc85c]/30 flex items-center justify-center text-[10px] font-bold text-[#ecc85c] shrink-0">{p.profiles?.name?.[0]}</div>
                             }
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-white font-semibold truncate">{p.profiles?.name}</p>
                             </div>
-                            {p.profiles?.is_pro && <span className="text-[8px] font-black text-[#050505] bg-[#C9A84C] px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
+                            {p.profiles?.is_pro && <span className="text-[8px] font-black text-[#0b0b0d] bg-[#ecc85c] px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
@@ -115,7 +115,7 @@ export default function Feed() {
                             </div>
                             {p.location_name && (
                               <div className="flex items-center gap-1">
-                                <MapPin size={10} className="text-[#C9A84C]/60" />
+                                <MapPin size={10} className="text-[#ecc85c]/60" />
                                 <span className="text-[10px] text-white/45 truncate max-w-[90px]">{p.location_name}</span>
                               </div>
                             )}
@@ -140,7 +140,7 @@ export default function Feed() {
         {/* CTA */}
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
           className="mt-24 text-center card-premium p-12">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ecc85c]/20 to-transparent" />
           <p className="section-label mb-4">Want to post your work?</p>
           <h3 className="text-2xl font-serif text-white mb-3">Join the community</h3>
           <p className="text-sm text-white/35 mb-8 max-w-sm mx-auto leading-relaxed">Download Lenzly free to share your photography, discover locations, and connect with clients.</p>

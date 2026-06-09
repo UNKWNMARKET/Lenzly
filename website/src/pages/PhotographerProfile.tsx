@@ -32,7 +32,7 @@ export default function PhotographerProfile() {
 
   if (loading) return (
     <div className="min-h-screen pt-24 flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-[#C9A84C]/20 border-t-[#C9A84C] animate-spin" />
+      <div className="w-8 h-8 rounded-full border-2 border-[#ecc85c]/20 border-t-[#ecc85c] animate-spin" />
     </div>
   )
   if (!profile) return (
@@ -61,7 +61,7 @@ export default function PhotographerProfile() {
           <div className="pb-2 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl md:text-2xl font-bold text-white">{profile.name}</h1>
-              {profile.is_pro && <><CheckCircle size={16} className="text-[#C9A84C]" /><span className="text-[10px] font-bold text-[#060606] bg-[#C9A84C] px-2 py-0.5 rounded-full">PRO</span></>}
+              {profile.is_pro && <><CheckCircle size={16} className="text-[#ecc85c]" /><span className="text-[10px] font-bold text-[#060606] bg-[#ecc85c] px-2 py-0.5 rounded-full">PRO</span></>}
               {profile.available && <span className="text-[10px] font-bold text-green-400 bg-green-950/30 border border-green-500/20 px-2 py-0.5 rounded-full">Available for hire</span>}
             </div>
             <p className="text-sm text-white/40 mt-0.5">@{profile.username}</p>
@@ -73,12 +73,12 @@ export default function PhotographerProfile() {
             {profile.bio && <p className="text-sm text-white/60 leading-relaxed mb-5">{profile.bio}</p>}
             <div className="flex flex-wrap gap-3 mb-5">
               {profile.specialty?.map(s => (
-                <span key={s} className="text-xs bg-[#C9A84C]/10 text-[#C9A84C] border border-[#C9A84C]/20 px-3 py-1.5 rounded-full">{s}</span>
+                <span key={s} className="text-xs bg-[#ecc85c]/10 text-[#ecc85c] border border-[#ecc85c]/20 px-3 py-1.5 rounded-full">{s}</span>
               ))}
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
               {profile.location && <div className="flex items-center gap-1.5 text-white/40"><MapPin size={14} />{profile.location}</div>}
-              {profile.website && <a href={`https://${profile.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#C9A84C]/70 hover:text-[#C9A84C]"><Globe size={14} />{profile.website}</a>}
+              {profile.website && <a href={`https://${profile.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#ecc85c]/70 hover:text-[#ecc85c]"><Globe size={14} />{profile.website}</a>}
             </div>
           </div>
           <div className="space-y-3">
@@ -95,7 +95,7 @@ export default function PhotographerProfile() {
             {profile.price_range && (
               <div className="card p-4">
                 <p className="text-[10px] text-white/30 mb-1">Price Range</p>
-                <p className="text-sm text-[#C9A84C]">{profile.price_range}</p>
+                <p className="text-sm text-[#ecc85c]">{profile.price_range}</p>
               </div>
             )}
             <a href="https://apps.apple.com" className="btn-gold w-full justify-center text-sm py-3">

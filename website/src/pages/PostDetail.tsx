@@ -22,7 +22,7 @@ export default function PostDetail() {
 
   if (loading) return (
     <div className="min-h-screen pt-24 flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-[#C9A84C]/20 border-t-[#C9A84C] animate-spin" />
+      <div className="w-8 h-8 rounded-full border-2 border-[#ecc85c]/20 border-t-[#ecc85c] animate-spin" />
     </div>
   )
   if (!post) return <div className="min-h-screen pt-24 text-center text-white/30 py-20">Post not found</div>
@@ -52,8 +52,8 @@ export default function PostDetail() {
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-semibold text-white group-hover:text-[#C9A84C] transition-colors">{post.profiles.name}</span>
-                    {post.profiles.is_pro && <><CheckCircle size={13} className="text-[#C9A84C]" /><span className="text-[9px] font-bold text-[#060606] bg-[#C9A84C] px-1.5 py-0.5 rounded-full">PRO</span></>}
+                    <span className="text-sm font-semibold text-white group-hover:text-[#ecc85c] transition-colors">{post.profiles.name}</span>
+                    {post.profiles.is_pro && <><CheckCircle size={13} className="text-[#ecc85c]" /><span className="text-[9px] font-bold text-[#060606] bg-[#ecc85c] px-1.5 py-0.5 rounded-full">PRO</span></>}
                   </div>
                   <p className="text-xs text-white/40">@{post.profiles.username}</p>
                 </div>
@@ -76,7 +76,7 @@ export default function PostDetail() {
             </div>
 
             {post.category && (
-              <span className="text-[10px] font-bold tracking-widest text-[#C9A84C]/50 uppercase border border-[#C9A84C]/20 px-3 py-1.5 rounded-full w-fit mb-6">
+              <span className="text-[10px] font-bold tracking-widest text-[#ecc85c]/50 uppercase border border-[#ecc85c]/20 px-3 py-1.5 rounded-full w-fit mb-6">
                 {post.category}
               </span>
             )}

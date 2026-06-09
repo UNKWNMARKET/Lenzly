@@ -30,7 +30,7 @@ function PhotographerCard({ p, shortlisted, onShortlist }: { p: Photographer; sh
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <button
           onClick={onShortlist}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${shortlisted ? 'bg-[#C9A84C] text-[#050505]' : 'bg-black/40 text-white/60 hover:bg-black/60 hover:text-white border border-white/10'}`}
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${shortlisted ? 'bg-[#ecc85c] text-[#0b0b0d]' : 'bg-black/40 text-white/60 hover:bg-black/60 hover:text-white border border-white/10'}`}
         >
           {shortlisted ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
         </button>
@@ -44,16 +44,16 @@ function PhotographerCard({ p, shortlisted, onShortlist }: { p: Photographer; sh
 
       <div className="p-5">
         <div className="flex items-start gap-3 mb-3 -mt-8 relative z-10">
-          <div className="w-14 h-14 rounded-xl border-2 border-[#050505] overflow-hidden bg-[#141414] shrink-0 shadow-xl">
+          <div className="w-14 h-14 rounded-xl border-2 border-[#0b0b0d] overflow-hidden bg-[#141414] shrink-0 shadow-xl">
             {p.avatar_url
               ? <img src={p.avatar_url} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-lg font-bold text-[#C9A84C]/50">{p.name?.[0]}</div>
+              : <div className="w-full h-full flex items-center justify-center text-lg font-bold text-[#ecc85c]/50">{p.name?.[0]}</div>
             }
           </div>
           <div className="pt-8 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h3 className="text-sm font-bold text-white truncate">{p.name}</h3>
-              {p.is_pro && <span className="text-[8px] font-black text-[#050505] bg-[#C9A84C] px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
+              {p.is_pro && <span className="text-[8px] font-black text-[#0b0b0d] bg-[#ecc85c] px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
             </div>
             <p className="text-xs text-white/35">@{p.username}</p>
           </div>
@@ -63,7 +63,7 @@ function PhotographerCard({ p, shortlisted, onShortlist }: { p: Photographer; sh
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           {specialties.map(s => (
-            <span key={s} className="text-[10px] font-medium text-[#C9A84C]/70 bg-[#C9A84C]/8 border border-[#C9A84C]/12 px-2 py-0.5 rounded-full">{s}</span>
+            <span key={s} className="text-[10px] font-medium text-[#ecc85c]/70 bg-[#ecc85c]/8 border border-[#ecc85c]/12 px-2 py-0.5 rounded-full">{s}</span>
           ))}
           {p.location && (
             <span className="flex items-center gap-1 text-[10px] text-white/30">
@@ -83,10 +83,10 @@ function PhotographerCard({ p, shortlisted, onShortlist }: { p: Photographer; sh
               <p className="text-[9px] text-white/25 uppercase tracking-wide">Followers</p>
             </div>
           </div>
-          {p.price_range && <p className="text-xs font-semibold text-[#C9A84C]">{p.price_range}</p>}
+          {p.price_range && <p className="text-xs font-semibold text-[#ecc85c]">{p.price_range}</p>}
         </div>
 
-        <Link to={`/photographer/${p.id}`} className="mt-4 w-full py-2.5 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/15 text-[#C9A84C] text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#C9A84C]/18 hover:border-[#C9A84C]/25 transition-all">
+        <Link to={`/photographer/${p.id}`} className="mt-4 w-full py-2.5 rounded-xl bg-[#ecc85c]/10 border border-[#ecc85c]/15 text-[#ecc85c] text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#ecc85c]/18 hover:border-[#ecc85c]/25 transition-all">
           View Profile <ArrowRight size={12} />
         </Link>
       </div>
@@ -155,11 +155,11 @@ function DiscoveryPortal() {
           </div>
           <button
             onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${showFilters || activeFilters > 0 ? 'bg-[#C9A84C]/10 border-[#C9A84C]/30 text-[#C9A84C]' : 'bg-[#0A0A0A] border-[#1E1E1E] text-white/50 hover:border-[#C9A84C]/20 hover:text-white/70'}`}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${showFilters || activeFilters > 0 ? 'bg-[#ecc85c]/10 border-[#ecc85c]/30 text-[#ecc85c]' : 'bg-[#0A0A0A] border-[#1E1E1E] text-white/50 hover:border-[#ecc85c]/20 hover:text-white/70'}`}
           >
             <SlidersHorizontal size={14} />
             Filters
-            {activeFilters > 0 && <span className="w-5 h-5 rounded-full bg-[#C9A84C] text-[#050505] text-[10px] font-black flex items-center justify-center">{activeFilters}</span>}
+            {activeFilters > 0 && <span className="w-5 h-5 rounded-full bg-[#ecc85c] text-[#0b0b0d] text-[10px] font-black flex items-center justify-center">{activeFilters}</span>}
           </button>
         </div>
 
@@ -180,7 +180,7 @@ function DiscoveryPortal() {
                     <div className="flex flex-wrap gap-1.5">
                       {SPECIALTIES.map(s => (
                         <button key={s} onClick={() => toggleSpecialty(s)}
-                          className={`text-xs px-3 py-1.5 rounded-full border transition-all font-medium ${selectedSpecialties.includes(s) ? 'bg-[#C9A84C]/15 border-[#C9A84C]/40 text-[#C9A84C]' : 'bg-transparent border-[#1E1E1E] text-white/40 hover:border-[#C9A84C]/20 hover:text-white/60'}`}>
+                          className={`text-xs px-3 py-1.5 rounded-full border transition-all font-medium ${selectedSpecialties.includes(s) ? 'bg-[#ecc85c]/15 border-[#ecc85c]/40 text-[#ecc85c]' : 'bg-transparent border-[#1E1E1E] text-white/40 hover:border-[#ecc85c]/20 hover:text-white/60'}`}>
                           {s}
                         </button>
                       ))}
@@ -195,7 +195,7 @@ function DiscoveryPortal() {
                     <div className="flex flex-wrap gap-1">
                       {LOCATIONS.slice(0, 4).map(l => (
                         <button key={l} onClick={() => setLocation(l === location ? '' : l)}
-                          className={`text-[10px] px-2 py-1 rounded border transition-all ${l === location ? 'border-[#C9A84C]/30 text-[#C9A84C] bg-[#C9A84C]/8' : 'border-[#1E1E1E] text-white/30 hover:border-[#1E1E1E] hover:text-white/50'}`}>
+                          className={`text-[10px] px-2 py-1 rounded border transition-all ${l === location ? 'border-[#ecc85c]/30 text-[#ecc85c] bg-[#ecc85c]/8' : 'border-[#1E1E1E] text-white/30 hover:border-[#1E1E1E] hover:text-white/50'}`}>
                           {l}
                         </button>
                       ))}
@@ -209,8 +209,8 @@ function DiscoveryPortal() {
                       ].map(opt => (
                         <button key={opt.label} onClick={() => opt.set(!opt.value)}
                           className={`flex items-center gap-3 w-full text-left text-sm transition-colors ${opt.value ? 'text-white' : 'text-white/40 hover:text-white/60'}`}>
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${opt.value ? 'bg-[#C9A84C] border-[#C9A84C]' : 'border-[#333]'}`}>
-                            {opt.value && <CheckCircle size={10} className="text-[#050505]" />}
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${opt.value ? 'bg-[#ecc85c] border-[#ecc85c]' : 'border-[#333]'}`}>
+                            {opt.value && <CheckCircle size={10} className="text-[#0b0b0d]" />}
                           </div>
                           {opt.label}
                         </button>
@@ -236,7 +236,7 @@ function DiscoveryPortal() {
             { id: 'shortlist', label: `Shortlist (${shortlisted.size})` },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id as any)}
-              className={`text-sm font-medium pb-3 border-b-2 transition-all ${tab === t.id ? 'text-white border-[#C9A84C]' : 'text-white/35 border-transparent hover:text-white/60'}`}>
+              className={`text-sm font-medium pb-3 border-b-2 transition-all ${tab === t.id ? 'text-white border-[#ecc85c]' : 'text-white/35 border-transparent hover:text-white/60'}`}>
               {t.label}
             </button>
           ))}
@@ -373,7 +373,7 @@ function SignupForm() {
         <div className="grid grid-cols-3 gap-2">
           {NEEDS.map(n => (
             <button type="button" key={n} onClick={() => toggle(n)}
-              className={`text-xs py-2.5 rounded-xl border transition-all font-medium ${needs.includes(n) ? 'bg-[#C9A84C]/15 border-[#C9A84C]/40 text-[#C9A84C]' : 'bg-[#0A0A0A] border-[#1E1E1E] text-white/40 hover:border-[#C9A84C]/20 hover:text-white/60'}`}>
+              className={`text-xs py-2.5 rounded-xl border transition-all font-medium ${needs.includes(n) ? 'bg-[#ecc85c]/15 border-[#ecc85c]/40 text-[#ecc85c]' : 'bg-[#0A0A0A] border-[#1E1E1E] text-white/40 hover:border-[#ecc85c]/20 hover:text-white/60'}`}>
               {n}
             </button>
           ))}
@@ -447,8 +447,8 @@ export default function Brands() {
         <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {perks.map(({ icon: Icon, title, desc }) => (
             <motion.div key={title} variants={fadeUp} className="card-premium card-glow p-5">
-              <div className="w-9 h-9 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/10 flex items-center justify-center mb-3">
-                <Icon size={16} className="text-[#C9A84C]" />
+              <div className="w-9 h-9 rounded-xl bg-[#ecc85c]/10 border border-[#ecc85c]/10 flex items-center justify-center mb-3">
+                <Icon size={16} className="text-[#ecc85c]" />
               </div>
               <p className="text-sm font-semibold text-white mb-1.5">{title}</p>
               <p className="text-xs text-white/35 leading-relaxed">{desc}</p>
@@ -489,8 +489,8 @@ export default function Brands() {
                 'Priority support',
               ].map(f => (
                 <div key={f} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-[#C9A84C]/15 border border-[#C9A84C]/20 flex items-center justify-center shrink-0">
-                    <CheckCircle size={11} className="text-[#C9A84C]" />
+                  <div className="w-5 h-5 rounded-full bg-[#ecc85c]/15 border border-[#ecc85c]/20 flex items-center justify-center shrink-0">
+                    <CheckCircle size={11} className="text-[#ecc85c]" />
                   </div>
                   <p className="text-sm text-white/60">{f}</p>
                 </div>
@@ -509,7 +509,7 @@ export default function Brands() {
                 <div className="flex gap-1 mb-7 bg-[#0A0A0A] rounded-xl p-1 border border-[#1C1C1C]">
                   {(['apply', 'login'] as const).map(t => (
                     <button key={t} onClick={() => setTab(t)}
-                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${tab === t ? 'bg-[#C9A84C] text-[#050505]' : 'text-white/35 hover:text-white/60'}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${tab === t ? 'bg-[#ecc85c] text-[#0b0b0d]' : 'text-white/35 hover:text-white/60'}`}>
                       {t === 'apply' ? 'Apply for Access' : 'Sign In'}
                     </button>
                   ))}

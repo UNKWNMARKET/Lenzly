@@ -31,10 +31,10 @@ function AnimatedNumber({ target, suffix = '' }: { target: number; suffix?: stri
 }
 
 const features = [
-  { icon: MapPin, title: 'Community Discovered Locations', desc: 'Photographers tag real shoot spots when they post. Browse the interactive map, see live weather, and get directions to your next location.', tag: 'Discover', color: '#C9A84C' },
-  { icon: Briefcase, title: 'Get Hired by Brands', desc: 'Build a PRO profile that clients find. Let brands search and book you directly — no agency, no middleman, no commission cuts.', tag: 'Grow', color: '#C9A84C' },
-  { icon: Lock, title: 'End-to-End Encryption', desc: 'Every message is AES-256 encrypted. Discuss rates, share contracts, send previews. Only you and your client can read them.', tag: 'Private', color: '#C9A84C' },
-  { icon: Camera, title: 'Stories & Feed', desc: 'Share your work in a community built for photography. No algorithm hiding your posts, no ads diluting your audience.', tag: 'Share', color: '#C9A84C' },
+  { icon: MapPin, title: 'Community Discovered Locations', desc: 'Photographers tag real shoot spots when they post. Browse the interactive map, see live weather, and get directions to your next location.', tag: 'Discover', color: '#ecc85c' },
+  { icon: Briefcase, title: 'Get Hired by Brands', desc: 'Build a PRO profile that clients find. Let brands search and book you directly — no agency, no middleman, no commission cuts.', tag: 'Grow', color: '#ecc85c' },
+  { icon: Lock, title: 'End-to-End Encryption', desc: 'Every message is AES-256 encrypted. Discuss rates, share contracts, send previews. Only you and your client can read them.', tag: 'Private', color: '#ecc85c' },
+  { icon: Camera, title: 'Stories & Feed', desc: 'Share your work in a community built for photography. No algorithm hiding your posts, no ads diluting your audience.', tag: 'Share', color: '#ecc85c' },
 ]
 
 const stats = [
@@ -83,14 +83,14 @@ export default function Home() {
         <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 grid-bg" />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%)' }} />
-          <div className="absolute bottom-0 left-0 right-0 h-48" style={{ background: 'linear-gradient(to top, #050505, transparent)' }} />
-          <motion.div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#C9A84C]/5 blur-[120px]" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
+          <div className="absolute bottom-0 left-0 right-0 h-48" style={{ background: 'linear-gradient(to top, #0b0b0d, transparent)' }} />
+          <motion.div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#ecc85c]/5 blur-[120px]" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
         </motion.div>
 
         <motion.div style={{ opacity: heroOpacity }} className="relative w-full max-w-6xl mx-auto px-6 py-24 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="badge mb-8 mx-auto">
-              <Star size={10} className="fill-[#C9A84C]" />
+              <Star size={10} className="fill-[#ecc85c]" />
               Built for photographers, by photographers
             </div>
           </motion.div>
@@ -138,7 +138,7 @@ export default function Home() {
             className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1C1C1C] rounded-2xl overflow-hidden max-w-2xl mx-auto border border-[#1C1C1C]"
           >
             {stats.map(s => (
-              <div key={s.label} className="bg-[#050505] px-6 py-6 text-center">
+              <div key={s.label} className="bg-[#0b0b0d] px-6 py-6 text-center">
                 <p className="text-2xl md:text-3xl font-bold gold-text mb-1">
                   <AnimatedNumber target={s.value} suffix={s.suffix} />
                 </p>
@@ -156,7 +156,7 @@ export default function Home() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
           <motion.div className="w-5 h-8 rounded-full border border-white/15 flex items-start justify-center p-1.5">
-            <motion.div className="w-1 h-1.5 rounded-full bg-[#C9A84C]" animate={{ y: [0, 10, 0] }} transition={{ duration: 1.8, repeat: Infinity }} />
+            <motion.div className="w-1 h-1.5 rounded-full bg-[#ecc85c]" animate={{ y: [0, 10, 0] }} transition={{ duration: 1.8, repeat: Infinity }} />
           </motion.div>
         </motion.div>
       </section>
@@ -193,10 +193,10 @@ export default function Home() {
           {features.map(({ icon: Icon, title, desc, tag }) => (
             <motion.div key={title} variants={fadeUp} className="card-premium card-glow p-8 group cursor-default">
               <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-[#C9A84C]/10 border border-[#C9A84C]/10 flex items-center justify-center group-hover:bg-[#C9A84C]/15 group-hover:border-[#C9A84C]/20 transition-all duration-300">
-                  <Icon size={20} className="text-[#C9A84C]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#ecc85c]/10 border border-[#ecc85c]/10 flex items-center justify-center group-hover:bg-[#ecc85c]/15 group-hover:border-[#ecc85c]/20 transition-all duration-300">
+                  <Icon size={20} className="text-[#ecc85c]" />
                 </div>
-                <span className="text-[10px] font-bold tracking-widest text-[#C9A84C]/45 uppercase border border-[#C9A84C]/12 px-2.5 py-1 rounded-full bg-[#C9A84C]/4">{tag}</span>
+                <span className="text-[10px] font-bold tracking-widest text-[#ecc85c]/45 uppercase border border-[#ecc85c]/12 px-2.5 py-1 rounded-full bg-[#ecc85c]/4">{tag}</span>
               </div>
               <h3 className="text-[17px] font-semibold text-white mb-3 leading-snug">{title}</h3>
               <p className="text-sm text-white/40 leading-relaxed">{desc}</p>
@@ -208,7 +208,7 @@ export default function Home() {
       {/* ── How it works ── */}
       <section className="max-w-6xl mx-auto px-6 py-12">
         <div className="relative rounded-3xl overflow-hidden border border-[#1C1C1C] p-12 md:p-16" style={{ background: 'linear-gradient(135deg, #0D0D0D 0%, #080808 100%)' }}>
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ecc85c]/20 to-transparent" />
           <div className="absolute inset-0 grid-bg-sm opacity-60 pointer-events-none" />
 
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
@@ -221,7 +221,7 @@ export default function Home() {
               {howItWorks.map((s, i) => (
                 <motion.div key={s.step} variants={fadeUp} className="relative">
                   {i < howItWorks.length - 1 && (
-                    <div className="hidden md:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-[#C9A84C]/20 to-transparent -translate-x-4 pointer-events-none" />
+                    <div className="hidden md:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-[#ecc85c]/20 to-transparent -translate-x-4 pointer-events-none" />
                   )}
                   <div className="text-4xl font-serif gold-text mb-4 leading-none">{s.step}</div>
                   <h3 className="text-[16px] font-semibold text-white mb-2">{s.title}</h3>
@@ -242,7 +242,7 @@ export default function Home() {
                 <p className="section-label mb-3">Real photographers, real work</p>
                 <h2 className="text-3xl md:text-4xl font-serif text-white">From the community</h2>
               </div>
-              <Link to="/feed" className="hidden md:flex items-center gap-2 text-sm text-[#C9A84C] hover:text-white transition-colors font-medium">
+              <Link to="/feed" className="hidden md:flex items-center gap-2 text-sm text-[#ecc85c] hover:text-white transition-colors font-medium">
                 View all <ChevronRight size={14} />
               </Link>
             </motion.div>
@@ -262,7 +262,7 @@ export default function Home() {
                       <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
                         {p.profiles?.avatar_url
                           ? <img src={p.profiles.avatar_url} className="w-6 h-6 rounded-full object-cover border border-white/20 shrink-0" />
-                          : <div className="w-6 h-6 rounded-full bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center text-[9px] font-bold text-[#C9A84C] shrink-0">{p.profiles?.name?.[0]}</div>
+                          : <div className="w-6 h-6 rounded-full bg-[#ecc85c]/20 border border-[#ecc85c]/30 flex items-center justify-center text-[9px] font-bold text-[#ecc85c] shrink-0">{p.profiles?.name?.[0]}</div>
                         }
                         <span className="text-xs text-white font-medium truncate">{p.profiles?.name}</span>
                       </div>
@@ -329,11 +329,11 @@ export default function Home() {
                 className="card-premium card-glow p-7 flex flex-col"
               >
                 <div className="flex gap-1 mb-4">
-                  {[...Array(t.rating)].map((_, i) => <Star key={i} size={12} className="text-[#C9A84C] fill-[#C9A84C]" />)}
+                  {[...Array(t.rating)].map((_, i) => <Star key={i} size={12} className="text-[#ecc85c] fill-[#ecc85c]" />)}
                 </div>
                 <p className="text-sm text-white/60 leading-relaxed mb-6 flex-1 italic">"{t.text}"</p>
                 <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#C9A84C]/12 border border-[#C9A84C]/20 flex items-center justify-center text-sm font-bold text-[#C9A84C]">{t.avatar}</div>
+                  <div className="w-10 h-10 rounded-full bg-[#ecc85c]/12 border border-[#ecc85c]/20 flex items-center justify-center text-sm font-bold text-[#ecc85c]">{t.avatar}</div>
                   <div>
                     <p className="text-sm font-semibold text-white">{t.name}</p>
                     <p className="text-xs text-white/30">{t.role}</p>
@@ -358,8 +358,8 @@ export default function Home() {
             { icon: Users, title: '14K+ Photographers', desc: 'The largest photography community' },
           ].map(({ icon: Icon, title, desc }) => (
             <motion.div key={title} variants={fadeUp} className="card p-5 text-center card-glow">
-              <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/8 border border-[#C9A84C]/10 flex items-center justify-center mx-auto mb-3">
-                <Icon size={18} className="text-[#C9A84C]" />
+              <div className="w-10 h-10 rounded-xl bg-[#ecc85c]/8 border border-[#ecc85c]/10 flex items-center justify-center mx-auto mb-3">
+                <Icon size={18} className="text-[#ecc85c]" />
               </div>
               <p className="text-xs font-semibold text-white mb-1">{title}</p>
               <p className="text-[11px] text-white/30 leading-relaxed">{desc}</p>
@@ -375,13 +375,13 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="relative rounded-3xl overflow-hidden border border-[#C9A84C]/12 p-12 md:p-24 text-center"
-          style={{ background: 'linear-gradient(135deg, #120E00 0%, #0A0800 50%, #050505 100%)' }}
+          className="relative rounded-3xl overflow-hidden border border-[#ecc85c]/12 p-12 md:p-24 text-center"
+          style={{ background: 'linear-gradient(135deg, #120E00 0%, #0A0800 50%, #0b0b0d 100%)' }}
         >
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-[#C9A84C]/8 blur-[100px]" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-[#ecc85c]/8 blur-[100px]" />
             <div className="absolute inset-0 grid-bg-sm opacity-50" />
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/30 to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ecc85c]/30 to-transparent" />
           </div>
           <div className="relative">
             <p className="section-label mb-6">Free forever</p>
@@ -414,12 +414,12 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="w-full max-w-3xl aspect-video bg-[#0C0C0C] rounded-2xl border border-[#1C1C1C] flex items-center justify-center"
+              className="w-full max-w-3xl aspect-video bg-[#141417] rounded-2xl border border-[#1C1C1C] flex items-center justify-center"
               onClick={e => e.stopPropagation()}
             >
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-[#C9A84C]/15 border border-[#C9A84C]/20 flex items-center justify-center mx-auto mb-4">
-                  <Play size={24} className="fill-[#C9A84C] text-[#C9A84C] ml-1" />
+                <div className="w-16 h-16 rounded-full bg-[#ecc85c]/15 border border-[#ecc85c]/20 flex items-center justify-center mx-auto mb-4">
+                  <Play size={24} className="fill-[#ecc85c] text-[#ecc85c] ml-1" />
                 </div>
                 <p className="text-white/40 text-sm">Demo video coming soon</p>
               </div>
