@@ -15,6 +15,7 @@ const PAGE_SIZE = 12
 
 export default function Feed() {
   const [posts, setPosts] = useState<Post[]>([])
+  const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('All')
   const [page, setPage] = useState(0)
@@ -95,7 +96,7 @@ export default function Feed() {
                 transition={{ duration: 0.3 }}
                 className="grid grid-cols-2 md:grid-cols-3 gap-3"
               >
-                {posts.map((p, i) => (
+                {posts.filter(p => p.image_url && !brokenImgs.has(p.id)).map((p, i) => (
                   <motion.div
                     key={p.id}
                     initial={{ opacity: 0, scale: 0.97 }}
@@ -103,7 +104,7 @@ export default function Feed() {
                     transition={{ duration: 0.4, delay: i < 12 ? i * 0.04 : 0 }}
                   >
                     <Link to={`/post/${p.id}`} className="group relative aspect-square rounded-2xl overflow-hidden bg-[#141417] block border border-[#26262b]">
-                      <img src={p.image_url} alt={p.caption ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                      <img src={p.image_url} alt="" onError={() => setBrokenImgs(prev => new Set(prev).add(p.id))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <div className="flex items-center gap-2 mb-2">

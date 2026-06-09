@@ -34,6 +34,7 @@ const howItWorks = [
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
+  const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set())
   const [videoOpen, setVideoOpen] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
@@ -218,7 +219,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div variants={fadeUp} className="grid grid-cols-3 gap-2">
-              {posts.slice(0, 9).map((p, i) => (
+              {posts.filter(p => p.image_url && !brokenImgs.has(p.id)).slice(0, 9).map((p, i) => (
                 <motion.div
                   key={p.id}
                   initial={{ opacity: 0, scale: 0.96 }}
@@ -227,7 +228,7 @@ export default function Home() {
                   viewport={{ once: true }}
                 >
                   <Link to={`/post/${p.id}`} className={`block overflow-hidden rounded-xl md:rounded-2xl bg-[#141414] group relative ${i === 0 ? 'row-span-2 aspect-[1/2] md:aspect-square' : 'aspect-square'}`}>
-                    <img src={p.image_url} alt={p.caption ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                    <img src={p.image_url} alt="" onError={() => setBrokenImgs(prev => new Set(prev).add(p.id))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
                         {p.profiles?.avatar_url
