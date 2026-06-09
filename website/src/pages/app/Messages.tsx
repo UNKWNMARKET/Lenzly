@@ -14,20 +14,37 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user) return
-    ;(async () => {
-      const { data: parts } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user.id)
+
+    async function loadConvs() {
+      const { data: parts } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user!.id)
       const ids = (parts ?? []).map(p => p.conversation_id)
-      if (!ids.length) { setLoading(false); return }
+      if (!ids.length) { setConvs([]); setLoading(false); return }
       const { data: convData } = await supabase.from('conversations').select('id, updated_at').in('id', ids).order('updated_at', { ascending: false })
       const result: Conv[] = []
       for (const c of convData ?? []) {
-        const { data: others } = await supabase.from('conversation_participants').select('user_id, profiles:user_id(id, username, name, avatar_url)').eq('conversation_id', c.id).neq('user_id', user.id)
+        // conversation_participants.user_id → auth.users, so fetch the profile separately
+        const { data: others } = await supabase.from('conversation_participants').select('user_id').eq('conversation_id', c.id).neq('user_id', user!.id)
+        const otherId = others?.[0]?.user_id
+        let other
+        if (otherId) {
+          const { data: prof } = await supabase.from('profiles').select('id, username, name, avatar_url').eq('id', otherId).single()
+          other = prof ?? undefined
+        }
         const { data: lastMsg } = await supabase.from('messages').select('content, image_url').eq('conversation_id', c.id).order('sent_at', { ascending: false }).limit(1)
-        const other = (others?.[0] as any)?.profiles
         result.push({ id: c.id, updated_at: c.updated_at, other, last: lastMsg?.[0]?.content ?? (lastMsg?.[0]?.image_url ? '📷 Photo' : null) })
       }
       setConvs(result); setLoading(false)
-    })()
+    }
+
+    loadConvs()
+
+    // Live realtime — new/updated messages refresh the conversation list
+    const channel = supabase
+      .channel('messages-list-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => loadConvs())
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [user])
 
   return (

@@ -18,8 +18,14 @@ export default function Chat() {
     if (!id || !user) return
     supabase.from('messages').select('id, sender_id, content, image_url, sent_at, unsent').eq('conversation_id', id).order('sent_at', { ascending: true })
       .then(({ data }) => setMsgs((data ?? []) as Msg[]))
-    supabase.from('conversation_participants').select('profiles:user_id(username, name, avatar_url)').eq('conversation_id', id).neq('user_id', user.id)
-      .then(({ data }) => setOther((data?.[0] as any)?.profiles ?? null))
+    // conversation_participants.user_id → auth.users, so fetch the profile separately
+    supabase.from('conversation_participants').select('user_id').eq('conversation_id', id).neq('user_id', user.id)
+      .then(async ({ data }) => {
+        const otherId = data?.[0]?.user_id
+        if (!otherId) return
+        const { data: prof } = await supabase.from('profiles').select('username, name, avatar_url').eq('id', otherId).single()
+        setOther(prof ?? null)
+      })
 
     const ch = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` },

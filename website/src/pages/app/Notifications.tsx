@@ -30,11 +30,42 @@ export default function Notifications() {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('notifications')
-      .select('id, type, message, read, created_at, post_id, actor:actor_id(username, name, avatar_url)')
-      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
-      .then(({ data }) => { setNotifs((data ?? []) as unknown as Notif[]); setLoading(false) })
+
+    // notifications.actor_id → auth.users, so fetch actor profiles separately and merge
+    async function attachActors(rows: any[]): Promise<Notif[]> {
+      if (!rows.length) return []
+      const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))]
+      const map: Record<string, any> = {}
+      if (actorIds.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, username, name, avatar_url').in('id', actorIds)
+        for (const p of profs ?? []) map[p.id] = p
+      }
+      return rows.map(r => ({ ...r, actor: map[r.actor_id] ?? undefined })) as Notif[]
+    }
+
+    async function loadNotifs() {
+      const { data } = await supabase.from('notifications')
+        .select('id, type, message, read, created_at, post_id, actor_id')
+        .eq('user_id', user!.id).order('created_at', { ascending: false }).limit(50)
+      setNotifs(await attachActors(data ?? []))
+      setLoading(false)
+    }
+
+    loadNotifs()
     supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false).then(() => {})
+
+    // Live realtime — new notifications appear instantly, like the iOS app
+    const channel = supabase
+      .channel('notifications-live')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        async (payload) => {
+          const [notif] = await attachActors([payload.new])
+          setNotifs(prev => prev.some(n => n.id === notif.id) ? prev : [notif, ...prev])
+        })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [user])
 
   return (
