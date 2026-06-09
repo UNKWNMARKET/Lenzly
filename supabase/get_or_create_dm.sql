@@ -39,8 +39,8 @@ BEGIN
     RETURN conv;
   END IF;
 
-  INSERT INTO public.conversations (created_by)
-  VALUES (auth.uid())
+  INSERT INTO public.conversations (created_by, bg)
+  VALUES (auth.uid(), '#0A0804')
   RETURNING id INTO conv;
 
   INSERT INTO public.conversation_participants (conversation_id, user_id)
