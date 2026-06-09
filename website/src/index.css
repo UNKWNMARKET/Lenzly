@@ -2,15 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
 
 * { box-sizing: border-box; }
 body { background: #060606; color: #fff; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.font-serif { font-family: 'Playfair Display', Georgia, serif; }
+
 .gold-text { background: linear-gradient(135deg,#C9A84C,#e8c96a,#C9A84C); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.glass { background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.06); }
-.btn-gold { background:#C9A84C; color:#060606; font-weight:700; border-radius:9999px; padding:14px 32px; font-size:14px; letter-spacing:0.05em; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
-.btn-gold:hover { background:#dbb95f; transform:translateY(-1px); box-shadow:0 8px 32px rgba(201,168,76,0.25); }
-.btn-outline { border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7); font-weight:500; border-radius:9999px; padding:14px 32px; font-size:14px; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
-.btn-outline:hover { border-color:#C9A84C; color:#C9A84C; }
-.card { background:#0E0E0E; border:1px solid #1A1A1A; border-radius:20px; }
-::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#C9A84C33; border-radius:2px; }
+.gold-text-static { color: #C9A84C; }
+.glass { background:rgba(6,6,6,0.8); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.06); }
+
+.btn-gold { background:linear-gradient(135deg,#C9A84C,#dbb95f); color:#060606; font-weight:700; border-radius:9999px; padding:14px 32px; font-size:14px; letter-spacing:0.04em; transition:all 0.25s; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 20px rgba(201,168,76,0.2); }
+.btn-gold:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(201,168,76,0.35); filter:brightness(1.05); }
+.btn-gold:active { transform:translateY(0); }
+
+.btn-outline { border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); font-weight:500; border-radius:9999px; padding:14px 32px; font-size:14px; transition:all 0.25s; display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.02); }
+.btn-outline:hover { border-color:rgba(201,168,76,0.5); color:#C9A84C; background:rgba(201,168,76,0.05); }
+
+.card { background:#0C0C0C; border:1px solid #1C1C1C; border-radius:20px; }
+.card-hover { transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s; }
+.card-hover:hover { border-color: rgba(201,168,76,0.2); transform: translateY(-2px); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+
+.section-label { font-size:11px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; color:#C9A84C; }
+.section-heading { font-family:'Playfair Display',Georgia,serif; }
+
+.noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); }
+
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#C9A84C22; border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background:#C9A84C44; }
+
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+@keyframes shimmer { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
+.animate-float { animation: float 6s ease-in-out infinite; }
+.shimmer { background: linear-gradient(90deg, #C9A84C 0%, #e8c96a 50%, #C9A84C 100%); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation: shimmer 4s linear infinite; }
