@@ -1,11 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variables')
-}
+// TODO: Once VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set as environment
+// variables in Codemagic CI, remove these fallback strings and the || operator.
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://zdmtiyyfljzwveaowjxq.supabase.co'
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 'sb_publishable_1QS2OxeITYGN0E8d1QNeQw_DHRuVByw'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
