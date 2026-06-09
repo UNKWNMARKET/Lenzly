@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+body { background: #060606; color: #fff; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.gold-text { background: linear-gradient(135deg,#C9A84C,#e8c96a,#C9A84C); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.glass { background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.06); }
+.btn-gold { background:#C9A84C; color:#060606; font-weight:700; border-radius:9999px; padding:14px 32px; font-size:14px; letter-spacing:0.05em; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+.btn-gold:hover { background:#dbb95f; transform:translateY(-1px); box-shadow:0 8px 32px rgba(201,168,76,0.25); }
+.btn-outline { border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7); font-weight:500; border-radius:9999px; padding:14px 32px; font-size:14px; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+.btn-outline:hover { border-color:#C9A84C; color:#C9A84C; }
+.card { background:#0E0E0E; border:1px solid #1A1A1A; border-radius:20px; }
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#C9A84C33; border-radius:2px; }
