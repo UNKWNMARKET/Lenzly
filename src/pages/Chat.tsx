@@ -230,10 +230,6 @@ export default function Chat() {
 
   useEffect(() => {
     if (!convId || !user) return
-    // Verify user is a participant before subscribing to this conversation's messages
-    supabase.from('conversation_participants')
-      .select('id').eq('conversation_id', convId).eq('user_id', user.id).single()
-      .then(({ data }) => { if (!data) navigate('/messages') })
     const ch = supabase.channel(`chat_${convId}`)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
