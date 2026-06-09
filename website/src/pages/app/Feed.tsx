@@ -59,6 +59,36 @@ export default function Feed() {
     return () => obs.disconnect()
   }, [page, hasMore, loading, tab, load])
 
+  // Live realtime sync — new posts appear instantly, just like the iOS app
+  useEffect(() => {
+    const channel = supabase
+      .channel('feed-posts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
+        const row = payload.new as { id: string; user_id: string }
+        // Only "For You" streams every new post; "Following" handled by the existing query on refresh
+        if (tab !== 'foryou') return
+        // Fetch the full post with its author profile, then prepend
+        const { data } = await supabase.from('posts')
+          .select('id, user_id, image_url, caption, location_name, likes_count, comments_count, category, created_at, profiles:user_id(id, username, name, avatar_url, is_pro)')
+          .eq('id', row.id)
+          .single()
+        if (!data) return
+        const post = data as unknown as Post
+        setPosts(prev => prev.some(p => p.id === post.id) ? prev : [post, ...prev])
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
+        const row = payload.old as { id: string }
+        setPosts(prev => prev.filter(p => p.id !== row.id))
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+        const row = payload.new as Post
+        setPosts(prev => prev.map(p => p.id === row.id ? { ...p, ...row } : p))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [tab])
+
   return (
     <div className="max-w-[640px] mx-auto">
       {/* mobile header */}
