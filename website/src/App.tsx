@@ -35,6 +35,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 // Business
 import BusinessLayout from './components/app/BusinessLayout'
 import BusinessLogin from './pages/business/BusinessLogin'
+import BusinessOnboarding from './pages/business/BusinessOnboarding'
 import BusinessDashboard from './pages/business/BusinessDashboard'
 import BusinessDiscover from './pages/business/BusinessDiscover'
 import BusinessPhotographer from './pages/business/BusinessPhotographer'
@@ -82,6 +83,7 @@ export default function App() {
 
           {/* Business */}
           <Route path="/business/login" element={<BusinessLogin />} />
+          <Route path="/business/onboarding" element={<BusinessOnboarding />} />
           <Route path="/business" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboard />} />
             <Route path="discover" element={<BusinessDiscover />} />

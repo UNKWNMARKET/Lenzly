@@ -18,12 +18,6 @@ interface Application {
 
 interface Credentials { company: string; email: string; password: string }
 
-function generatePassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
-  let p = ''
-  for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)]
-  return p + '!'
-}
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth()
@@ -54,29 +48,26 @@ export default function AdminDashboard() {
 
   async function approve(app: Application) {
     setActionLoading(app.id)
-    const tempPassword = generatePassword()
-
-    // Update application status (brand account created via Supabase invite email)
-    await supabase
-      .from('brand_applications')
-      .update({
-        status: 'approved',
-        temp_password: tempPassword,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', app.id)
-
-    setCredentials({ company: app.company, email: app.email, password: tempPassword })
+    const res = await fetch('/api/review-brand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ applicationId: app.id, action: 'approve' }),
+    })
+    const data = await res.json()
+    if (data.tempPassword) {
+      setCredentials({ company: app.company, email: app.email, password: data.tempPassword })
+    }
     await fetchApps()
     setActionLoading(null)
   }
 
   async function reject(app: Application) {
     setActionLoading(app.id)
-    await supabase
-      .from('brand_applications')
-      .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
-      .eq('id', app.id)
+    await fetch('/api/review-brand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ applicationId: app.id, action: 'reject' }),
+    })
     await fetchApps()
     setActionLoading(null)
   }
