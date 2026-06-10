@@ -279,9 +279,6 @@ function DiscoveryPortal() {
 
 const NEEDS = ['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign']
 
-function slugify(s: string) {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'brand'
-}
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('')

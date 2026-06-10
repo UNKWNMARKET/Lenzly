@@ -55,20 +55,12 @@ export default function AdminDashboard() {
     setActionLoading(app.id)
     const tempPassword = generatePassword()
 
-    // Create Supabase auth account for the brand
-    const { data: signUpData, error: signUpError } = await supabase.auth.admin
-      ? (await (supabase as any).auth.admin.createUser({ email: app.email, password: tempPassword, email_confirm: true }))
-      : { data: null, error: { message: 'Admin API unavailable' } }
-
-    const brandUserId = signUpData?.user?.id || null
-
-    // Update application status
+    // Update application status (brand account created via Supabase invite email)
     await supabase
       .from('brand_applications')
       .update({
         status: 'approved',
         temp_password: tempPassword,
-        brand_user_id: brandUserId,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', app.id)
