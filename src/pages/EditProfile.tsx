@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ChevronLeft, Camera, Check, MapPin, Globe, Loader } from 'lucide-react'
+import { ChevronLeft, Camera, Check, MapPin, Globe } from 'lucide-react'
+import Spinner from '@/components/Spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -22,7 +23,24 @@ export default function EditProfile() {
   const [location, setLocation] = useState(profile?.location ?? '')
   const [website, setWebsite] = useState(profile?.website ?? '')
   const [specialties, setSpecialties] = useState<string[]>(profile?.specialty ?? [])
+  const [available, setAvailable] = useState<boolean>(profile?.available ?? false)
+  const [secondShooter, setSecondShooter] = useState<boolean>(profile?.second_shooter ?? false)
+  const [priceRange, setPriceRange] = useState<string>(profile?.price_range ?? '')
   const [saving, setSaving] = useState(false)
+  const [websiteError, setWebsiteError] = useState('')
+
+  const handleWebsiteChange = (val: string) => {
+    setWebsite(val)
+    if (!val.trim()) { setWebsiteError(''); return }
+    try { new URL(val.includes('://') ? val : `https://${val}`) ; setWebsiteError('') }
+    catch { setWebsiteError('Enter a valid URL') }
+  }
+
+  const normalizeWebsite = (val: string) => {
+    if (!val.trim()) return ''
+    if (/^https?:\/\//i.test(val)) return val.trim()
+    return `https://${val.trim()}`
+  }
 
   // ── Photo upload ─────────────────────────────────────────────────────────────
   const [avatarPreview, setAvatarPreview]   = useState<string | null>(null)
@@ -62,6 +80,9 @@ export default function EditProfile() {
       setLocation(profile.location ?? '')
       setWebsite(profile.website ?? '')
       setSpecialties(profile.specialty ?? [])
+      setAvailable(profile.available ?? false)
+      setSecondShooter(profile.second_shooter ?? false)
+      setPriceRange(profile.price_range ?? '')
     }
   }, [profile?.id])
 
@@ -119,17 +140,23 @@ export default function EditProfile() {
       username:  username.trim().toLowerCase(),
       bio:       bio.trim() || null,
       location:  location.trim() || null,
-      website:   website.trim() || null,
-      specialty: specialties,
+      website:   website.trim() ? normalizeWebsite(website) : null,
+      specialty:      specialties,
+      available:      available,
+      second_shooter: secondShooter,
+      price_range:    priceRange.trim() || null,
     }
 
     if (newAvatarUrl) updateData.avatar_url = newAvatarUrl
     if (newCoverUrl)  updateData.cover_url  = newCoverUrl
 
-    if (!isFirstSave && usernameChanged && canChangeUsername()) {
+    // Lock the username after first profile setup, or when they change it later
+    const isSetup = !profile?.name
+    if (isSetup || (!isFirstSave && usernameChanged && canChangeUsername())) {
       updateData.username_changed_at = new Date().toISOString()
     }
 
+    // upsert handles both new users (no row yet) and existing users
     const { error } = await supabase
       .from('profiles')
       .upsert(updateData, { onConflict: 'id' })
@@ -140,10 +167,11 @@ export default function EditProfile() {
       return
     }
 
+    const wasSetup = !profile?.name
     await refreshProfile()
-    toast.success('Profile updated!')
+    toast.success(wasSetup ? 'Profile created!' : 'Profile updated!')
     setSaving(false)
-    navigate('/profile')
+    navigate(wasSetup ? '/onboarding' : '/profile')
   }
 
   // ── Derived display values ────────────────────────────────────────────────────
@@ -151,7 +179,8 @@ export default function EditProfile() {
   const displayCover  = coverPreview  ?? profile?.cover_url
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => navigate('/profile')} className="p-2 -ml-2">
@@ -179,7 +208,7 @@ export default function EditProfile() {
             }
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {uploadingCover
-                ? <Loader size={18} className="text-white animate-spin" />
+                ? <Spinner size="sm" className="border-white/30 border-t-white" />
                 : <div className="flex items-center gap-2 text-white text-xs font-medium">
                     <Camera size={15} />
                     Change Cover
@@ -207,7 +236,7 @@ export default function EditProfile() {
               </div>
               <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
                 {uploadingAvatar
-                  ? <Loader size={13} className="text-white animate-spin" />
+                  ? <Spinner size="sm" className="border-white/30 border-t-white" />
                   : <Camera size={13} className="text-white" />
                 }
               </div>
@@ -227,13 +256,20 @@ export default function EditProfile() {
         {/* Display Name */}
         <div>
           <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-2">Display Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Your Name"
-            className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value.slice(0, 50))}
+              placeholder="Your Name"
+              className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+            />
+            {name.length > 35 && (
+              <span className={`absolute bottom-2.5 right-3 text-[10px] tabular-nums ${name.length >= 50 ? 'text-rose-400' : 'text-white/20'}`}>
+                {name.length}/50
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Username */}
@@ -305,13 +341,14 @@ export default function EditProfile() {
           <div className="relative">
             <Globe size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
             <input
-              type="url"
+              type="text"
               value={website}
-              onChange={e => setWebsite(e.target.value)}
-              placeholder="https://yoursite.com"
-              className="w-full bg-lenz-card border border-lenz-border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+              onChange={e => handleWebsiteChange(e.target.value)}
+              placeholder="yoursite.com"
+              className={`w-full bg-lenz-card border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 outline-none transition-colors ${websiteError ? 'border-rose-500/50 focus:border-rose-400/70' : 'border-lenz-border focus:border-gold/50'}`}
             />
           </div>
+          {websiteError && <p className="text-[11px] text-rose-400 mt-1 pl-1">{websiteError}</p>}
         </div>
 
         {/* Specialties */}
@@ -340,6 +377,52 @@ export default function EditProfile() {
           </div>
         </div>
 
+        {/* Availability & Rate */}
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase">
+            For Hire
+          </label>
+
+          {/* Available toggle */}
+          <div className="flex items-center justify-between p-3.5 bg-lenz-card rounded-xl border border-lenz-border">
+            <div>
+              <p className="text-sm font-medium text-white/80">Available for hire</p>
+              <p className="text-[11px] text-white/30 mt-0.5">Show clients you're open to bookings</p>
+            </div>
+            <button
+              onClick={() => setAvailable(v => !v)}
+              className={`w-12 h-6.5 rounded-full transition-colors relative flex-shrink-0 ${available ? 'bg-gold' : 'bg-white/15'}`}
+              style={{ height: '26px', width: '46px' }}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Second shooter toggle */}
+          <div className="flex items-center justify-between p-3.5 bg-lenz-card rounded-xl border border-lenz-border">
+            <div>
+              <p className="text-sm font-medium text-white/80">Available as second shooter</p>
+              <p className="text-[11px] text-white/30 mt-0.5">For weddings and large events</p>
+            </div>
+            <button
+              onClick={() => setSecondShooter(v => !v)}
+              className={`relative flex-shrink-0 rounded-full transition-colors`}
+              style={{ height: '26px', width: '46px', background: secondShooter ? 'var(--gold, #C9A84C)' : 'rgba(255,255,255,0.15)' }}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${secondShooter ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Price range */}
+          <input
+            type="text"
+            value={priceRange}
+            onChange={e => setPriceRange(e.target.value)}
+            placeholder="e.g. $500–$2,000/day"
+            className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+          />
+        </div>
+
         {/* Save button */}
         <button
           onClick={handleSave}
@@ -350,6 +433,7 @@ export default function EditProfile() {
         </button>
 
       </div>
+    </div>
     </div>
   )
 }

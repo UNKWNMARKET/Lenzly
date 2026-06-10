@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { toast } from 'sonner'
 
 type Notif = {
   id: string
   type: string
   actor_id: string | null
   post_id: string | null
+  conversation_id: string | null
   message: string | null
   read: boolean
   created_at: string
@@ -32,8 +34,16 @@ const typeIcon = (type: string) => {
     case 'like':    return <Heart size={14} className="fill-rose-500 text-rose-500" />
     case 'comment': return <MessageCircle size={14} className="text-blue-400" />
     case 'follow':  return <UserPlus size={14} className="text-green-400" />
-    case 'mention': return <Aperture size={14} className="text-gold" />
-    default:        return <Bell size={14} className="text-white/50" />
+    case 'mention':      return <Aperture size={14} className="text-gold" />
+    case 'story_share':    return <Clapperboard size={14} className="text-amber-400" />
+    case 'follow_request': return <Lock size={14} className="text-amber-400" />
+    case 'follow_accepted':return <UserCheck size={14} className="text-green-400" />
+    case 'follow_declined':return <XIcon size={14} className="text-rose-400" />
+    case 'hire_request':    return <Camera size={14} className="text-gold" />
+    case 'story_like':      return <Heart size={14} className="fill-rose-500 text-rose-500" />
+    case 'story_comment':   return <MessageCircle size={14} className="text-purple-400" />
+    case 'message':         return <MessageCircle size={14} className="text-blue-400" />
+    default:               return <Bell size={14} className="text-white/50" />
   }
 }
 
@@ -43,8 +53,16 @@ const typeLabel = (type: string, actor?: string | null): string => {
     case 'like':    return `${name} liked your photo`
     case 'comment': return `${name} commented on your photo`
     case 'follow':  return `${name} started following you`
-    case 'mention': return `${name} mentioned you in a comment`
-    default:        return 'New notification'
+    case 'mention':      return `${name} mentioned you in a comment`
+    case 'story_share':     return `${name} shared your photo to their story`
+    case 'follow_request':  return `${name} wants to follow you`
+    case 'follow_accepted': return `${name} accepted your follow request`
+    case 'follow_declined': return `${name} declined your follow request`
+    case 'hire_request':    return `${name} sent you a hire request`
+    case 'story_like':      return `${name} liked your story`
+    case 'story_comment':   return `${name} replied to your story`
+    case 'message':         return `${name} sent you a message`
+    default:                return 'New notification'
   }
 }
 
@@ -53,31 +71,61 @@ export default function Notifications() {
   const { user } = useAuth()
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loading, setLoading] = useState(true)
+  const [followBackDone, setFollowBackDone] = useState<Set<string>>(new Set())
+  const [requestDone, setRequestDone] = useState<Set<string>>(new Set())
 
   const fetchNotifs = useCallback(async () => {
-    if (!user) return
-    const { data } = await supabase
+    if (!user) { setLoading(false); return }
+    const { data: rows, error } = await supabase
       .from('notifications')
-      .select('*, actor:actor_id(username, avatar_url)')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(60)
-    if (data) setNotifs(data as Notif[])
+
+    if (error) {
+      toast.error('Notifications error: ' + error.message)
+      setLoading(false)
+      return
+    }
+
+    const safeRows = rows ?? []
+
+    // Batch-fetch actor profiles
+    const actorIds = [...new Set(safeRows.map((r: any) => r.actor_id).filter(Boolean))]
+    const profileMap: Record<string, { username: string; avatar_url: string | null }> = {}
+    if (actorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', actorIds)
+      if (profiles) {
+        for (const p of profiles) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url }
+      }
+    }
+
+    const merged = safeRows.map((r: any) => ({
+      ...r,
+      actor: r.actor_id ? (profileMap[r.actor_id] ?? null) : null,
+    }))
+    setNotifs(merged as Notif[])
     setLoading(false)
   }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchNotifs })
 
   useEffect(() => {
+    if (!user) { setLoading(false); return }
     fetchNotifs()
     const ch = supabase
       .channel('notifs_live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications',
-        filter: `user_id=eq.${user?.id}` }, () => fetchNotifs())
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => fetchNotifs())
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, fetchNotifs])
 
   const markAllRead = async () => {
     if (!user) return
@@ -86,15 +134,80 @@ export default function Notifications() {
     setNotifs(prev => prev.map(n => ({ ...n, read: true })))
   }
 
+  const handleConfirmFollow = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').upsert(
+      { follower_id: n.actor_id, following_id: user.id, status: 'accepted' },
+      { onConflict: 'follower_id,following_id' }
+    )
+    // Notify the requester that they were accepted
+    await supabase.from('notifications').insert({
+      user_id: n.actor_id,
+      actor_id: user.id,
+      type: 'follow_accepted',
+      message: 'accepted your follow request',
+      read: false,
+    })
+    setRequestDone(prev => new Set(prev).add(n.id))
+    toast.success(`${n.actor?.username ?? 'User'} can now follow you`)
+    markRead(n.id)
+  }
+
+  const handleDenyFollow = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').delete().eq('follower_id', n.actor_id).eq('following_id', user.id)
+    // Notify the requester that they were declined
+    await supabase.from('notifications').insert({
+      user_id: n.actor_id,
+      actor_id: user.id,
+      type: 'follow_declined',
+      message: 'declined your follow request',
+      read: false,
+    })
+    setRequestDone(prev => new Set(prev).add(n.id))
+    toast.success('Request declined')
+    markRead(n.id)
+  }
+
+  const handleFollowBack = async (n: Notif) => {
+    if (!n.actor_id || !user) return
+    await supabase.from('follows').upsert(
+      { follower_id: user.id, following_id: n.actor_id },
+      { onConflict: 'follower_id,following_id' }
+    )
+    setFollowBackDone(prev => new Set(prev).add(n.id))
+    toast.success(`Following @${n.actor?.username ?? 'user'}`)
+    markRead(n.id)
+  }
+
   const markRead = async (id: string) => {
     await supabase.from('notifications').update({ read: true }).eq('id', id)
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
   }
 
+  const handleTap = (n: Notif) => {
+    markRead(n.id)
+    // Navigate to the relevant content
+    if (n.post_id && ['like', 'comment', 'mention'].includes(n.type)) {
+      navigate(`/post/${n.post_id}`)
+    } else if (n.type === 'hire_request') {
+      // Go directly to the conversation if we have it, otherwise messages list
+      if (n.conversation_id) navigate(`/chat/${n.conversation_id}`)
+      else navigate('/messages')
+    } else if (n.actor_id && ['follow', 'follow_request', 'follow_accepted', 'follow_declined'].includes(n.type)) {
+      navigate(`/photographer/${n.actor_id}`)
+    } else if (n.actor_id && ['story_like', 'story_comment', 'story_share'].includes(n.type)) {
+      navigate(`/photographer/${n.actor_id}`)
+    } else if (n.type === 'message') {
+      navigate('/messages')
+    }
+    // follow_request stays on the page so user can confirm/deny
+  }
+
   const unread = notifs.filter(n => !n.read).length
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-6">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
@@ -139,14 +252,16 @@ export default function Notifications() {
       ) : (
         <div className="flex flex-col gap-1 p-4 mt-1">
           {notifs.map(n => (
-            <button
+            <div
               key={n.id}
-              onClick={() => markRead(n.id)}
+              role="button"
+              onClick={() => handleTap(n)}
               className={cn(
-                'flex items-center gap-3 p-3 rounded-2xl transition-all text-left w-full',
-                n.read ? 'bg-transparent hover:bg-white/3' : 'bg-white/5 hover:bg-white/7'
+                'flex flex-col p-3 rounded-2xl transition-all cursor-pointer',
+                n.read ? 'bg-transparent hover:bg-white/5' : 'bg-white/5 hover:bg-white/7'
               )}
             >
+            <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 <div className="w-11 h-11 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
@@ -174,7 +289,32 @@ export default function Notifications() {
               {!n.read && (
                 <span className="w-2 h-2 rounded-full bg-gold flex-shrink-0" />
               )}
-            </button>
+            </div>
+
+            {(n.type === 'follow' || n.type === 'follow_request') && !requestDone.has(n.id) && (
+              <div className="flex gap-2 mt-2 ml-14">
+                {n.type === 'follow_request' ? (
+                  <>
+                    <button onClick={e => { e.stopPropagation(); handleConfirmFollow(n) }}
+                      className="px-3 py-1 rounded-xl bg-gold text-lenz-bg text-xs font-bold active:scale-95 transition-transform">
+                      Confirm
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); handleDenyFollow(n) }}
+                      className="px-3 py-1 rounded-xl bg-white/10 text-white/60 text-xs font-semibold active:scale-95 transition-transform">
+                      Delete
+                    </button>
+                  </>
+                ) : !followBackDone.has(n.id) ? (
+                  <button onClick={e => { e.stopPropagation(); handleFollowBack(n) }}
+                    className="px-3 py-1 rounded-xl border border-lenz-border text-white/70 text-xs font-semibold active:scale-95 transition-transform hover:border-gold/40 hover:text-gold/80">
+                    Follow Back
+                  </button>
+                ) : (
+                  <span className="text-xs text-white/30 ml-1">Following ✓</span>
+                )}
+              </div>
+            )}
+            </div>
           ))}
         </div>
       )}

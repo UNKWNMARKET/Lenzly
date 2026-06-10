@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, TrendingUp, Shield, LogIn } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, Shield, TrendingUp, LogIn } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { photographers } from '@/data/mockData'
 import { toast } from 'sonner'
 
+const API = 'http://localhost:3001/api/brand'
 const brandLogos = ['WildScope', 'Maison Élite', 'Lumière', 'ApexGear', 'Nexar', 'Meridian']
 
 const perks = [
@@ -13,50 +14,42 @@ const perks = [
   { icon: TrendingUp, title: 'Track Results', desc: 'View post analytics and campaign performance.' },
 ]
 
-const NEEDS_OPTIONS = ['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign']
-
 export default function BrandsPage() {
   const [, navigate] = useLocation()
   const [activeTab, setActiveTab] = useState<'discover' | 'signup'>('discover')
-
   const [company, setCompany] = useState('')
   const [email, setEmail] = useState('')
   const [website, setWebsite] = useState('')
-  const [needs, setNeeds] = useState<string[]>([])
+  const [selectedNeeds, setSelectedNeeds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   function toggleNeed(need: string) {
-    setNeeds(prev => prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need])
+    setSelectedNeeds(prev => prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need])
   }
 
-  async function handleSubmit() {
-    if (!company.trim() || !email.trim()) {
-      toast.error('Company name and email are required')
-      return
-    }
+  async function handleApply(e: React.FormEvent) {
+    e.preventDefault()
+    if (!company.trim() || !email.trim()) { toast.error('Company name and email are required'); return }
     setSubmitting(true)
     try {
-      const res = await fetch('http://localhost:3001/api/brands/apply', {
+      const res = await fetch(`${API}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company, email, website, needs }),
+        body: JSON.stringify({ company: company.trim(), email: email.trim(), website: website.trim(), needs: selectedNeeds }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to submit application')
-        return
-      }
+      if (!res.ok) { toast.error(data.error ?? 'Failed to submit'); setSubmitting(false); return }
       setSubmitted(true)
     } catch {
-      toast.error('Cannot connect to server. Please try again.')
-    } finally {
-      setSubmitting(false)
+      toast.error('Could not connect to server')
     }
+    setSubmitting(false)
   }
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24 animate-fade-in">
+    <div className="fixed inset-0 overflow-y-auto overscroll-none">
+    <div className="min-h-full bg-lenz-bg pb-24 animate-fade-in">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-4 flex items-center gap-3 safe-top">
         <button onClick={() => navigate('/')} className="p-1 -ml-1 text-white/40 hover:text-white transition-colors">
@@ -65,7 +58,7 @@ export default function BrandsPage() {
         <h1 className="text-xl font-bold tracking-[0.12em] gold-text">FOR BRANDS</h1>
         <div className="ml-auto">
           <button
-            onClick={() => navigate('/brand/login')}
+            onClick={() => navigate('/brand-portal/login')}
             className="flex items-center gap-1.5 text-xs text-white/40 hover:text-[#C9A84C] transition-colors"
           >
             <LogIn size={14} />
@@ -90,17 +83,11 @@ export default function BrandsPage() {
             Connect with verified, talented photographers for editorial, commercial, and brand campaigns. Trusted by leading companies worldwide.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex gap-3">
-            <button onClick={() => setActiveTab('signup')} className="flex-1 btn-primary">
-              Create Brand Account
-            </button>
-            <button onClick={() => setActiveTab('discover')} className="flex-1 btn-ghost">
-              Browse Talent
-            </button>
+            <button onClick={() => setActiveTab('signup')} className="flex-1 btn-primary">Create Brand Account</button>
+            <button onClick={() => setActiveTab('discover')} className="flex-1 btn-ghost">Browse Talent</button>
           </div>
 
-          {/* Trusted by */}
           <div className="mt-5">
             <p className="text-[10px] text-white/20 tracking-widest uppercase mb-2">Trusted by</p>
             <div className="flex gap-4 overflow-x-auto no-scrollbar">
@@ -129,7 +116,6 @@ export default function BrandsPage() {
 
       {activeTab === 'discover' ? (
         <div className="px-4 space-y-4 animate-fade-in">
-          {/* Perks */}
           <div className="grid grid-cols-2 gap-3 mb-2">
             {perks.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="card p-3">
@@ -140,7 +126,6 @@ export default function BrandsPage() {
             ))}
           </div>
 
-          {/* Featured photographers */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-white/50 tracking-wider uppercase">Featured Talent</p>
@@ -178,9 +163,7 @@ export default function BrandsPage() {
                         </div>
                       </div>
                     </div>
-                    <button className="shrink-0 btn-primary text-xs py-1.5 px-3">
-                      Hire
-                    </button>
+                    <button className="shrink-0 btn-primary text-xs py-1.5 px-3">Hire</button>
                   </div>
 
                   <div className="grid grid-cols-4 gap-1 mt-3">
@@ -198,23 +181,18 @@ export default function BrandsPage() {
       ) : (
         <div className="px-4 animate-fade-in">
           {submitted ? (
-            <div className="card p-8 text-center space-y-3">
-              <div className="w-16 h-16 rounded-full bg-green-950/40 border border-green-900/40 flex items-center justify-center mx-auto">
-                <CheckCircle size={32} className="text-green-400" />
+            <div className="card p-6 text-center space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-green-950/30 border border-green-500/20 flex items-center justify-center mx-auto">
+                <CheckCircle size={26} className="text-green-400" />
               </div>
               <h3 className="text-lg font-bold text-white">Application Submitted!</h3>
-              <p className="text-sm text-white/40 leading-relaxed">
-                We'll review your application and send your login credentials to <span className="text-white/70">{email}</span> within 24 hours.
-              </p>
-              <button
-                onClick={() => navigate('/brand/login')}
-                className="w-full btn-primary py-3 mt-2"
-              >
-                Go to Brand Login
+              <p className="text-sm text-white/50">We'll review your request and send login credentials to <span className="text-white">{email}</span> within 24 hours.</p>
+              <button onClick={() => navigate('/brand-portal/login')} className="w-full btn-primary py-3 text-sm mt-2">
+                Go to Brand Portal
               </button>
             </div>
           ) : (
-            <div className="card p-5 space-y-4">
+            <form onSubmit={handleApply} className="card p-5 space-y-4">
               <div className="text-center mb-2">
                 <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
                   <Building2 size={26} className="text-lenz-bg" />
@@ -225,71 +203,45 @@ export default function BrandsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Company Name *</label>
-                <input
-                  type="text"
-                  placeholder="Your company name..."
-                  value={company}
-                  onChange={e => setCompany(e.target.value)}
-                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
-                />
+                <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Your company name..." required
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Work Email *</label>
-                <input
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
-                />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Website</label>
-                <input
-                  type="text"
-                  placeholder="company.com"
-                  value={website}
-                  onChange={e => setWebsite(e.target.value)}
-                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
-                />
+                <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="company.com"
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {NEEDS_OPTIONS.map(need => (
-                    <button
-                      key={need}
-                      type="button"
-                      onClick={() => toggleNeed(need)}
+                  {['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign'].map(need => (
+                    <button type="button" key={need} onClick={() => toggleNeed(need)}
                       className={`text-xs py-2 rounded-lg border transition-all ${
-                        needs.includes(need)
-                          ? 'bg-gold/10 border-gold/40 text-gold'
+                        selectedNeeds.includes(need)
+                          ? 'bg-gold/15 border-gold/40 text-gold'
                           : 'text-white/50 bg-lenz-muted border-lenz-border hover:border-gold/40 hover:text-gold'
-                      }`}
-                    >
+                      }`}>
                       {need}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !company.trim() || !email.trim()}
-                className="w-full btn-primary py-3.5 text-sm disabled:opacity-40"
-              >
-                {submitting ? 'Submitting...' : 'Request Brand Access'}
+              <button type="submit" disabled={submitting} className="w-full btn-primary py-3.5 text-sm disabled:opacity-50">
+                {submitting ? 'Submitting…' : 'Request Brand Access'}
               </button>
-              <p className="text-[10px] text-white/20 text-center">
-                Our team will review your request within 24 hours.
-              </p>
-            </div>
+              <p className="text-[10px] text-white/20 text-center">Our team will review your request within 24 hours.</p>
+            </form>
           )}
         </div>
       )}
+    </div>
     </div>
   )
 }

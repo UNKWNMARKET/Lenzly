@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://zdmtiyyfljzwveaowjxq.supabase.co'
-const supabaseAnonKey = 'sb_publishable_1QS2OxeITYGN0E8d1QNeQw_DHRuVByw'
+// TODO: Once VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set as environment
+// variables in Codemagic CI, remove these fallback strings and the || operator.
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://zdmtiyyfljzwveaowjxq.supabase.co'
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 'sb_publishable_1QS2OxeITYGN0E8d1QNeQw_DHRuVByw'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -31,6 +33,12 @@ export type Profile = {
   posts_count: number
   created_at: string
   username_changed_at: string | null
+  onboarded?: boolean
+  available: boolean
+  second_shooter: boolean
+  price_range: string | null
+  private_account?: boolean
+  show_location?: boolean
 }
 
 export type Post = {

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:gn="http://www.goodnotes.com/gn-svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#050505"/>
+  <line x1="680" y1="0" x2="1080" y2="420" stroke="#C9A84C" stroke-width="0.6" opacity="0.15"/>
+  <line x1="760" y1="0" x2="1080" y2="340" stroke="#C9A84C" stroke-width="0.3" opacity="0.08"/>
+  <line x1="0" y1="1500" x2="400" y2="1920" stroke="#C9A84C" stroke-width="0.6" opacity="0.15"/>
+  <line x1="0" y1="1580" x2="320" y2="1920" stroke="#C9A84C" stroke-width="0.3" opacity="0.08"/>
+  <text x="540" y="190" font-family="Georgia, serif" font-size="56" font-weight="400" fill="#FFFFFF" text-anchor="middle" letter-spacing="20" opacity="0.95">LENZLY</text>
+  <rect x="340" y="208" width="400" height="1" fill="#C9A84C" opacity="0.35"/>
+  <text x="90" y="430" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Find your</text>
+  <text x="90" y="540" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">next</text>
+  <text x="90" y="650" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#C9A84C" letter-spacing="-1" font-style="italic">photo spot.</text>
+  <text x="90" y="730" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Real locations shared by real photographers.</text>
+  <text x="90" y="760" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Live weather data. One-tap directions.</text>
+  <text x="90" y="790" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Community-powered. Always free.</text>
+  <rect x="90" y="840" width="900" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <text x="90" y="920" font-family="Georgia, serif" font-size="52" font-weight="400" fill="#C9A84C">Real</text>
+  <text x="90" y="958" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFFFFF" opacity="0.35" letter-spacing="3">LOCATIONS</text>
+  <text x="400" y="920" font-family="Georgia, serif" font-size="52" font-weight="400" fill="#C9A84C">Live</text>
+  <text x="400" y="958" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFFFFF" opacity="0.35" letter-spacing="3">WEATHER</text>
+  <text x="700" y="920" font-family="Georgia, serif" font-size="52" font-weight="400" fill="#C9A84C">Free</text>
+  <text x="700" y="958" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFFFFF" opacity="0.35" letter-spacing="3">ALWAYS</text>
+  <rect x="90" y="990" width="900" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <text x="90" y="1090" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Get</text>
+  <text x="90" y="1196" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#C9A84C" letter-spacing="-1" font-style="italic">hired.</text>
+  <text x="90" y="1272" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">PRO profiles. Direct client bookings.</text>
+  <text x="90" y="1302" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">No agency. No middleman. Just you.</text>
+  <rect x="90" y="1360" width="900" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <text x="90" y="1446" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#FFFFFF" letter-spacing="-1">Private</text>
+  <text x="90" y="1552" font-family="Georgia, serif" font-size="96" font-weight="400" fill="#C9A84C" letter-spacing="-1" font-style="italic">by design.</text>
+  <text x="90" y="1624" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">End-to-end encrypted messages.</text>
+  <text x="90" y="1654" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#FFFFFF" opacity="0.45">Even we can not read them.</text>
+  <rect x="90" y="1740" width="900" height="72" rx="36" fill="#C9A84C"/>
+  <text x="540" y="1800" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#050505" text-anchor="middle" letter-spacing="3">DOWNLOAD FREE — APP STORE</text>
+  <text x="540" y="1876" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#FFFFFF" text-anchor="middle" opacity="0.22" letter-spacing="4">@LENZLY</text>
+</svg>

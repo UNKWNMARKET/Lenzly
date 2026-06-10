@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#060606"/>
+  <!-- Top and bottom gold bars -->
+  <rect x="0" y="0" width="1080" height="4" fill="#C9A84C" opacity="0.8"/>
+  <rect x="0" y="1916" width="1080" height="4" fill="#C9A84C" opacity="0.8"/>
+  <!-- Concentric rings background -->
+  <circle cx="540" cy="500" r="420" fill="none" stroke="#C9A84C" stroke-width="0.8" opacity="0.06"/>
+  <circle cx="540" cy="500" r="340" fill="none" stroke="#C9A84C" stroke-width="0.8" opacity="0.08"/>
+  <circle cx="540" cy="500" r="260" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.10"/>
+  <circle cx="540" cy="500" r="180" fill="none" stroke="#C9A84C" stroke-width="1.2" opacity="0.14"/>
+  <circle cx="540" cy="500" r="100" fill="none" stroke="#C9A84C" stroke-width="1.5" opacity="0.20"/>
+  <!-- Crosshair -->
+  <line x1="540" y1="100" x2="540" y2="400" stroke="#C9A84C" stroke-width="0.8" opacity="0.15"/>
+  <line x1="540" y1="600" x2="540" y2="900" stroke="#C9A84C" stroke-width="0.8" opacity="0.15"/>
+  <line x1="140" y1="500" x2="440" y2="500" stroke="#C9A84C" stroke-width="0.8" opacity="0.15"/>
+  <line x1="640" y1="500" x2="940" y2="500" stroke="#C9A84C" stroke-width="0.8" opacity="0.15"/>
+  <circle cx="540" cy="500" r="5" fill="#C9A84C" opacity="0.9"/>
+  <!-- LENZLY label -->
+  <text x="540" y="196" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#C9A84C" text-anchor="middle" letter-spacing="7" opacity="0.7">LENZLY</text>
+  <!-- NOW LIVE headline -->
+  <text x="540" y="720" font-family="Georgia, serif" font-size="160" font-weight="400" fill="#FFFFFF" text-anchor="middle" letter-spacing="-4">NOW</text>
+  <text x="540" y="900" font-family="Georgia, serif" font-size="160" font-weight="400" fill="#C9A84C" text-anchor="middle" letter-spacing="-4" font-style="italic">LIVE.</text>
+  <!-- Divider -->
+  <rect x="140" y="950" width="800" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <!-- Feature pills -->
+  <rect x="140" y="990" width="800" height="72" rx="36" fill="#111111" stroke="#C9A84C" stroke-width="0.8" opacity="0.8"/>
+  <text x="540" y="1033" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" opacity="0.85">Community Discovered · Live Weather</text>
+  <rect x="140" y="1082" width="800" height="72" rx="36" fill="#111111" stroke="#C9A84C" stroke-width="0.8" opacity="0.8"/>
+  <text x="540" y="1125" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" opacity="0.85">PRO Profiles · Direct Bookings</text>
+  <rect x="140" y="1174" width="800" height="72" rx="36" fill="#111111" stroke="#C9A84C" stroke-width="0.8" opacity="0.8"/>
+  <text x="540" y="1217" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" opacity="0.85">End-to-End Encrypted Messages</text>
+  <rect x="140" y="1266" width="800" height="72" rx="36" fill="#111111" stroke="#C9A84C" stroke-width="0.8" opacity="0.8"/>
+  <text x="540" y="1309" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" opacity="0.85">Stories · Feed · Location Tags</text>
+  <!-- Sub copy -->
+  <text x="540" y="1430" font-family="Georgia, serif" font-size="28" fill="#FFFFFF" text-anchor="middle" opacity="0.55">Built for photographers.</text>
+  <text x="540" y="1472" font-family="Georgia, serif" font-size="28" fill="#FFFFFF" text-anchor="middle" opacity="0.40">Free. Always.</text>
+  <!-- CTA -->
+  <rect x="180" y="1540" width="720" height="90" rx="45" fill="#C9A84C"/>
+  <text x="540" y="1593" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#0A0A0A" text-anchor="middle" letter-spacing="3">DOWNLOAD FREE</text>
+  <text x="540" y="1688" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#FFFFFF" text-anchor="middle" opacity="0.28" letter-spacing="3">AVAILABLE ON THE APP STORE</text>
+  <text x="540" y="1760" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#C9A84C" text-anchor="middle" opacity="0.45" letter-spacing="5">@LENZLY</text>
+</svg>

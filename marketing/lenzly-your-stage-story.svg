@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#080808"/>
+  <!-- Film strip perforations left -->
+  <rect x="0" y="0" width="56" height="1920" fill="#0D0D0D"/>
+  <rect x="56" y="0" width="2" height="1920" fill="#C9A84C" opacity="0.15"/>
+  <rect x="10" y="60" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="120" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="180" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="240" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="300" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="360" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="420" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="480" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="540" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="600" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="660" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="720" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="780" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="840" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="900" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="960" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1020" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1080" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1140" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1200" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1260" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1320" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1380" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1440" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1500" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1560" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1620" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1680" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1740" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1800" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="10" y="1860" width="36" height="28" rx="4" fill="#000000"/>
+  <!-- Film strip perforations right -->
+  <rect x="1022" y="0" width="58" height="1920" fill="#0D0D0D"/>
+  <rect x="1022" y="0" width="2" height="1920" fill="#C9A84C" opacity="0.15"/>
+  <rect x="1034" y="60" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="120" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="180" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="240" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="300" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="360" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="420" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="480" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="540" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="600" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="660" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="720" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="780" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="840" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="900" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="960" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1020" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1080" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1140" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1200" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1260" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1320" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1380" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1440" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1500" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1560" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1620" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1680" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1740" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1800" width="36" height="28" rx="4" fill="#000000"/>
+  <rect x="1034" y="1860" width="36" height="28" rx="4" fill="#000000"/>
+  <!-- LENZLY top -->
+  <text x="540" y="168" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#C9A84C" text-anchor="middle" letter-spacing="8" opacity="0.65">LENZLY</text>
+  <!-- Headline -->
+  <text x="100" y="430" font-family="Georgia, serif" font-size="148" font-weight="400" fill="#FFFFFF" letter-spacing="-4">Your</text>
+  <text x="100" y="590" font-family="Georgia, serif" font-size="148" font-weight="400" fill="#C9A84C" letter-spacing="-4" font-style="italic">work.</text>
+  <text x="100" y="750" font-family="Georgia, serif" font-size="148" font-weight="400" fill="#FFFFFF" letter-spacing="-4">Your</text>
+  <text x="100" y="910" font-family="Georgia, serif" font-size="148" font-weight="400" fill="#C9A84C" letter-spacing="-4" font-style="italic">stage.</text>
+  <!-- Divider -->
+  <rect x="100" y="960" width="880" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <!-- Stats row -->
+  <text x="220" y="1040" font-family="Georgia, serif" font-size="48" font-weight="400" fill="#C9A84C" text-anchor="middle">Share</text>
+  <text x="220" y="1072" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#FFFFFF" text-anchor="middle" opacity="0.35" letter-spacing="3">YOUR SHOTS</text>
+  <text x="540" y="1040" font-family="Georgia, serif" font-size="48" font-weight="400" fill="#C9A84C" text-anchor="middle">Discover</text>
+  <text x="540" y="1072" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#FFFFFF" text-anchor="middle" opacity="0.35" letter-spacing="3">NEW SPOTS</text>
+  <text x="860" y="1040" font-family="Georgia, serif" font-size="48" font-weight="400" fill="#C9A84C" text-anchor="middle">Earn</text>
+  <text x="860" y="1072" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#FFFFFF" text-anchor="middle" opacity="0.35" letter-spacing="3">FROM YOUR CRAFT</text>
+  <!-- Divider -->
+  <rect x="100" y="1110" width="880" height="1" fill="#FFFFFF" opacity="0.07"/>
+  <!-- Quote block -->
+  <rect x="100" y="1140" width="4" height="140" fill="#C9A84C" opacity="0.6"/>
+  <text x="128" y="1192" font-family="Georgia, serif" font-size="26" fill="#FFFFFF" opacity="0.75">"The photography community</text>
+  <text x="128" y="1232" font-family="Georgia, serif" font-size="26" fill="#FFFFFF" opacity="0.75">you've been waiting for."</text>
+  <text x="128" y="1272" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#C9A84C" opacity="0.5" letter-spacing="2">— LENZLY</text>
+  <!-- CTA -->
+  <rect x="140" y="1380" width="800" height="88" rx="44" fill="#C9A84C"/>
+  <text x="540" y="1433" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#080808" text-anchor="middle" letter-spacing="3">DOWNLOAD FREE</text>
+  <text x="540" y="1540" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#FFFFFF" text-anchor="middle" opacity="0.25" letter-spacing="3">AVAILABLE ON THE APP STORE</text>
+  <text x="540" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#C9A84C" text-anchor="middle" opacity="0.40" letter-spacing="5">@LENZLY</text>
+</svg>

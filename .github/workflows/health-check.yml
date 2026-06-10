@@ -1,0 +1,142 @@
+name: LENZLY Daily Health Check
+
+on:
+  schedule:
+    # 6am UTC = 1am Eastern Time
+    - cron: '0 6 * * *'
+  workflow_dispatch: # allow manual trigger
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/health-check.yml'
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only run on push if it's a workflow file change; always run on schedule/dispatch
+    if: ${{ vars.SUPABASE_URL != '' || secrets.SUPABASE_URL != '' || github.event_name != 'push' }}
+
+    steps:
+      - name: Check secrets are configured
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
+            echo "::warning::SUPABASE_URL or SUPABASE_SERVICE_KEY secret not set — skipping health check"
+            echo "SKIP=true" >> $GITHUB_ENV
+          fi
+
+      - name: Run LENZLY Health Check
+        if: env.SKIP != 'true'
+        uses: actions/github-script@v7
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        with:
+          script: |
+            const SUPABASE_URL = process.env.SUPABASE_URL
+            const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY
+
+            const headers = {
+              'apikey': SERVICE_KEY,
+              'Authorization': `Bearer ${SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+            }
+
+            const issues = []
+            const fixes  = []
+            const info   = []
+
+            // ── 1. Check profiles table ──────────────────────────────────
+            const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count`, { headers })
+            const profileCount = profilesRes.ok ? (await profilesRes.json()).length : null
+            if (!profilesRes.ok) issues.push('Cannot reach profiles table')
+            info.push(`Total profiles: ${profileCount ?? 'ERROR'}`)
+
+            // ── 2. Check follows table ───────────────────────────────────
+            const followsRes = await fetch(`${SUPABASE_URL}/rest/v1/follows?select=count`, { headers })
+            const followCount = followsRes.ok ? (await followsRes.json()).length : null
+            if (!followsRes.ok) issues.push('Cannot reach follows table')
+            info.push(`Total follows: ${followCount ?? 'ERROR'}`)
+
+            // ── 3. Check posts table ─────────────────────────────────────
+            const postsRes = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=count`, { headers })
+            const postCount = postsRes.ok ? (await postsRes.json()).length : null
+            if (!postsRes.ok) issues.push('Cannot reach posts table')
+            info.push(`Total posts: ${postCount ?? 'ERROR'}`)
+
+            // ── 4. Recount follower/following/post counts (auto-fix) ─────
+            const recountRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recount_all_profile_stats`, {
+              method: 'POST',
+              headers,
+              body: '{}',
+            })
+            if (recountRes.ok) {
+              fixes.push('Recalculated all follower/following/post counts')
+            } else {
+              issues.push('recount_all_profile_stats failed — run supabase/feedback_and_health.sql')
+            }
+
+            // ── 5. Expire old spot stories ───────────────────────────────
+            const expireRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/spot_stories?expires_at=lt.${new Date().toISOString()}`,
+              { method: 'DELETE', headers }
+            )
+            if (expireRes.ok) fixes.push('Cleaned up expired spot stories')
+
+            // ── 6. Read unread feedback from users ───────────────────────
+            const feedbackRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/feedback?select=*&order=created_at.desc&limit=20&read=eq.false`,
+              { headers }
+            )
+            const feedback = feedbackRes.ok ? await feedbackRes.json() : []
+            info.push(`Unread user feedback: ${feedback.length}`)
+
+            // ── 7. Recent signups ────────────────────────────────────────
+            const recentUsersRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=id,created_at&order=created_at.desc&limit=10`,
+              { headers }
+            )
+            const recentUsers = recentUsersRes.ok ? await recentUsersRes.json() : []
+            info.push(`Recent signups (last 10): ${recentUsers.length}`)
+
+            // ── 8. Mark feedback as read ─────────────────────────────────
+            if (feedback.length > 0) {
+              const ids = feedback.map(f => f.id)
+              await fetch(`${SUPABASE_URL}/rest/v1/feedback?id=in.(${ids.join(',')})`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ read: true }),
+              })
+            }
+
+            // ── 9. Build report for GitHub Actions summary ───────────────
+            const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+            const status = issues.length > 0 ? '⚠️ Issues Detected' : '✅ All Systems Healthy'
+
+            const feedbackLines = feedback.length > 0
+              ? feedback.slice(0, 10).map(f => `- **[${f.type}]** ${f.message}`).join('\n')
+              : '_No new feedback_'
+
+            const summary = `
+# LENZLY Health Report — ${now}
+
+## ${status}
+
+### App Stats
+${info.map(i => `- ${i}`).join('\n')}
+
+### Auto-Fixes Applied
+${fixes.length > 0 ? fixes.map(f => `- ✓ ${f}`).join('\n') : '_None needed_'}
+
+${issues.length > 0 ? `### ⚠️ Issues\n${issues.map(i => `- ${i}`).join('\n')}` : ''}
+
+### User Feedback
+${feedbackLines}
+`
+            await core.summary.addRaw(summary).write()
+            console.log(summary)
+
+            // Fail the run if there are issues — GitHub will email you automatically
+            if (issues.length > 0) {
+              core.setFailed(`Health check found ${issues.length} issue(s): ${issues.join(', ')}`)
+            }

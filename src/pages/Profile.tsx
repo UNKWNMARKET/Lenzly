@@ -1,18 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Spinner from '@/components/Spinner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import {
   Settings, Grid3X3, Heart, Bookmark,
-  ExternalLink, MapPin, CheckCircle, Edit3, Camera,
+  ExternalLink, MapPin, Edit3, Camera,
   ChevronRight, Star, Building2, Share2, X,
-  ChevronLeft, MessageSquare
+  MessageSquare
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 import { formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from 'wouter'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { img } from '@/lib/image'
+
+const GRID_PAGE = 30
 
 type ProfileTab = 'posts' | 'liked' | 'saved'
 type ModalType = 'followers' | 'following' | 'photo' | 'reviews' | null
@@ -23,11 +31,125 @@ const savedPhotos = currentUser.photos.slice(3)
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts')
+  const [tabVisible, setTabVisible] = useState(true)
   const [modal, setModal] = useState<ModalType>(null)
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+
+  const switchTab = (tab: ProfileTab) => {
+    if (tab === activeTab) return
+    setTabVisible(false)
+    setTimeout(() => { setActiveTab(tab); setTabVisible(true) }, 150)
+  }
   const [, navigate] = useLocation()
-  const { profile, refreshProfile } = useAuth()
-  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile() } })
+  const { user, profile, refreshProfile } = useAuth()
+
+  type MyPost = {
+    id: string
+    image_url: string
+    likes_count: number
+    comments_count: number
+    caption: string | null
+    archived: boolean
+    created_at?: string
+  }
+
+  const [liveFollowers, setLiveFollowers] = useState<number | null>(null)
+  const [liveFollowing, setLiveFollowing] = useState<number | null>(null)
+  const [livePostCount, setLivePostCount] = useState<number | null>(null)
+
+  // The current user's own uploaded posts
+  const [myPosts, setMyPosts] = useState<MyPost[]>([])
+  const [savedPosts, setSavedPosts] = useState<MyPost[]>([])
+  const [likedPosts, setLikedPosts] = useState<MyPost[]>([])
+  const [myHasMore, setMyHasMore] = useState(false)
+  const [myLoadingMore, setMyLoadingMore] = useState(false)
+
+  const loadMyPosts = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('posts')
+      .select('id, image_url, likes_count, comments_count, caption, archived, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(GRID_PAGE)
+    if (data) setMyPosts(data.filter(p => p.image_url) as MyPost[])
+    setMyHasMore((data?.length ?? 0) === GRID_PAGE)
+  }, [user])
+
+  const loadMoreMyPosts = useCallback(async () => {
+    if (!user || myLoadingMore || myPosts.length === 0) return
+    setMyLoadingMore(true)
+    const oldest = (myPosts[myPosts.length - 1] as any).created_at
+    const { data } = await supabase
+      .from('posts')
+      .select('id, image_url, likes_count, comments_count, caption, archived, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .lt('created_at', oldest)
+      .limit(GRID_PAGE)
+    if (data && data.length > 0) {
+      setMyPosts(prev => {
+        const seen = new Set(prev.map(p => p.id))
+        return [...prev, ...data.filter(p => !seen.has(p.id) && p.image_url)] as MyPost[]
+      })
+    }
+    setMyHasMore((data?.length ?? 0) === GRID_PAGE)
+    setMyLoadingMore(false)
+  }, [user, myLoadingMore, myPosts])
+
+  const gridSentinelRef = useInfiniteScroll(loadMoreMyPosts, { hasMore: myHasMore, loading: myLoadingMore })
+
+  const loadSavedPosts = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('saved_posts')
+      .select('post_id, posts(id, image_url, likes_count, comments_count, caption, archived)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) {
+      const posts = data.map((r: any) => r.posts).filter(Boolean) as MyPost[]
+      setSavedPosts(posts.filter(p => p.image_url))
+    }
+  }, [user])
+
+  const loadLikedPosts = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('post_likes')
+      .select('post_id, posts(id, image_url, likes_count, comments_count, caption, archived)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) {
+      const posts = data.map((r: any) => r.posts).filter(Boolean) as MyPost[]
+      setLikedPosts(posts.filter(p => p.image_url))
+    }
+  }, [user])
+
+  useEffect(() => { loadMyPosts(); loadSavedPosts(); loadLikedPosts() }, [loadMyPosts, loadSavedPosts, loadLikedPosts])
+
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase.channel('profile_counts')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'profiles',
+        filter: `id=eq.${user.id}`
+      }, (payload) => {
+        const row = payload.new as any
+        if (row.followers_count !== undefined) setLiveFollowers(row.followers_count)
+        if (row.following_count !== undefined) setLiveFollowing(row.following_count)
+      })
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'posts',
+        filter: `user_id=eq.${user.id}`
+      }, () => { setLivePostCount(prev => (prev ?? myPosts.length) + 1) })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'posts',
+        filter: `user_id=eq.${user.id}`
+      }, () => { setLivePostCount(prev => Math.max(0, (prev ?? myPosts.length) - 1)) })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user])
+
+  const ptr = usePullToRefresh({ onRefresh: async () => { await refreshProfile(); await loadMyPosts(); await loadSavedPosts(); await loadLikedPosts() } })
 
   // Merge real Supabase profile data over mock for the fields that users can edit.
   // Everything else (photos grid, cover, rating, etc.) falls back to mock data
@@ -39,8 +161,8 @@ export default function Profile() {
   const u = {
     // Static mock fields used only as shape — real values override everything below
     ...currentUser,
-    name:        profile?.name       ?? currentUser.name,
-    username:    profile?.username   ?? currentUser.username,
+    name:        profile?.name       ?? (hasRealProfile ? '' : currentUser.name),
+    username:    profile?.username   ?? (hasRealProfile ? '' : currentUser.username),
     bio:         profile?.bio        ?? (hasRealProfile ? '' : currentUser.bio),
     location:    profile?.location   ?? (hasRealProfile ? null : currentUser.location),
     website:     profile?.website    ?? null,
@@ -49,18 +171,18 @@ export default function Profile() {
     avatar:      profile?.avatar_url  ?? null,
     coverPhoto:  profile?.cover_url   ?? (hasRealProfile ? null : currentUser.coverPhoto),
     // Real counts or zero — never mock numbers
-    followers:   profile?.followers_count ?? 0,
-    following:   profile?.following_count ?? 0,
-    posts:       profile?.posts_count     ?? 0,
+    followers:   liveFollowers ?? profile?.followers_count ?? 0,
+    following:   liveFollowing ?? profile?.following_count ?? 0,
+    posts:       livePostCount ?? (hasRealProfile ? myPosts.length : currentUser.posts),
     pro:         profile?.is_pro          ?? false,
     // These only come from real data — new profiles show nothing
     photos:      hasRealProfile ? [] : currentUser.photos,
     hired:       hasRealProfile ? 0  : currentUser.hired,
     rating:      hasRealProfile ? 0  : currentUser.rating,
     verified:    hasRealProfile ? false : currentUser.verified,
-    secondShooter: hasRealProfile ? false : currentUser.secondShooter,
-    available:   hasRealProfile ? false : currentUser.available,
-    priceRange:  hasRealProfile ? ''  : currentUser.priceRange,
+    secondShooter: profile?.second_shooter ?? (hasRealProfile ? false : currentUser.secondShooter),
+    available:   profile?.available ?? (hasRealProfile ? false : currentUser.available),
+    priceRange:  profile?.price_range ?? (hasRealProfile ? '' : currentUser.priceRange),
   }
 
   const tabs: { key: ProfileTab; icon: typeof Grid3X3; label: string }[] = [
@@ -70,42 +192,46 @@ export default function Profile() {
   ]
 
   const tabPhotos = {
-    posts:  u.photos,                              // real uploads (empty for new users)
-    liked:  hasRealProfile ? [] : likedPhotos,     // blank until real likes are tracked
-    saved:  hasRealProfile ? [] : savedPhotos,     // blank until real saves are tracked
+    posts:  u.photos,
+    liked:  likedPosts,
+    saved:  savedPosts,
   }
 
   const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
+    const profileUrl = `https://lenzly.app/@${u.username}`
+    const shareText = u.bio
+      ? `Check out ${u.name}'s photography on LENZLY`
+      : `Check out @${u.username} on LENZLY`
+
+    try {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({
         title: `${u.name} on LENZLY`,
-        text: u.bio,
-        url: window.location.href,
+        text: shareText,
+        url: profileUrl,
+        dialogTitle: 'Share Profile',
       })
-    } else {
-      await navigator.clipboard.writeText(window.location.href)
-      alert('Profile link copied!')
+    } catch {
+      // fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(profileUrl)
+        toast.success('Profile link copied!')
+      } catch {
+        toast.success(`lenzly.app/@${u.username}`)
+      }
     }
   }
 
-  const openPhoto = (src: string) => {
-    setSelectedPhoto(src)
-    setModal('photo')
-  }
-
-  const closeModal = () => {
-    setModal(null)
-    setSelectedPhoto(null)
-  }
+  const closeModal = () => setModal(null)
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
-    <div className="min-h-full pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Cover photo */}
       <div className="relative h-48 overflow-hidden bg-lenz-card">
         {u.coverPhoto
-          ? <img src={u.coverPhoto} alt="cover" className="w-full h-full object-cover" />
-          : <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#0a0804]" />
+          ? <img src={img.hero(u.coverPhoto)} alt="cover" className="w-full h-full object-cover" />
+          : <div className="w-full h-full bg-gradient-to-br from-[#1a1408] via-[#0e0e0e] to-[#0a0a0a]" />
         }
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-lenz-bg" />
 
@@ -137,7 +263,7 @@ export default function Profile() {
           <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
             <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
               {u.avatar
-                ? <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
                     {u.name.charAt(0).toUpperCase()}
                   </div>
@@ -174,7 +300,7 @@ export default function Profile() {
         <div className="mt-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-white">{u.name}</h2>
-            {u.verified && <CheckCircle size={16} className="text-gold fill-gold/20" />}
+            {u.verified && <VerifiedBadge size={15} />}
             {u.pro && (
               <span className="text-[10px] font-bold tracking-widest text-lenz-bg bg-gold px-2 py-0.5 rounded-full">PRO</span>
             )}
@@ -283,7 +409,7 @@ export default function Profile() {
         {tabs.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => switchTab(key)}
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium tracking-wide uppercase border-b-2 transition-all',
               activeTab === key
@@ -298,25 +424,97 @@ export default function Profile() {
       </div>
 
       {/* Photo Grid */}
-      {tabPhotos[activeTab].length > 0 ? (
-        <div className="grid grid-cols-3 gap-0.5 mt-0.5">
-          {tabPhotos[activeTab].map((photo, i) => (
+      <div style={{ opacity: tabVisible ? 1 : 0, transition: 'opacity 0.15s ease' }}>
+      {activeTab === 'posts' && hasRealProfile ? (
+        myPosts.length > 0 ? (
+          <>
+          <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
+            {myPosts.map(post => (
+              <button
+                key={post.id}
+                onClick={() => navigate(`/post/${post.id}`)}
+                className="relative overflow-hidden aspect-square group bg-lenz-card active:scale-95 transition-transform duration-150"
+              >
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-active:opacity-100 transition-opacity duration-150" />
+                <div className="absolute bottom-1.5 left-2 flex items-center gap-1 opacity-0 group-active:opacity-100 transition-opacity duration-150">
+                  <Heart size={11} className="text-white fill-white" />
+                  <span className="text-[10px] text-white font-semibold">{post.likes_count ?? 0}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          {myHasMore && (
+            <div ref={gridSentinelRef} className="py-6 flex items-center justify-center">
+              {myLoadingMore && <Spinner size="sm" />}
+            </div>
+          )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Camera size={32} className="text-white/10 mb-3" />
+            <p className="text-sm text-white/25">No posts yet</p>
             <button
-              key={i}
-              onClick={() => openPhoto(photo)}
-              className="photo-grid-item relative group overflow-hidden"
+              onClick={() => navigate('/upload')}
+              className="mt-4 text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
             >
-              <img src={photo} alt="" loading="lazy" className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              Share your first photo
             </button>
-          ))}
-        </div>
+          </div>
+        )
+      ) : activeTab === 'liked' ? (
+        likedPosts.length > 0 ? (
+          <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
+            {likedPosts.map(post => (
+              <button
+                key={post.id}
+                onClick={() => navigate(`/post/${post.id}`)}
+                className="relative overflow-hidden aspect-square group bg-lenz-card"
+              >
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Heart size={11} className="text-red-500 fill-red-500" />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Heart size={32} className="text-white/10 mb-3" />
+            <p className="text-sm text-white/25">Photos you like will appear here</p>
+          </div>
+        )
+      ) : activeTab === 'saved' ? (
+        savedPosts.length > 0 ? (
+          <div className="grid grid-cols-3 gap-[1px] mt-[1px]">
+            {savedPosts.map(post => (
+              <button
+                key={post.id}
+                onClick={() => navigate(`/post/${post.id}`)}
+                className="relative overflow-hidden aspect-square group bg-lenz-card"
+              >
+                <img src={img.thumb(post.image_url)} alt="" loading="lazy" className="w-full h-full object-cover group-active:opacity-80 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Bookmark size={11} className="text-gold fill-gold" />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Bookmark size={32} className="text-white/10 mb-3" />
+            <p className="text-sm text-white/25">Saved posts will appear here</p>
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Camera size={32} className="text-white/10 mb-3" />
           <p className="text-sm text-white/25">No photos yet</p>
         </div>
       )}
+      </div>
 
       {/* Upgrade to Pro CTA (if not pro) */}
       {!u.pro && (
@@ -337,29 +535,12 @@ export default function Profile() {
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
 
-      {/* Photo Viewer Modal */}
-      {modal === 'photo' && selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={closeModal}>
-          <button
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-            onClick={closeModal}
-          >
-            <X size={20} className="text-white" />
-          </button>
-          <img
-            src={selectedPhoto.replace('w=400', 'w=800')}
-            alt=""
-            className="max-w-full max-h-full object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
-      )}
-
       {/* Followers Modal */}
       {modal === 'followers' && (
         <PeopleModal
           title={`Followers · ${formatCount(u.followers)}`}
-          people={photographers.slice(0, 8)}
+          userId={user?.id ?? ''}
+          type="followers"
           onClose={closeModal}
         />
       )}
@@ -368,7 +549,8 @@ export default function Profile() {
       {modal === 'following' && (
         <PeopleModal
           title={`Following · ${u.following}`}
-          people={photographers.slice(0, 6)}
+          userId={user?.id ?? ''}
+          type="following"
           onClose={closeModal}
         />
       )}
@@ -383,43 +565,76 @@ export default function Profile() {
 }
 
 // ── People Modal ──────────────────────────────────────────────────────────────
-function PeopleModal({ title, people, onClose }: {
+type RealPerson = { id: string; username: string | null; name: string | null; avatar_url: string | null; is_pro?: boolean }
+
+function PeopleModal({ title, userId, type, onClose }: {
   title: string
-  people: typeof photographers
+  userId: string
+  type: 'followers' | 'following'
   onClose: () => void
 }) {
+  const [people, setPeople] = useState<RealPerson[]>([])
+  const [loading, setLoading] = useState(true)
+  const [, navigate] = useLocation()
+
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+      if (type === 'followers') {
+        // People who follow userId
+        const { data } = await supabase
+          .from('follows').select('follower_id').eq('following_id', userId).eq('status', 'accepted')
+        const ids = (data ?? []).map((r: any) => r.follower_id)
+        if (ids.length === 0) { setPeople([]); setLoading(false); return }
+        const { data: profiles } = await supabase.from('profiles').select('id, username, name, avatar_url, is_pro').in('id', ids)
+        setPeople((profiles ?? []) as RealPerson[])
+      } else {
+        // People userId follows
+        const { data } = await supabase
+          .from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted')
+        const ids = (data ?? []).map((r: any) => r.following_id)
+        if (ids.length === 0) { setPeople([]); setLoading(false); return }
+        const { data: profiles } = await supabase.from('profiles').select('id, username, name, avatar_url, is_pro').in('id', ids)
+        setPeople((profiles ?? []) as RealPerson[])
+      }
+      setLoading(false)
+    })()
+  }, [userId, type])
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
-      <div
-        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Handle */}
+      <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-lenz-border">
           <h3 className="text-sm font-bold text-white tracking-wide">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
             <X size={16} className="text-white/60" />
           </button>
         </div>
-        <div className="overflow-y-auto max-h-[60vh] pb-6">
-          {people.map(p => (
-            <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 hover:bg-white/3 transition-colors">
-              <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border">
-                <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+        <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Spinner size="sm" />
+            </div>
+          ) : people.length === 0 ? (
+            <p className="text-center text-white/30 text-sm py-10">No one here yet</p>
+          ) : people.map(p => (
+            <button key={p.id}
+              onClick={() => { onClose(); navigate(`/photographer/${p.id}`) }}
+              className="w-full flex items-center gap-3 px-4 py-3 border-b border-lenz-border/50 active:bg-white/5 transition-colors text-left">
+              <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-lenz-border bg-lenz-card">
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-white/30 font-bold">{(p.name || p.username || '?')[0].toUpperCase()}</div>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold text-white truncate">{p.name}</p>
-                  {p.pro && (
-                    <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-                  )}
+                  <p className="text-sm font-semibold text-white truncate">{p.name || p.username}</p>
+                  {p.is_pro && <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>}
                 </div>
-                <p className="text-xs text-white/40 truncate">@{p.username} · {p.location}</p>
+                <p className="text-xs text-white/40 truncate">@{p.username}</p>
               </div>
-              <button className="text-xs font-semibold text-gold border border-gold/30 px-3 py-1.5 rounded-full hover:bg-gold/10 transition-colors shrink-0">
-                Follow
-              </button>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -444,7 +659,7 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end" onClick={onClose}>
       <div
-        className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
+        className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-2xl border-t border-lenz-border"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -470,7 +685,7 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
         </div>
 
         {/* Reviews list */}
-        <div className="overflow-y-auto max-h-[60vh] pb-6">
+        <div className="overflow-y-auto max-h-[65vh]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 90px, 100px)' }}>
           {mockReviews.map(r => (
             <div key={r.id} className="px-4 py-4 border-b border-lenz-border/50">
               <div className="flex items-start gap-3">

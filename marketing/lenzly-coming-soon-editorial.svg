@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#070707"/>
+  <!-- Diagonal gold slash lines background -->
+  <line x1="0" y1="200" x2="280" y2="0" stroke="#C9A84C" stroke-width="1" opacity="0.10"/>
+  <line x1="0" y1="350" x2="430" y2="0" stroke="#C9A84C" stroke-width="0.6" opacity="0.06"/>
+  <line x1="800" y1="1080" x2="1080" y2="780" stroke="#C9A84C" stroke-width="1" opacity="0.10"/>
+  <line x1="650" y1="1080" x2="1080" y2="630" stroke="#C9A84C" stroke-width="0.6" opacity="0.06"/>
+  <!-- L-shaped gold bars top-left -->
+  <rect x="80" y="80" width="3" height="180" fill="#C9A84C" opacity="0.7"/>
+  <rect x="80" y="80" width="120" height="3" fill="#C9A84C" opacity="0.7"/>
+  <!-- Main headline -->
+  <text x="80" y="360" font-family="Georgia, serif" font-size="130" font-weight="400" fill="#FFFFFF" letter-spacing="-3">The app</text>
+  <text x="80" y="510" font-family="Georgia, serif" font-size="130" font-weight="400" fill="#FFFFFF" letter-spacing="-3">you've</text>
+  <text x="80" y="660" font-family="Georgia, serif" font-size="130" font-weight="400" fill="#C9A84C" letter-spacing="-3" font-style="italic">waited</text>
+  <text x="80" y="810" font-family="Georgia, serif" font-size="130" font-weight="400" fill="#C9A84C" letter-spacing="-3" font-style="italic">for.</text>
+  <!-- Divider line -->
+  <rect x="80" y="856" width="600" height="1" fill="#FFFFFF" opacity="0.08"/>
+  <!-- Available now pill -->
+  <rect x="80" y="880" width="220" height="52" rx="26" fill="#C9A84C"/>
+  <text x="190" y="913" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#060606" text-anchor="middle" letter-spacing="3">AVAILABLE NOW</text>
+  <!-- App store sub-label -->
+  <text x="320" y="913" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFFFFF" opacity="0.30" letter-spacing="1">App Store · Free</text>
+  <!-- LENZLY bottom right -->
+  <text x="1000" y="990" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="end" letter-spacing="8" opacity="0.5">LENZLY</text>
+</svg>

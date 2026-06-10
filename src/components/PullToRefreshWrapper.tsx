@@ -1,4 +1,5 @@
 import { RefObject } from 'react'
+import Spinner from './Spinner'
 
 interface Props {
   scrollRef: RefObject<HTMLDivElement>
@@ -50,7 +51,7 @@ export default function PullToRefreshWrapper({
             className="flex flex-col items-center gap-1"
           >
             {refreshing ? (
-              <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              <Spinner size="sm" />
             ) : (
               <svg
                 width="20" height="20" viewBox="0 0 20 20" fill="none"

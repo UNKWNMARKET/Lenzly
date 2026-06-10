@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle, MapPin, Star, Camera, X } from 'lucide-react'
+import { MapPin, Star, Camera, X } from 'lucide-react'
+import VerifiedBadge from './VerifiedBadge'
 import { formatCount } from '@/lib/utils'
 import { useLocation } from 'wouter'
 import { toast } from 'sonner'
@@ -25,7 +26,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
     await new Promise(r => setTimeout(r, 800))
     setSending(false)
     setSent(true)
-    toast.success(`Hire request sent to ${p.name.split(' ')[0]}!`)
+    toast.success(`Hire request sent to ${p.name}!`)
   }
 
   return (
@@ -52,7 +53,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                 onClick={() => navigate(`/photographer/${p.id}`)}
               >
                 <span className="font-semibold text-white text-sm truncate">{p.name}</span>
-                {p.verified && <CheckCircle size={13} className="text-gold fill-gold/20 shrink-0" />}
+                {p.verified && <VerifiedBadge size={12} />}
                 {p.pro && (
                   <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
                 )}
@@ -86,29 +87,46 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
         {!compact && (
           <>
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-lenz-border">
-              <div className="text-center">
-                <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+            {(p as any).isReal ? (
+              <div className="flex gap-6 mt-4 pt-3 border-t border-lenz-border">
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{(p as any).posts ?? 0}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Posts</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-white">{p.hired}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Hired</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-lenz-border">
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{formatCount(p.followers)}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Followers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">{p.hired}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Hired</p>
+                </div>
+                {p.priceRange && (
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-gold">{p.priceRange.split('–')[0]}</p>
+                    <p className="text-[10px] text-white/30 mt-0.5">Starting</p>
+                  </div>
+                )}
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-gold">{p.priceRange.split('–')[0]}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Starting</p>
-              </div>
-            </div>
+            )}
 
             {/* Mini photo grid */}
-            <div className="grid grid-cols-3 gap-1 mt-3">
-              {p.photos.slice(0, 3).map((photo, i) => (
-                <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
-                  <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-            </div>
+            {p.photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-1 mt-3">
+                {p.photos.slice(0, 3).map((photo, i) => (
+                  <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
+                    <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2 mt-3">
@@ -116,7 +134,7 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                 onClick={() => setShowHire(true)}
                 className="flex-1 btn-primary text-xs py-2"
               >
-                Hire {p.name.split(' ')[0]}
+                Hire
               </button>
               <button
                 onClick={() => navigate(`/photographer/${p.id}`)}
@@ -135,10 +153,10 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
           className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-sm"
           onClick={e => e.target === e.currentTarget && setShowHire(false)}
         >
-          <div className="w-full max-w-[430px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-bg rounded-t-3xl border-t border-lenz-border pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">
-                {sent ? '✓ Request Sent!' : `Hire ${p.name.split(' ')[0]}`}
+                {sent ? '✓ Request Sent!' : 'Hire'}
               </h2>
               <button onClick={() => { setShowHire(false); setSent(false) }} className="p-1.5 rounded-full bg-white/5">
                 <X size={16} className="text-white/50" />
@@ -167,7 +185,9 @@ export default function PhotographerCard({ photographer: p, compact = false }: P
                     <p className="text-sm font-semibold text-white">{p.name}</p>
                     <div className="flex items-center gap-1">
                       <Star size={10} className="text-gold fill-gold" />
-                      <span className="text-xs text-white/40">{p.rating} · {p.priceRange}</span>
+                      <span className="text-xs text-white/40">
+                        {(p as any).rating > 0 ? `${(p as any).rating} · ` : ''}{(p as any).priceRange || 'Rate on request'}
+                      </span>
                     </div>
                   </div>
                 </div>

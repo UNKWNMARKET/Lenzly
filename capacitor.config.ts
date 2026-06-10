@@ -5,9 +5,10 @@ const config: CapacitorConfig = {
   appName: 'LENZLY',
   webDir: 'dist',
   ios: {
-    contentInset: 'automatic',
+    contentInset: 'never',
     backgroundColor: '#080808',
-    preferredContentMode: 'mobile',
+    preferredContentMode: 'recommended',
+    scrollEnabled: false,
   },
   server: {
     // In production build, use the bundled web assets (not a remote URL)
@@ -21,8 +22,9 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
     StatusBar: {
-      style: 'dark',
-      backgroundColor: '#080808',
+      style: 'LIGHT',
+      overlaysWebView: true,
+      backgroundColor: '#00000000',
     },
   },
 };

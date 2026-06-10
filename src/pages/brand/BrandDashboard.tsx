@@ -1,175 +1,136 @@
-import { useState } from 'react'
-import { Building2, LogOut, Camera, MapPin, Star, CheckCircle, Search, Filter, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
+import { Building2, Search, Bookmark, Send, LogOut, ChevronRight, Users } from 'lucide-react'
 import { useBrandAuth } from '@/contexts/BrandAuthContext'
-import { photographers } from '@/data/mockData'
 
-const SPECIALTIES = ['All', 'Editorial', 'Commercial', 'Fashion', 'Events', 'Product', 'Campaign']
+interface HireRequest {
+  id: string
+  photographerId: string
+  status: 'pending' | 'cancelled'
+  createdAt: string
+  photographer?: { name: string; avatar_url: string | null }
+}
 
 export default function BrandDashboard() {
-  const { brand, logout } = useBrandAuth()
+  const { brand, logout, api } = useBrandAuth()
   const [, navigate] = useLocation()
-  const [search, setSearch] = useState('')
-  const [specialty, setSpecialty] = useState('All')
+  const [recentRequests, setRecentRequests] = useState<HireRequest[]>([])
+  const [shortlistCount, setShortlistCount] = useState(0)
 
-  if (!brand) {
-    navigate('/brand/login')
-    return null
-  }
-
-  const filtered = photographers
-    .filter(p => p.pro)
-    .filter(p => {
-      const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.city.toLowerCase().includes(search.toLowerCase())
-      const matchesSpecialty = specialty === 'All' || p.specialty.some(s => s.toLowerCase().includes(specialty.toLowerCase()))
-      return matchesSearch && matchesSpecialty
-    })
+  useEffect(() => {
+    api('/hire-requests').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setRecentRequests(data.slice(0, 3))
+    }).catch(() => {})
+    api('/shortlist').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setShortlistCount(data.length)
+    }).catch(() => {})
+  }, [])
 
   function handleLogout() {
     logout()
-    navigate('/brand/login')
+    navigate('/brand-portal/login')
   }
 
+  const stats = [
+    { label: 'Shortlisted', value: shortlistCount, icon: Bookmark, action: () => navigate('/brand-portal/shortlist') },
+    { label: 'Hire Requests', value: recentRequests.length, icon: Send, action: () => navigate('/brand-portal/requests') },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#050505] pb-10">
+    <div className="min-h-screen bg-[#060606]">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#080808]/90 backdrop-blur-xl border-b border-[#1a1a1a] px-4 py-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C9A84C] to-[#A88A35] flex items-center justify-center">
-              <Building2 size={18} className="text-[#080808]" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white leading-none">{brand.company}</p>
-              <p className="text-[10px] text-white/30 mt-0.5 leading-none">Brand Portal</p>
-            </div>
+      <header className="sticky top-0 z-40 bg-[#060606]/90 backdrop-blur border-b border-[#1A1A1A] px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center">
+            <Building2 size={15} className="text-[#C9A84C]" />
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-xs text-white/30 hover:text-red-400 transition-colors"
-          >
-            <LogOut size={14} />
-            Sign Out
-          </button>
+          <div>
+            <p className="text-xs font-bold text-white tracking-widest">LENZLY</p>
+            <p className="text-[10px] text-[#C9A84C]/60 tracking-wider">BRAND PORTAL</p>
+          </div>
         </div>
+        <button onClick={handleLogout} className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors">
+          <LogOut size={14} />
+          Sign out
+        </button>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
-        {/* Welcome banner */}
-        <div className="rounded-2xl bg-gradient-to-r from-[#C9A84C]/10 to-transparent border border-[#C9A84C]/15 p-5">
-          <p className="text-[10px] font-bold text-[#C9A84C]/60 tracking-widest uppercase mb-1">Welcome back</p>
-          <h2 className="text-xl font-bold text-white">{brand.company}</h2>
-          <p className="text-xs text-white/40 mt-1">
-            Browse and connect with our verified photographer talent network.
-          </p>
+      <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+        {/* Welcome */}
+        <div>
+          <p className="text-xs text-[#C9A84C]/60 tracking-widest uppercase mb-1">Welcome back</p>
+          <h1 className="text-2xl font-bold text-white">{brand?.company}</h1>
+          <p className="text-sm text-white/40 mt-1">{brand?.email}</p>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Pro Photographers', value: photographers.filter(p => p.pro).length },
-            { label: 'Avg. Rating', value: '4.8★' },
-            { label: 'Avg. Response', value: '< 2h' },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-3 text-center">
-              <p className="text-lg font-bold text-[#C9A84C]">{value}</p>
-              <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{label}</p>
-            </div>
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 gap-4">
+          {stats.map(({ label, value, icon: Icon, action }) => (
+            <button key={label} onClick={action} className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl p-5 text-left hover:border-[#C9A84C]/20 transition-colors group">
+              <Icon size={20} className="text-[#C9A84C] mb-3" />
+              <p className="text-2xl font-bold text-white">{value}</p>
+              <p className="text-xs text-white/40 mt-0.5">{label}</p>
+              <div className="flex items-center gap-1 mt-3 text-[10px] text-[#C9A84C]/50 group-hover:text-[#C9A84C]/80 transition-colors">
+                View all <ChevronRight size={10} />
+              </div>
+            </button>
           ))}
         </div>
 
-        {/* Search & filter */}
-        <div className="space-y-3">
-          <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-            <input
-              type="text"
-              placeholder="Search by name or city..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#111] border border-[#1e1e1e] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A84C]/50 transition-colors"
-            />
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {SPECIALTIES.map(s => (
-              <button
-                key={s}
-                onClick={() => setSpecialty(s)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  specialty === s
-                    ? 'bg-[#C9A84C]/15 text-[#C9A84C] border border-[#C9A84C]/25'
-                    : 'text-white/40 bg-[#111] border border-[#1e1e1e] hover:text-white/60'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+        {/* Quick actions */}
+        <div className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl overflow-hidden">
+          <p className="text-[10px] text-white/30 tracking-widest uppercase px-5 pt-4 pb-2">Quick actions</p>
+          {[
+            { icon: Search, label: 'Discover Photographers', sub: 'Search and filter PRO talent', path: '/brand-portal/search' },
+            { icon: Bookmark, label: 'My Shortlist', sub: `${shortlistCount} photographer${shortlistCount !== 1 ? 's' : ''} saved`, path: '/brand-portal/shortlist' },
+            { icon: Send, label: 'Hire Requests', sub: `${recentRequests.length} total request${recentRequests.length !== 1 ? 's' : ''}`, path: '/brand-portal/requests' },
+            { icon: Users, label: 'Account Settings', sub: 'Change password', path: '/brand-portal/settings' },
+          ].map(({ icon: Icon, label, sub, path }) => (
+            <button
+              key={label}
+              onClick={() => navigate(path)}
+              className="w-full flex items-center gap-4 px-5 py-4 border-b border-[#141414] last:border-0 hover:bg-white/[0.03] transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                <Icon size={16} className="text-white/50" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-white">{label}</p>
+                <p className="text-xs text-white/30 mt-0.5">{sub}</p>
+              </div>
+              <ChevronRight size={14} className="text-white/20 group-hover:text-white/40 transition-colors" />
+            </button>
+          ))}
         </div>
 
-        {/* Photographer list */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-white/50 tracking-wider uppercase">
-              {filtered.length} Photographers
-            </p>
-            <button className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60">
-              <Filter size={11} />
-              Filter
-            </button>
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="text-center py-12 text-white/30 text-sm">No photographers found</div>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map(p => (
-                <div key={p.id} className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-4 hover:border-[#C9A84C]/20 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#C9A84C]/30 shrink-0">
-                      <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-white">{p.name}</span>
-                        <CheckCircle size={13} className="text-[#C9A84C]" />
-                        <span className="text-[9px] font-bold text-[#080808] bg-[#C9A84C] px-1.5 py-0.5 rounded-full">PRO</span>
-                      </div>
-                      <p className="text-[11px] text-white/40 mt-0.5">{p.specialty.join(' · ')}</p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <div className="flex items-center gap-0.5">
-                          <Star size={10} className="text-[#C9A84C] fill-[#C9A84C]" />
-                          <span className="text-xs text-white/60">{p.rating}</span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          <Camera size={10} className="text-white/30" />
-                          <span className="text-xs text-white/40">{p.hired} hired</span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          <MapPin size={10} className="text-white/30" />
-                          <span className="text-xs text-white/40">{p.city}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/20 text-[#C9A84C] text-xs font-semibold hover:bg-[#C9A84C]/20 transition-all">
-                      Hire
-                      <ChevronRight size={12} />
-                    </button>
+        {/* Recent hire requests */}
+        {recentRequests.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white/50 tracking-wider uppercase">Recent Requests</p>
+              <button onClick={() => navigate('/brand-portal/requests')} className="text-[11px] text-[#C9A84C] font-medium">View all</button>
+            </div>
+            <div className="space-y-2">
+              {recentRequests.map(r => (
+                <div key={r.id} className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white/5 overflow-hidden shrink-0">
+                    {r.photographer?.avatar_url
+                      ? <img src={r.photographer.avatar_url} className="w-full h-full object-cover" alt="" />
+                      : <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">{r.photographer?.name?.[0] ?? '?'}</div>
+                    }
                   </div>
-
-                  <div className="grid grid-cols-4 gap-1 mt-3">
-                    {p.photos.slice(0, 4).map((photo, i) => (
-                      <div key={i} className="aspect-square rounded-md overflow-hidden bg-[#1a1a1a]">
-                        <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      </div>
-                    ))}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{r.photographer?.name ?? 'Photographer'}</p>
+                    <p className="text-xs text-white/30">{new Date(r.createdAt).toLocaleDateString()}</p>
                   </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                    r.status === 'pending' ? 'bg-yellow-950/40 text-yellow-400' : 'bg-white/5 text-white/30'
+                  }`}>{r.status}</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

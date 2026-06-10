@@ -1,49 +1,146 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Bell, MessageCircle } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Bell, MessageCircle, Search, Clock } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
-import PostCard from '@/components/PostCard'
+import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 import BusinessBanner from '@/components/BusinessBanner'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import AppLogo from '@/components/AppLogo'
-import { posts as mockPosts } from '@/data/mockData'
 import { supabase, Post } from '@/lib/supabase'
+import Spinner from '@/components/Spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { useBlockedUsers } from '@/hooks/useBlockedUsers'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+
+const PAGE_SIZE = 20
 
 export default function Home() {
   const [, navigate] = useLocation()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [realPosts, setRealPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [activeStoryUserIds, setActiveStoryUserIds] = useState<Set<string>>(new Set())
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
+  const [feedTab, setFeedTab] = useState<'foryou' | 'following'>('foryou')
+  const swipeStartX = useRef(0)
+  const swipeStartY = useRef(0)
+  const [swipeOpacity, setSwipeOpacity] = useState(1)
+  const isSwiping = useRef(false)
+  const edgeSwipeStartX = useRef(0)
+  const edgeSwipeActive = useRef(false)
+  const [cameraSwipeX, setCameraSwipeX] = useState(0)
+  const [followingIds, setFollowingIds] = useState<string[]>([])
+  const { blockedIds } = useBlockedUsers()
 
+  // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
-    const { data } = await supabase
-      .from('posts')
-      .select('*, profiles(*)')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    if (data && data.length > 0) setRealPosts(data)
-    setLoading(false)
+    setLoading(true)
+    try {
+      // Fetch posts without profiles join (user_id → auth.users, not profiles)
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE)
+      if (error) { console.error('[Feed] fetchPosts error:', error.message, error.code); setLoading(false); return }
+      if (!postsData || postsData.length === 0) { setRealPosts([]); setLoading(false); return }
+
+      // Fetch profiles for these posts separately
+      const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+        .in('id', userIds)
+      const profileMap: Record<string, any> = {}
+      for (const p of profilesData ?? []) profileMap[p.id] = p
+
+      // Merge profiles onto posts
+      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      setRealPosts(merged)
+      setHasMore(postsData.length === PAGE_SIZE)
+
+      // Batch check which post authors have active stories
+      const { data: storyRows } = await supabase
+        .from('spot_stories').select('user_id')
+        .in('user_id', userIds).gt('expires_at', new Date().toISOString())
+      setActiveStoryUserIds(new Set((storyRows ?? []).map((r: any) => r.user_id)))
+    } catch (err) {
+      console.error('[Feed] fetchPosts threw:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  // Load the next page using the oldest loaded post's created_at as the cursor
+  const loadMore = useCallback(async () => {
+    if (loadingMore || realPosts.length === 0) return
+    setLoadingMore(true)
+    const oldest = realPosts[realPosts.length - 1].created_at
+    const { data: postsData } = await supabase
+      .from('posts').select('*')
+      .order('created_at', { ascending: false })
+      .lt('created_at', oldest).limit(PAGE_SIZE)
+    if (postsData && postsData.length > 0) {
+      const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account').in('id', userIds)
+      const profileMap: Record<string, any> = {}
+      for (const p of profilesData ?? []) profileMap[p.id] = p
+      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      setRealPosts(prev => {
+        const seen = new Set(prev.map(p => p.id))
+        return [...prev, ...merged.filter((p: any) => !seen.has(p.id))]
+      })
+    }
+    setHasMore((postsData?.length ?? 0) === PAGE_SIZE)
+    setLoadingMore(false)
+  }, [loadingMore, realPosts])
+
+  const sentinelRef = useInfiniteScroll(loadMore, { hasMore, loading: loadingMore })
+
+  // Load who the current user follows
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', user.id)
+      .then(({ data }) => {
+        if (data) setFollowingIds(data.map(f => f.following_id))
+      })
+  }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
 
+  // Re-fetch once auth settles so we get the full authenticated view
+  const hasFetched = useRef(false)
   useEffect(() => {
+    if (authLoading) return          // wait for session to resolve
+    if (hasFetched.current) return   // only do this once
+    hasFetched.current = true
     fetchPosts()
 
     // Real-time subscription for new posts
     const channel = supabase
       .channel('posts')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-        setRealPosts(prev => [payload.new as Post, ...prev])
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async payload => {
+        const newPost = payload.new as any
+        const { data: prof } = await supabase
+          .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+          .eq('id', newPost.user_id).single()
+        const merged = { ...newPost, profiles: prof ?? null }
+        setRealPosts(prev => {
+          if (prev.some(p => p.id === merged.id)) return prev
+          return [merged, ...prev]
+        })
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [authLoading, fetchPosts])
 
   // Unread counts
   useEffect(() => {
@@ -77,26 +174,135 @@ export default function Home() {
 
     const ch = supabase.channel('home_badges')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        () => setUnreadNotifs(n => n + 1))
+        () => fetchCounts())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => fetchCounts())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
         () => fetchCounts())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
+        () => fetchCounts())
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+
+    // Re-fetch when tab regains focus (e.g. returning from Notifications/Chat)
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchCounts() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => { supabase.removeChannel(ch); document.removeEventListener('visibilitychange', onVisible) }
   }, [user])
 
-  // Use real posts if available, otherwise fall back to mock data
-  const hasPosts = realPosts.length > 0
+  // Use real posts if available, otherwise fall back to mock data.
+  // Always hide posts from users involved in a block relationship.
+  const switchTab = (tab: 'foryou' | 'following') => {
+    if (tab === feedTab) return
+    setSwipeOpacity(0)
+    setTimeout(() => { setFeedTab(tab); setSwipeOpacity(1) }, 200)
+  }
+
+  const onSwipeTouchStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX
+    swipeStartY.current = e.touches[0].clientY
+    isSwiping.current = false
+  }
+
+  const onSwipeTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - swipeStartX.current
+    const dy = Math.abs(e.touches[0].clientY - swipeStartY.current)
+    if (dy > 20 && !isSwiping.current) return // vertical scroll, ignore
+    if (Math.abs(dx) > 8) isSwiping.current = true
+    if (!isSwiping.current) return
+    // Fade out proportional to drag distance (max fade at 80px)
+    const progress = Math.min(Math.abs(dx) / 80, 1)
+    setSwipeOpacity(1 - progress * 0.85)
+  }
+
+  const onSwipeTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwiping.current) { setSwipeOpacity(1); return }
+    const dx = e.changedTouches[0].clientX - swipeStartX.current
+    isSwiping.current = false
+    if (Math.abs(dx) > 50) {
+      // Swipe left → Following, swipe right → For You
+      const next = dx < 0 ? 'following' : 'foryou'
+      if (next !== feedTab) {
+        switchTab(next)
+        return
+      }
+    }
+    // Not far enough — snap back
+    setSwipeOpacity(1)
+  }
+
+  const onEdgeTouchStart = (e: React.TouchEvent) => {
+    const x = e.touches[0].clientX
+    if (x < 30) { edgeSwipeActive.current = true; edgeSwipeStartX.current = x }
+    else edgeSwipeActive.current = false
+  }
+
+  const onEdgeTouchMove = (e: React.TouchEvent) => {
+    if (!edgeSwipeActive.current) return
+    const dx = e.touches[0].clientX - edgeSwipeStartX.current
+    if (dx > 0) setCameraSwipeX(Math.min(dx, 120))
+  }
+
+  const onEdgeTouchEnd = () => {
+    if (edgeSwipeActive.current && cameraSwipeX > 60) navigate('/spot')
+    edgeSwipeActive.current = false
+    setCameraSwipeX(0)
+  }
+
+  const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
+  const visiblePosts = feedTab === 'following'
+    ? notBlocked.filter(p => p.user_id === user?.id || followingIds.includes(p.user_id))
+    : notBlocked.filter(p =>
+        p.user_id === user?.id ||                        // always show own posts
+        !(p.profiles as any)?.private_account ||         // public accounts visible to all
+        followingIds.includes(p.user_id)                 // private accounts: only if following
+      )
+  const hasPosts = visiblePosts.length > 0
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
-    <div className="min-h-full pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
+    {/* Edge swipe detector — sits over the left edge only */}
+    <div
+      className="fixed left-0 top-0 h-full w-8 z-50"
+      onTouchStart={onEdgeTouchStart}
+      onTouchMove={onEdgeTouchMove}
+      onTouchEnd={onEdgeTouchEnd}
+    />
+    {/* Camera swipe peek indicator */}
+    {cameraSwipeX > 0 && (
+      <div
+        className="fixed left-0 top-0 h-full z-40 flex items-center justify-center pointer-events-none"
+        style={{
+          width: `${cameraSwipeX + 20}px`,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.9), transparent)',
+          opacity: Math.min(cameraSwipeX / 80, 1),
+        }}
+      >
+        <div className="flex flex-col items-center gap-2 pl-3">
+          <div className="w-12 h-12 rounded-full bg-gold/20 border border-gold/50 flex items-center justify-center">
+            <span className="text-2xl">📸</span>
+          </div>
+          {cameraSwipeX > 60 && <span className="text-[9px] text-gold font-bold tracking-widest uppercase">SPOT</span>}
+        </div>
+      </div>
+    )}
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
-        <div>
+        <div className="md:hidden">
           <h1 className="text-2xl font-bold tracking-[0.15em] gold-text">LENZLY</h1>
           <p className="text-[9px] text-white/20 tracking-[0.3em] uppercase mt-0.5">Photography Platform</p>
         </div>
+        <div className="hidden md:block">
+          <h1 className="text-lg font-bold tracking-wider text-white/70">Feed</h1>
+        </div>
         <div className="flex items-center gap-1">
+          <button onClick={() => navigate('/story-archive')} className="p-2 rounded-full hover:bg-white/5 transition-colors">
+            <Clock size={20} className="text-white/60" />
+          </button>
+          <button onClick={() => navigate('/search')} className="p-2 rounded-full hover:bg-white/5 transition-colors">
+            <Search size={20} className="text-white/60" />
+          </button>
           <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <Bell size={20} className="text-white/60" />
             {unreadNotifs > 0 && (
@@ -127,35 +333,108 @@ export default function Home() {
         <StoriesBar />
       </div>
 
+      {/* Feed tabs: For You / Following */}
+      <div className="flex border-b border-lenz-border">
+        {(['foryou', 'following'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => switchTab(tab)}
+            className={`flex-1 py-3 text-xs font-semibold tracking-wider uppercase transition-colors relative ${
+              feedTab === tab ? 'text-gold' : 'text-white/40'
+            }`}
+          >
+            {tab === 'foryou' ? 'For You' : 'Following'}
+            {feedTab === tab && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gold rounded-full" />
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Business Banner */}
       <BusinessBanner />
 
       {/* Feed */}
-      <div className="mt-1">
+      <div
+        className="mt-1 md:grid md:grid-cols-2 md:gap-0"
+        style={{ opacity: swipeOpacity, transition: isSwiping.current ? 'none' : 'opacity 0.2s ease' }}
+        onTouchStart={onSwipeTouchStart}
+        onTouchMove={onSwipeTouchMove}
+        onTouchEnd={onSwipeTouchEnd}
+      >
         {loading ? (
-          // Skeleton loading
-          [1, 2, 3].map(i => (
-            <div key={i} className="p-4 border-b border-lenz-border animate-pulse">
-              <div className="flex items-center gap-3 mb-3">
+          // Skeleton loading — 4:5 ratio matches real cards
+          [1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="mx-3 my-3 rounded-3xl overflow-hidden border border-lenz-border/40 animate-pulse">
+              <div className="flex items-center gap-3 p-4">
                 <div className="w-10 h-10 rounded-full bg-lenz-card" />
-                <div className="space-y-1.5">
-                  <div className="w-32 h-3 bg-lenz-card rounded" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="w-28 h-3 bg-lenz-card rounded" />
                   <div className="w-20 h-2 bg-lenz-card rounded" />
                 </div>
               </div>
-              <div className="aspect-square bg-lenz-card rounded-xl" />
+              <div className="mx-3 rounded-2xl aspect-[4/5] bg-lenz-card" />
+              <div className="p-4 space-y-2">
+                <div className="w-16 h-3 bg-lenz-card rounded" />
+                <div className="w-40 h-2.5 bg-lenz-card rounded" />
+              </div>
             </div>
           ))
         ) : hasPosts ? (
-          // Real posts from Supabase — render as simple cards
-          realPosts.map(post => (
-            <RealPostCard key={post.id} post={post} />
+          // Real posts from Supabase — full card with likes, comments, save, share
+          visiblePosts.map(post => (
+            <FeedPostCard
+              key={post.id}
+              post={toFeedPost(post)}
+              currentUserId={user?.id ?? null}
+              hasStory={activeStoryUserIds.has(post.user_id)}
+              onDeleted={id => setRealPosts(prev => prev.filter(p => p.id !== id))}
+            />
           ))
+        ) : feedTab === 'following' ? (
+          // Following tab with no followed posts yet
+          <div className="text-center py-16 px-8">
+            <p className="text-white/40 text-sm font-medium">No posts from people you follow yet</p>
+            <p className="text-white/25 text-xs mt-2">Follow photographers to see their photos and locations here.</p>
+            <button
+              onClick={() => navigate('/find')}
+              className="mt-4 text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+            >
+              Find photographers
+            </button>
+          </div>
         ) : (
-          // Mock posts fallback
-          mockPosts.map(post => (
-            <PostCard key={post.id} post={post} />
-          ))
+          // For You with no posts in the app yet — real empty state
+          <div className="text-center py-16 px-8">
+            <p className="text-white/40 text-sm font-medium">No posts yet</p>
+            <p className="text-white/25 text-xs mt-2">Be the first to share — post a photo or a spot, and follow photographers to fill your feed.</p>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => navigate('/upload')}
+                className="text-lenz-bg bg-gold text-xs font-semibold rounded-full px-4 py-2"
+              >
+                Share a photo
+              </button>
+              <button
+                onClick={() => navigate('/find')}
+                className="text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+              >
+                Find photographers
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Infinite-scroll sentinel + spinner (only for the real feed) */}
+        {hasPosts && (
+          <div ref={sentinelRef} className="py-6 flex items-center justify-center">
+            {loadingMore && (
+              <Spinner size="sm" />
+            )}
+            {!hasMore && (
+              <p className="text-[11px] text-white/20 tracking-wider uppercase">You're all caught up</p>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -163,80 +442,24 @@ export default function Home() {
   )
 }
 
-function RealPostCard({ post }: { post: Post }) {
-  const [liked, setLiked] = useState(false)
-  const [likes, setLikes] = useState(post.likes_count)
-
-  const toggleLike = async () => {
-    setLiked(!liked)
-    setLikes(l => liked ? l - 1 : l + 1)
+// Map a Supabase Post (with joined `profiles`) onto the FeedPost shape that
+// FeedPostCard expects (which uses singular `profile`).
+function toFeedPost(post: Post): FeedPost {
+  const p = (post as any).profiles
+  return {
+    id: post.id,
+    user_id: post.user_id,
+    image_url: post.image_url,
+    caption: post.caption ?? null,
+    location_name: post.location_name ?? null,
+    tags: post.tags ?? [],
+    likes_count: post.likes_count ?? 0,
+    comments_count: post.comments_count ?? 0,
+    category: (post as any).category ?? '',
+    created_at: post.created_at,
+    archived: (post as any).archived ?? false,
+    profile: p
+      ? { id: p.id, username: p.username ?? null, name: p.name ?? null, avatar_url: p.avatar_url ?? null, is_pro: p.is_pro ?? false }
+      : null,
   }
-
-  const profile = post.profiles
-  const timeAgo = getTimeAgo(new Date(post.created_at))
-
-  return (
-    <div className="border-b border-lenz-border">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-10 h-10 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-bold">
-              {(profile?.name || '?')[0].toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-white truncate">{profile?.name || 'Photographer'}</p>
-            {profile?.is_pro && (
-              <span className="text-[9px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-            )}
-          </div>
-          {post.location_name && (
-            <p className="text-xs text-white/40 truncate">📍 {post.location_name}</p>
-          )}
-        </div>
-        <span className="text-xs text-white/25 shrink-0">{timeAgo}</span>
-      </div>
-
-      {/* Image */}
-      <div className="aspect-square overflow-hidden bg-lenz-card">
-        <img src={post.image_url} alt={post.caption || ''} className="w-full h-full object-cover" loading="lazy" />
-      </div>
-
-      {/* Actions */}
-      <div className="px-4 py-3">
-        <div className="flex items-center gap-4 mb-2">
-          <button onClick={toggleLike} className="flex items-center gap-1.5">
-            <span className={`text-xl ${liked ? 'text-red-500' : 'text-white/50'}`}>{liked ? '❤️' : '🤍'}</span>
-            <span className="text-sm text-white/50">{likes}</span>
-          </button>
-          <button className="flex items-center gap-1.5">
-            <span className="text-xl text-white/50">💬</span>
-            <span className="text-sm text-white/50">{post.comments_count}</span>
-          </button>
-        </div>
-        {post.caption && (
-          <p className="text-sm text-white/80 leading-relaxed">
-            <span className="font-semibold text-white">{profile?.username || profile?.name}</span>{' '}
-            {post.caption}
-          </p>
-        )}
-        {post.tags && post.tags.length > 0 && (
-          <p className="text-xs text-gold/60 mt-1">{post.tags.join(' ')}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return `${Math.floor(seconds / 86400)}d ago`
 }

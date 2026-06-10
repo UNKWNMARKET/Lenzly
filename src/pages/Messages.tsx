@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Edit2, Search, MessageCircle, Trash2, X, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Edit2, Search, MessageCircle, X, ChevronRight, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import Spinner from '@/components/Spinner'
 
-type Participant = { username: string; avatar_url: string | null }
+type Participant = { username: string; name: string | null; avatar_url: string | null }
 
 type Conversation = {
   id: string
@@ -19,7 +20,7 @@ type Conversation = {
   unread: boolean
 }
 
-type ProfileRow = { id: string; username: string; avatar_url: string | null }
+type ProfileRow = { id: string; username: string; name: string | null; avatar_url: string | null }
 
 function timeAgo(ts: string) {
   const diff = Date.now() - new Date(ts).getTime()
@@ -43,10 +44,10 @@ export default function Messages() {
 
   const fetchConversations = useCallback(async () => {
     if (!user) return
-    // Get all conversation IDs the user is in
+    // Get all conversation IDs the user is in (with last_read_at)
     const { data: participations } = await supabase
       .from('conversation_participants')
-      .select('conversation_id')
+      .select('conversation_id, last_read_at')
       .eq('user_id', user.id)
 
     if (!participations || participations.length === 0) {
@@ -56,6 +57,8 @@ export default function Messages() {
     }
 
     const ids = participations.map(p => p.conversation_id)
+    const lastReadMap: Record<string, string | null> = {}
+    for (const p of participations) lastReadMap[p.conversation_id] = p.last_read_at
 
     // Get conversations
     const { data: convos } = await supabase
@@ -79,7 +82,7 @@ export default function Messages() {
       if (parts && parts[0]) {
         const { data: prof } = await supabase
           .from('profiles')
-          .select('username, avatar_url')
+          .select('username, name, avatar_url')
           .eq('id', parts[0].user_id)
           .single()
         if (prof) other = prof
@@ -87,15 +90,27 @@ export default function Messages() {
 
       const { data: lastMsgs } = await supabase
         .from('messages')
-        .select('content, unsent, sent_at')
+        .select('content, unsent, sent_at, sender_id')
         .eq('conversation_id', c.id)
         .order('sent_at', { ascending: false })
         .limit(1)
 
       const lm = lastMsgs?.[0]
-      const lastMessage = lm ? (lm.unsent ? '🚫 Message unsent' : lm.content) : null
+      const rawContent = lm?.content ?? ''
+      const lastMessage = lm
+        ? lm.unsent
+          ? '🚫 Message unsent'
+          : rawContent.startsWith('{"type":"hire_proposal"')
+            ? '📋 Hire Opportunity'
+            : rawContent
+        : null
 
-      return { id: c.id, bg: c.bg, updated_at: c.updated_at, other_user: other, last_message: lastMessage, unread: false } as Conversation
+      // Unread = last message not sent by me, not unsent, and newer than last_read_at
+      const myLastRead = lastReadMap[c.id]
+      const unread = !!(lm && lm.sender_id !== user.id && !lm.unsent &&
+        (!myLastRead || new Date(lm.sent_at) > new Date(myLastRead)))
+
+      return { id: c.id, bg: c.bg, updated_at: c.updated_at, other_user: other, last_message: lastMessage, unread } as Conversation
     }))
 
     setConversations(enriched)
@@ -109,6 +124,22 @@ export default function Messages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
+  // Live updates — listen on conversations table (updated_at bumps on each new message)
+  // and on conversation_participants (last_read_at changes clear the unread dot)
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase
+      .channel('messages_list_live')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' },
+        () => fetchConversations())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' },
+        () => fetchConversations())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
+        () => fetchConversations())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user, fetchConversations])
+
   // User search
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); return }
@@ -116,7 +147,7 @@ export default function Messages() {
       setSearching(true)
       const { data } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, name, avatar_url')
         .ilike('username', `%${searchQuery}%`)
         .neq('id', user?.id ?? '')
         .limit(8)
@@ -129,47 +160,24 @@ export default function Messages() {
   const startConversation = async (otherUser: ProfileRow) => {
     if (!user) return
 
-    // Check if conversation already exists
-    const { data: existing } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id)
-
-    if (existing && existing.length > 0) {
-      const ids = existing.map(e => e.conversation_id)
-      const { data: shared } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', otherUser.id)
-        .in('conversation_id', ids)
-        .limit(1)
-
-      if (shared && shared[0]) {
-        setShowNewModal(false)
-        navigate(`/chat/${shared[0].conversation_id}`)
-        return
-      }
-    }
-
-    // Create new conversation
-    const { data: conv, error } = await supabase
-      .from('conversations')
-      .insert({ created_by: user.id, bg: '#0A0804' })
-      .select()
-      .single()
-
-    if (error || !conv) { toast.error('Could not start conversation'); return }
-
-    await supabase.from('conversation_participants').insert([
-      { conversation_id: conv.id, user_id: user.id },
-      { conversation_id: conv.id, user_id: otherUser.id },
-    ])
+    // Find-or-create atomically via SECURITY DEFINER RPC (avoids participant RLS)
+    const { data: convId, error } = await supabase.rpc('get_or_create_dm', { other_user: otherUser.id })
+    if (error || !convId) { toast.error(error?.message ?? 'Could not start conversation'); return }
 
     setShowNewModal(false)
-    navigate(`/chat/${conv.id}`)
+    navigate(`/chat/${convId}`)
   }
 
   const deleteConversation = async (id: string) => {
+    if (!user) return
+    // Verify user is a participant before deleting
+    const { data: participation } = await supabase
+      .from('conversation_participants')
+      .select('id')
+      .eq('conversation_id', id)
+      .eq('user_id', user.id)
+      .single()
+    if (!participation) { toast.error('Unauthorized'); return }
     setDeleting(null)
     await supabase.from('messages').delete().eq('conversation_id', id)
     await supabase.from('conversation_participants').delete().eq('conversation_id', id)
@@ -179,18 +187,18 @@ export default function Messages() {
   }
 
   return (
-    <PullToRefreshWrapper {...ptr} className="h-[100dvh] bg-lenz-bg">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
     <div className="min-h-full pb-6">
-      <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
+      <header className="sticky top-0 z-40 glass-dark px-4 pb-3 flex items-center justify-between safe-top">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
+          <button onClick={() => navigate('/')} className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center">
             <ArrowLeft size={20} className="text-white/70" />
           </button>
           <h1 className="text-base font-bold text-white tracking-wide">Messages</h1>
         </div>
         <button
           onClick={() => setShowNewModal(true)}
-          className="p-2 rounded-full hover:bg-white/5 transition-colors"
+          className="w-9 h-9 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center"
         >
           <Edit2 size={18} className="text-gold" />
         </button>
@@ -225,13 +233,22 @@ export default function Messages() {
       ) : (
         <div className="flex flex-col gap-0.5 p-4 mt-1">
           {conversations.map(c => (
-            <div key={c.id} className="relative group">
+            <div
+              key={c.id}
+              className={cn('flex items-center rounded-2xl bg-lenz-bg', c.unread ? 'bg-white/5' : '')}
+            >
+              {/* Tap anywhere on the row to open the chat */}
               <button
                 onClick={() => navigate(`/chat/${c.id}`)}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all w-full text-left"
+                className="flex items-center gap-3 p-3 flex-1 min-w-0 text-left"
               >
                 {/* Avatar */}
-                <div className="w-12 h-12 rounded-full bg-lenz-card border border-lenz-border flex-shrink-0 overflow-hidden">
+                <div className={cn(
+                  'w-12 h-12 rounded-full flex-shrink-0 overflow-hidden',
+                  c.unread
+                    ? 'ring-2 ring-gold/60 bg-lenz-card'
+                    : 'bg-lenz-card border border-lenz-border'
+                )}>
                   {c.other_user?.avatar_url
                     ? <img src={c.other_user.avatar_url} alt="" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-white/30 text-lg font-bold">
@@ -242,35 +259,44 @@ export default function Messages() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white/90 truncate">
-                      {c.other_user?.username ?? 'Unknown'}
+                    <p className={cn('text-sm font-semibold truncate', c.unread ? 'text-white' : 'text-white/90')}>
+                      {c.other_user?.name || c.other_user?.username || 'Unknown'}
                     </p>
                     <span className="text-[10px] text-white/25 flex-shrink-0 ml-2">{timeAgo(c.updated_at)}</span>
                   </div>
-                  <p className="text-xs text-white/35 truncate mt-0.5">
+                  <p className={cn('text-xs truncate mt-0.5', c.unread ? 'text-white/60 font-medium' : 'text-white/35')}>
                     {c.last_message ?? 'Start the conversation…'}
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-white/15 flex-shrink-0" />
+                {c.unread && <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />}
               </button>
-
-              {/* Delete button on hover */}
-              {deleting === c.id ? (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-lenz-card border border-lenz-border rounded-xl px-3 py-1.5">
-                  <span className="text-xs text-white/60">Delete?</span>
-                  <button onClick={() => deleteConversation(c.id)} className="text-xs text-rose-400 font-semibold">Yes</button>
-                  <button onClick={() => setDeleting(null)} className="text-xs text-white/40">No</button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setDeleting(c.id)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-lenz-card text-white/30 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
+              {/* Explicit delete button — no swipe gymnastics */}
+              <button
+                onClick={() => setDeleting(c.id)}
+                className="p-3 mr-1 text-white/20 hover:text-rose-400 transition-colors flex-shrink-0"
+                aria-label="Delete conversation"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete confirmation — fixed & centered, never tied to a row's position */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-8"
+          onClick={() => setDeleting(null)}>
+          <div className="w-full max-w-xs bg-lenz-card border border-lenz-border rounded-2xl p-5 text-center" onClick={e => e.stopPropagation()}>
+            <p className="text-white font-semibold text-sm mb-1">Delete conversation?</p>
+            <p className="text-white/40 text-xs mb-5">This removes the chat and its messages for you.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleting(null)}
+                className="flex-1 py-2.5 rounded-xl bg-lenz-bg border border-lenz-border text-white/60 text-sm font-medium">Cancel</button>
+              <button onClick={() => { const id = deleting; if (id) deleteConversation(id) }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold">Delete</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -280,7 +306,7 @@ export default function Messages() {
           className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setShowNewModal(false)}
         >
-          <div className="w-full max-w-[430px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
+          <div className="w-full max-w-[430px] md:max-w-[600px] mx-auto bg-lenz-card rounded-t-3xl pb-10 safe-bottom">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-lenz-border">
               <h2 className="text-base font-bold text-white">New Message</h2>
               <button onClick={() => setShowNewModal(false)} className="p-1 rounded-full hover:bg-white/5">
@@ -309,7 +335,7 @@ export default function Messages() {
             <div className="px-4 max-h-72 overflow-y-auto">
               {searching && (
                 <div className="flex justify-center py-6">
-                  <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  <Spinner size="sm" />
                 </div>
               )}
               {!searching && searchQuery && searchResults.length === 0 && (
@@ -330,7 +356,8 @@ export default function Messages() {
                     }
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-white/90">@{u.username}</p>
+                    <p className="text-sm font-semibold text-white/90">{u.name || `@${u.username}`}</p>
+                    {u.name && <p className="text-xs text-white/40">@{u.username}</p>}
                   </div>
                   <ChevronRight size={14} className="text-white/20" />
                 </button>

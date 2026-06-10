@@ -3,6 +3,7 @@ import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckC
 import { useWeather } from '@/hooks/useWeather'
 import type { PhotoSpot } from '@/data/mockData'
 import { formatCount, cn } from '@/lib/utils'
+import SmartSpotImage from './SmartSpotImage'
 
 interface Props {
   spot: PhotoSpot
@@ -32,7 +33,7 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-[60]"
       style={{ maxWidth: 430, margin: '0 auto', left: 0, right: 0, overflow: 'hidden' }}
     >
       {/* Scrim */}
@@ -55,7 +56,12 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
 
         {/* Hero image */}
         <div className="relative h-60 shrink-0">
-          <img src={spot.image} alt={spot.name} className="w-full h-full object-cover" />
+          <SmartSpotImage
+            name={`${spot.name} ${spot.city ?? ''} ${spot.state ?? ''}`.trim()}
+            fallback={spot.image}
+            alt={spot.name}
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-lenz-bg via-black/30 to-transparent" />
 
           <button
