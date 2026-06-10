@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Clock, Copy, LogOut, Building2, Globe, Mail, RefreshCw, Ban, ShieldOff } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Copy, LogOut, Building2, Globe, Mail, RefreshCw, Ban, ShieldOff, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -53,10 +53,10 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (isAdmin) fetchApps() }, [isAdmin, fetchApps])
 
-  async function review(app: Application, action: 'approve' | 'reject' | 'revoke') {
+  async function review(app: Application, action: 'approve' | 'reject' | 'revoke' | 'reinstate') {
     setActionLoading(app.id)
     setErrorMsg('')
-    const verb = action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected' : 'Revoked'
+    const verb = action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected' : action === 'revoke' ? 'Revoked' : 'Reinstated'
     try {
       const res = await fetch('/api/review-brand', {
         method: 'POST',
@@ -88,6 +88,8 @@ export default function AdminDashboard() {
     setRevokeTarget(null)
     await review(target, 'revoke')
   }
+
+  const reinstate = (app: Application) => review(app, 'reinstate')
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text)
@@ -226,9 +228,15 @@ export default function AdminDashboard() {
                   )}
 
                   {tab === 'revoked' && (
-                    <span className="shrink-0 flex items-center gap-1.5 text-xs text-red-400/70 border border-red-500/20 rounded-lg px-3 py-2">
-                      <ShieldOff size={13} /> Access Revoked
-                    </span>
+                    <div className="flex flex-col gap-2 shrink-0 items-end">
+                      <span className="flex items-center gap-1.5 text-xs text-red-400/70 border border-red-500/20 rounded-lg px-3 py-2 w-full justify-center">
+                        <ShieldOff size={13} /> Access Revoked
+                      </span>
+                      <button onClick={() => reinstate(app)} disabled={actionLoading === app.id}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gold text-lenz-bg font-semibold text-xs hover:opacity-90 transition-opacity disabled:opacity-40 w-full">
+                        <RotateCcw size={13} /> Reinstate
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

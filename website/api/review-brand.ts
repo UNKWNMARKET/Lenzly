@@ -44,7 +44,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<str
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { applicationId, action } = req.body as { applicationId: string; action: 'approve' | 'reject' | 'revoke' }
+  const { applicationId, action } = req.body as { applicationId: string; action: 'approve' | 'reject' | 'revoke' | 'reinstate' }
   if (!applicationId || !action) return res.status(400).json({ error: 'Missing fields' })
   if (!SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not set in Vercel environment variables' })
 
@@ -210,6 +210,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
           If you believe this was made in error, please reply to this email to appeal.
         </p>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
+      </div>
+      `
+    )
+
+    return res.status(200).json({ success: true, emailError })
+  }
+
+  if (action === 'reinstate') {
+    // Lift the ban on the brand's auth account so they can sign in again.
+    let located: string | null = app.brand_user_id || null
+    if (!located) {
+      const { data: list } = await admin.auth.admin.listUsers()
+      located = list?.users?.find(u => u.email?.toLowerCase() === app.email.toLowerCase())?.id || null
+    }
+    if (located) {
+      const { error: unbanErr } = await admin.auth.admin.updateUserById(located, {
+        ban_duration: 'none',
+      })
+      if (unbanErr) {
+        return res.status(500).json({ error: `Could not reinstate access: ${unbanErr.message}` })
+      }
+    }
+
+    await admin.from('brand_applications').update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', applicationId)
+
+    const loginUrl = `${SITE_URL}/business/login`
+    const emailError = await sendEmail(
+      app.email,
+      `Your Lenzly business access has been restored`,
+      `
+      <div style="font-family:Inter,sans-serif;background:#0b0b0d;color:#fff;max-width:560px;margin:0 auto;padding:40px 32px;border-radius:16px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:0.25em;color:#ecc85c;margin:0 0 8px;">LENZLY</h1>
+          <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Business Portal</p>
+        </div>
+        <h2 style="font-size:20px;font-weight:600;margin:0 0 12px;">Welcome back, ${app.company}</h2>
+        <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
+          Good news — your access to the Lenzly Business Portal has been restored. You can sign in again with your existing credentials.
+        </p>
+        <div style="text-align:center;margin-bottom:28px;">
+          <a href="${loginUrl}" style="display:inline-block;background:#ecc85c;color:#0b0b0d;font-weight:700;font-size:14px;padding:14px 32px;border-radius:100px;text-decoration:none;">
+            Sign In →
+          </a>
+        </div>
         <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
       </div>
       `
