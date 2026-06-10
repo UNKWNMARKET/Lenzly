@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, ChevronRight, Zap, Shield, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, TrendingUp, Shield, LogIn } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { photographers } from '@/data/mockData'
-import { formatCount } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const brandLogos = ['WildScope', 'Maison Élite', 'Lumière', 'ApexGear', 'Nexar', 'Meridian']
 
@@ -13,9 +13,47 @@ const perks = [
   { icon: TrendingUp, title: 'Track Results', desc: 'View post analytics and campaign performance.' },
 ]
 
+const NEEDS_OPTIONS = ['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign']
+
 export default function BrandsPage() {
   const [, navigate] = useLocation()
   const [activeTab, setActiveTab] = useState<'discover' | 'signup'>('discover')
+
+  const [company, setCompany] = useState('')
+  const [email, setEmail] = useState('')
+  const [website, setWebsite] = useState('')
+  const [needs, setNeeds] = useState<string[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  function toggleNeed(need: string) {
+    setNeeds(prev => prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need])
+  }
+
+  async function handleSubmit() {
+    if (!company.trim() || !email.trim()) {
+      toast.error('Company name and email are required')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch('http://localhost:3001/api/brands/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, email, website, needs }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to submit application')
+        return
+      }
+      setSubmitted(true)
+    } catch {
+      toast.error('Cannot connect to server. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-lenz-bg pb-24 animate-fade-in">
@@ -25,6 +63,15 @@ export default function BrandsPage() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl font-bold tracking-[0.12em] gold-text">FOR BRANDS</h1>
+        <div className="ml-auto">
+          <button
+            onClick={() => navigate('/brand/login')}
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-[#C9A84C] transition-colors"
+          >
+            <LogIn size={14} />
+            Brand Login
+          </button>
+        </div>
       </header>
 
       {/* Hero */}
@@ -45,16 +92,10 @@ export default function BrandsPage() {
 
           {/* CTA Buttons */}
           <div className="flex gap-3">
-            <button
-              onClick={() => setActiveTab('signup')}
-              className="flex-1 btn-primary"
-            >
+            <button onClick={() => setActiveTab('signup')} className="flex-1 btn-primary">
               Create Brand Account
             </button>
-            <button
-              onClick={() => setActiveTab('discover')}
-              className="flex-1 btn-ghost"
-            >
+            <button onClick={() => setActiveTab('discover')} className="flex-1 btn-ghost">
               Browse Talent
             </button>
           </div>
@@ -99,7 +140,7 @@ export default function BrandsPage() {
             ))}
           </div>
 
-          {/* Featured photographers for brands */}
+          {/* Featured photographers */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-white/50 tracking-wider uppercase">Featured Talent</p>
@@ -142,7 +183,6 @@ export default function BrandsPage() {
                     </button>
                   </div>
 
-                  {/* Photo strip */}
                   <div className="grid grid-cols-4 gap-1 mt-3">
                     {p.photos.slice(0, 4).map((photo, i) => (
                       <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
@@ -157,48 +197,97 @@ export default function BrandsPage() {
         </div>
       ) : (
         <div className="px-4 animate-fade-in">
-          <div className="card p-5 space-y-4">
-            <div className="text-center mb-2">
-              <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
-                <Building2 size={26} className="text-lenz-bg" />
+          {submitted ? (
+            <div className="card p-8 text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-green-950/40 border border-green-900/40 flex items-center justify-center mx-auto">
+                <CheckCircle size={32} className="text-green-400" />
               </div>
-              <h3 className="text-lg font-bold text-white">Create Brand Account</h3>
-              <p className="text-xs text-white/30 mt-1">Start hiring photographers today</p>
+              <h3 className="text-lg font-bold text-white">Application Submitted!</h3>
+              <p className="text-sm text-white/40 leading-relaxed">
+                We'll review your application and send your login credentials to <span className="text-white/70">{email}</span> within 24 hours.
+              </p>
+              <button
+                onClick={() => navigate('/brand/login')}
+                className="w-full btn-primary py-3 mt-2"
+              >
+                Go to Brand Login
+              </button>
             </div>
+          ) : (
+            <div className="card p-5 space-y-4">
+              <div className="text-center mb-2">
+                <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
+                  <Building2 size={26} className="text-lenz-bg" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Create Brand Account</h3>
+                <p className="text-xs text-white/30 mt-1">Start hiring photographers today</p>
+              </div>
 
-            {[
-              { label: 'Company Name', placeholder: 'Your company name...', type: 'text' },
-              { label: 'Work Email', placeholder: 'you@company.com', type: 'email' },
-              { label: 'Website', placeholder: 'company.com', type: 'url' },
-            ].map(({ label, placeholder, type }) => (
-              <div key={label}>
-                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">{label}</label>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Company Name *</label>
                 <input
-                  type={type}
-                  placeholder={placeholder}
+                  type="text"
+                  placeholder="Your company name..."
+                  value={company}
+                  onChange={e => setCompany(e.target.value)}
                   className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
                 />
               </div>
-            ))}
 
-            <div>
-              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign'].map(need => (
-                  <button key={need} className="text-xs text-white/50 bg-lenz-muted border border-lenz-border py-2 rounded-lg hover:border-gold/40 hover:text-gold transition-all">
-                    {need}
-                  </button>
-                ))}
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Work Email *</label>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
+                />
               </div>
-            </div>
 
-            <button className="w-full btn-primary py-3.5 text-sm">
-              Request Brand Access
-            </button>
-            <p className="text-[10px] text-white/20 text-center">
-              Our team will review your request within 24 hours.
-            </p>
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Website</label>
+                <input
+                  type="text"
+                  placeholder="company.com"
+                  value={website}
+                  onChange={e => setWebsite(e.target.value)}
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {NEEDS_OPTIONS.map(need => (
+                    <button
+                      key={need}
+                      type="button"
+                      onClick={() => toggleNeed(need)}
+                      className={`text-xs py-2 rounded-lg border transition-all ${
+                        needs.includes(need)
+                          ? 'bg-gold/10 border-gold/40 text-gold'
+                          : 'text-white/50 bg-lenz-muted border-lenz-border hover:border-gold/40 hover:text-gold'
+                      }`}
+                    >
+                      {need}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !company.trim() || !email.trim()}
+                className="w-full btn-primary py-3.5 text-sm disabled:opacity-40"
+              >
+                {submitting ? 'Submitting...' : 'Request Brand Access'}
+              </button>
+              <p className="text-[10px] text-white/20 text-center">
+                Our team will review your request within 24 hours.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

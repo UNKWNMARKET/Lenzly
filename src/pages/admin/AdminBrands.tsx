@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Trash2, ExternalLink, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, ExternalLink, RefreshCw, Copy, Key, X } from 'lucide-react'
 import { useAdminAuth } from '@/contexts/AdminAuthContext'
 import { toast } from 'sonner'
 
@@ -14,6 +14,12 @@ interface BrandApp {
   reviewedAt?: string
 }
 
+interface Credentials {
+  company: string
+  email: string
+  password: string
+}
+
 const STATUS_STYLES: Record<string, string> = {
   pending: 'text-yellow-400/80 bg-yellow-950/30',
   approved: 'text-green-400/80 bg-green-950/30',
@@ -25,6 +31,7 @@ export default function AdminBrands() {
   const [brands, setBrands] = useState<BrandApp[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [credentials, setCredentials] = useState<Credentials | null>(null)
 
   async function load() {
     setLoading(true)
@@ -41,17 +48,32 @@ export default function AdminBrands() {
       body: JSON.stringify({ status }),
     })
     if (res.ok) {
+      const data = await res.json()
       setBrands(prev => prev.map(b => b.id === id ? { ...b, status } : b))
-      toast.success(`Application ${status}`)
+      if (status === 'approved' && data.tempPassword) {
+        const brand = brands.find(b => b.id === id)
+        setCredentials({
+          company: brand?.company ?? data.company,
+          email: brand?.email ?? data.email,
+          password: data.tempPassword,
+        })
+      } else {
+        toast.success(`Application ${status}`)
+      }
     }
   }
 
   async function deleteBrand(id: string) {
+    if (!confirm('Delete this application?')) return
     const res = await api(`/brands/${id}`, { method: 'DELETE' })
     if (res.ok) {
       setBrands(prev => prev.filter(b => b.id !== id))
       toast.success('Application deleted')
     }
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied`))
   }
 
   const filtered = filter === 'all' ? brands : brands.filter(b => b.status === filter)
@@ -163,6 +185,76 @@ export default function AdminBrands() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Credentials modal */}
+      {credentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Key size={18} className="text-[#C9A84C]" />
+                <h2 className="text-base font-bold text-white">Brand Approved!</h2>
+              </div>
+              <button onClick={() => setCredentials(null)} className="text-white/30 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-white/40 mb-4">
+              Share these login credentials with <span className="text-white/70">{credentials.company}</span>. The password is generated once — copy it now.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1.5">Login URL</p>
+                <div className="flex items-center justify-between bg-[#0a0a0a] border border-[#1e1e1e] rounded-xl px-3 py-2.5">
+                  <span className="text-xs text-white/60 font-mono">lenzly.app/brand/login</span>
+                  <button onClick={() => copyToClipboard('lenzly.app/brand/login', 'URL')} className="text-white/30 hover:text-[#C9A84C] transition-colors">
+                    <Copy size={13} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1.5">Email</p>
+                <div className="flex items-center justify-between bg-[#0a0a0a] border border-[#1e1e1e] rounded-xl px-3 py-2.5">
+                  <span className="text-xs text-white/60 font-mono">{credentials.email}</span>
+                  <button onClick={() => copyToClipboard(credentials.email, 'Email')} className="text-white/30 hover:text-[#C9A84C] transition-colors">
+                    <Copy size={13} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-1.5">Temp Password</p>
+                <div className="flex items-center justify-between bg-[#0a0a0a] border border-[#1e1e1e] rounded-xl px-3 py-2.5">
+                  <span className="text-sm text-[#C9A84C] font-mono font-bold tracking-widest">{credentials.password}</span>
+                  <button onClick={() => copyToClipboard(credentials.password, 'Password')} className="text-white/30 hover:text-[#C9A84C] transition-colors">
+                    <Copy size={13} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                const text = `LENZLY Brand Portal\nLogin: lenzly.app/brand/login\nEmail: ${credentials.email}\nPassword: ${credentials.password}`
+                copyToClipboard(text, 'All credentials')
+              }}
+              className="w-full mt-4 py-2.5 rounded-xl bg-[#C9A84C]/15 border border-[#C9A84C]/25 text-[#C9A84C] text-xs font-semibold tracking-wide hover:bg-[#C9A84C]/25 transition-all"
+            >
+              Copy All Credentials
+            </button>
+
+            <button
+              onClick={() => setCredentials(null)}
+              className="w-full mt-2 py-2.5 rounded-xl bg-white/5 text-white/40 text-xs font-semibold hover:bg-white/10 transition-all"
+            >
+              Done
+            </button>
+          </div>
         </div>
       )}
     </div>
