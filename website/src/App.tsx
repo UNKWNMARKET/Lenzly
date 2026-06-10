@@ -28,6 +28,10 @@ import UploadPage from './pages/app/Upload'
 import Settings from './pages/app/Settings'
 import EditProfile from './pages/app/EditProfile'
 
+// Admin
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminDashboard from './pages/admin/AdminDashboard'
+
 // Business
 import BusinessLayout from './components/app/BusinessLayout'
 import BusinessLogin from './pages/business/BusinessLogin'
@@ -71,6 +75,10 @@ export default function App() {
             <Route path="post/:id" element={<PostView />} />
             <Route path="u/:username" element={<Profile />} />
           </Route>
+
+          {/* Admin */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
 
           {/* Business */}
           <Route path="/business/login" element={<BusinessLogin />} />
