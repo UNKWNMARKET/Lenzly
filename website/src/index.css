@@ -219,5 +219,20 @@ body {
 .input-dark::placeholder { color: rgba(255,255,255,0.2); }
 .input-dark:focus { border-color: rgba(236,200,92,0.4); }
 
+/* Compact form input used in modals/forms */
+.input {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: #fff;
+  transition: border-color 0.2s;
+  outline: none;
+}
+.input::placeholder { color: rgba(255,255,255,0.25); }
+.input:focus { border-color: rgba(236,200,92,0.4); }
+
 /* Prose */
 .text-balance { text-wrap: balance; }
