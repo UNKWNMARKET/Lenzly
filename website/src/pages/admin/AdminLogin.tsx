@@ -14,7 +14,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (user?.email === 'eisdorferjesse@gmail.com') navigate('/admin')
+    if (user?.email === 'eisdorferjesse@gmail.com') navigate('/admin', { replace: true })
   }, [user, navigate])
 
   async function handleLogin(e: React.FormEvent) {

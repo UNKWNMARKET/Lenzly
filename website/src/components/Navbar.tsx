@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { pathname } = useLocation()
+  const { user } = useAuth()
+  const isAdmin = user?.email === 'eisdorferjesse@gmail.com'
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24)
@@ -45,6 +48,9 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
+            {isAdmin && (
+              <Link to="/admin" className="text-sm text-[#ecc85c]/70 hover:text-[#ecc85c] transition-colors font-medium">Admin</Link>
+            )}
             <Link to="/business/login" className="text-sm text-white/40 hover:text-[#ecc85c] transition-colors font-medium">Brand Login</Link>
             <a href="https://apps.apple.com" className="btn-gold text-xs py-2.5 px-5">
               <Download size={12} /> Download Free

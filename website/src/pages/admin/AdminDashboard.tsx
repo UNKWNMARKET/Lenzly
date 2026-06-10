@@ -36,7 +36,8 @@ export default function AdminDashboard() {
   const [copied, setCopied] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!authLoading && user?.email !== 'eisdorferjesse@gmail.com') navigate('/admin/login')
+    if (!authLoading && !user) navigate('/login?next=/admin')
+    else if (!authLoading && user?.email !== 'eisdorferjesse@gmail.com') navigate('/')
   }, [user, authLoading, navigate])
 
   const fetchApps = useCallback(async () => {
