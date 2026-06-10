@@ -38,8 +38,27 @@ workflows:
 
       - name: Set build number
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
-          echo "CFBundleVersion set to: $BUILD_NUMBER"
+          # Codemagic's $BUILD_NUMBER reset to a low value when the app was
+          # recreated, but App Store Connect already has builds up to ~228 for
+          # version 1.0 and rejects any upload that isn't higher. So we query the
+          # latest build number that exists on App Store Connect and increment it.
+          set -e
+          APP_APPLE_ID=$(app-store-connect list-apps \
+            --bundle-id-identifier "$BUNDLE_ID" --json | jq -r '.[0].id')
+          echo "App Apple ID: $APP_APPLE_ID"
+
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_APPLE_ID" 2>/dev/null || echo "")
+          echo "Latest TestFlight build number: ${LATEST:-none}"
+
+          if [ -z "$LATEST" ]; then
+            # Fallback: stay safely above the known 228 builds and keep climbing
+            NEW_BUILD=$(( BUILD_NUMBER + 300 ))
+          else
+            NEW_BUILD=$(( LATEST + 1 ))
+          fi
+
+          echo "Setting CFBundleVersion to: $NEW_BUILD"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" ios/App/App/Info.plist
 
       - name: Resolve Swift packages
         script: |
