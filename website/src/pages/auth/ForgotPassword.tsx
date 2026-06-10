@@ -105,15 +105,15 @@ export default function ForgotPassword() {
                 <ShieldCheck size={20} className="text-gold" />
               </div>
               <h1 className="text-xl font-serif text-white mb-1">Enter your code</h1>
-              <p className="text-sm text-white/35">We sent a 6-digit code to<br/><span className="text-white/60">{email}</span></p>
+              <p className="text-sm text-white/35">We sent a verification code to<br/><span className="text-white/60">{email}</span></p>
             </div>
             <input
               inputMode="numeric"
               autoFocus
-              placeholder="000000"
+              placeholder="00000000"
               value={code}
-              onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] font-mono text-white placeholder-white/15 outline-none focus:border-gold/50"
+              onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.4em] font-mono text-white placeholder-white/15 outline-none focus:border-gold/50"
             />
             {error && <p className="text-sm text-red-400">{error}</p>}
             <button type="submit" disabled={loading || code.length < 6}

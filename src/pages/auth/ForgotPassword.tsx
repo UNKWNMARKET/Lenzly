@@ -100,12 +100,12 @@ export default function ForgotPassword() {
                 <ShieldCheck size={24} className="text-gold" />
               </div>
               <h2 className="text-white font-bold text-lg mt-2 tracking-wide">Enter your code</h2>
-              <p className="text-white/35 text-sm leading-relaxed">We sent a 6-digit code to<br /><span className="text-white/70 font-medium">{email}</span></p>
+              <p className="text-white/35 text-sm leading-relaxed">We sent a verification code to<br /><span className="text-white/70 font-medium">{email}</span></p>
             </div>
             <form onSubmit={verifyCode} className="space-y-4">
-              <input inputMode="numeric" autoFocus placeholder="000000" value={code}
-                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] font-mono text-white placeholder-white/15 outline-none focus:border-gold/50 transition-colors" />
+              <input inputMode="numeric" autoFocus placeholder="00000000" value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-4 text-center text-2xl tracking-[0.4em] font-mono text-white placeholder-white/15 outline-none focus:border-gold/50 transition-colors" />
               <button type="submit" disabled={loading || code.length < 6} className="btn-primary w-full py-3.5 text-sm font-semibold tracking-wider disabled:opacity-50">
                 {loading ? 'Verifying…' : 'Verify Code'}
               </button>
