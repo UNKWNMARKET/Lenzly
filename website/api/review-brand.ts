@@ -44,7 +44,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<str
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { applicationId, action } = req.body as { applicationId: string; action: 'approve' | 'reject' }
+  const { applicationId, action } = req.body as { applicationId: string; action: 'approve' | 'reject' | 'revoke' }
   if (!applicationId || !action) return res.status(400).json({ error: 'Missing fields' })
   if (!SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not set in Vercel environment variables' })
 
@@ -163,6 +163,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </p>
         <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
           If you believe this is an error or have questions, please reply to this email.
+        </p>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
+      </div>
+      `
+    )
+
+    return res.status(200).json({ success: true, emailError })
+  }
+
+  if (action === 'revoke') {
+    // Ban the brand's auth account so they can no longer sign in.
+    let located: string | null = app.brand_user_id || null
+    if (!located) {
+      const { data: list } = await admin.auth.admin.listUsers()
+      located = list?.users?.find(u => u.email?.toLowerCase() === app.email.toLowerCase())?.id || null
+    }
+    if (located) {
+      // Set a 100-year ban (effectively permanent) to block sign-in.
+      const { error: banErr } = await admin.auth.admin.updateUserById(located, {
+        ban_duration: '876000h',
+      })
+      if (banErr) {
+        return res.status(500).json({ error: `Could not revoke access: ${banErr.message}` })
+      }
+    }
+
+    await admin.from('brand_applications').update({
+      status: 'revoked',
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', applicationId)
+
+    const emailError = await sendEmail(
+      app.email,
+      `Your Lenzly business access has been revoked`,
+      `
+      <div style="font-family:Inter,sans-serif;background:#0b0b0d;color:#fff;max-width:560px;margin:0 auto;padding:40px 32px;border-radius:16px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:0.25em;color:#ecc85c;margin:0 0 8px;">LENZLY</h1>
+          <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Business Portal</p>
+        </div>
+        <h2 style="font-size:20px;font-weight:600;margin:0 0 12px;">Access Revoked</h2>
+        <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
+          Hi ${app.company}, your access to the Lenzly Business Portal has been revoked due to a violation of our rules and guidelines. You can no longer sign in.
+        </p>
+        <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
+          If you believe this was made in error, please reply to this email to appeal.
         </p>
         <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
       </div>

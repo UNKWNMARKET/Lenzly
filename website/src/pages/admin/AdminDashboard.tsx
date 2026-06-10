@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Clock, Copy, LogOut, Building2, Globe, Mail, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Copy, LogOut, Building2, Globe, Mail, RefreshCw, Ban, ShieldOff } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -10,13 +10,16 @@ interface Application {
   email: string
   website: string | null
   needs: string[]
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'revoked'
   created_at: string
   reviewed_at: string | null
   temp_password: string | null
+  brand_user_id: string | null
 }
 
 interface Credentials { company: string; email: string; password: string }
+
+type Tab = 'pending' | 'approved' | 'rejected' | 'revoked'
 
 
 export default function AdminDashboard() {
@@ -24,11 +27,12 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const [apps, setApps] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [tab, setTab] = useState<Tab>('pending')
   const [credentials, setCredentials] = useState<Credentials | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [revokeTarget, setRevokeTarget] = useState<Application | null>(null)
 
   const isAdmin = user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com'
 
@@ -49,9 +53,10 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (isAdmin) fetchApps() }, [isAdmin, fetchApps])
 
-  async function review(app: Application, action: 'approve' | 'reject') {
+  async function review(app: Application, action: 'approve' | 'reject' | 'revoke') {
     setActionLoading(app.id)
     setErrorMsg('')
+    const verb = action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected' : 'Revoked'
     try {
       const res = await fetch('/api/review-brand', {
         method: 'POST',
@@ -62,7 +67,7 @@ export default function AdminDashboard() {
       if (!res.ok) {
         setErrorMsg(data.error || `Request failed (${res.status})`)
       } else {
-        if (data.emailError) setErrorMsg(`${action === 'approve' ? 'Approved' : 'Rejected'}, but the email failed to send: ${data.emailError}`)
+        if (data.emailError) setErrorMsg(`${verb}, but the email failed to send: ${data.emailError}`)
         if (action === 'approve' && data.tempPassword) {
           setCredentials({ company: app.company, email: app.email, password: data.tempPassword })
         }
@@ -76,6 +81,13 @@ export default function AdminDashboard() {
 
   const approve = (app: Application) => review(app, 'approve')
   const reject = (app: Application) => review(app, 'reject')
+
+  async function confirmRevoke() {
+    if (!revokeTarget) return
+    const target = revokeTarget
+    setRevokeTarget(null)
+    await review(target, 'revoke')
+  }
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text)
@@ -122,8 +134,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-lenz-card border border-lenz-border rounded-xl p-1 w-fit">
-          {(['pending', 'approved', 'rejected'] as const).map(t => {
+        <div className="flex gap-1 mb-6 bg-lenz-card border border-lenz-border rounded-xl p-1 w-fit flex-wrap">
+          {(['pending', 'approved', 'rejected', 'revoked'] as const).map(t => {
             const count = apps.filter(a => a.status === t).length
             return (
               <button key={t} onClick={() => setTab(t)}
@@ -131,6 +143,7 @@ export default function AdminDashboard() {
                 {t === 'pending' && <Clock size={13} />}
                 {t === 'approved' && <CheckCircle size={13} />}
                 {t === 'rejected' && <XCircle size={13} />}
+                {t === 'revoked' && <Ban size={13} />}
                 {t} {count > 0 && <span className={`text-xs rounded-full px-1.5 py-0.5 ${tab === t ? 'bg-lenz-bg/20' : 'bg-white/10'}`}>{count}</span>}
               </button>
             )
@@ -197,11 +210,25 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {tab === 'approved' && app.temp_password && (
-                    <button onClick={() => setCredentials({ company: app.company, email: app.email, password: app.temp_password! })}
-                      className="shrink-0 text-xs text-gold/60 hover:text-gold transition-colors border border-gold/20 rounded-lg px-3 py-2">
-                      View Credentials
-                    </button>
+                  {tab === 'approved' && (
+                    <div className="flex flex-col gap-2 shrink-0 items-end">
+                      {app.temp_password && (
+                        <button onClick={() => setCredentials({ company: app.company, email: app.email, password: app.temp_password! })}
+                          className="text-xs text-gold/60 hover:text-gold transition-colors border border-gold/20 rounded-lg px-3 py-2 w-full">
+                          View Credentials
+                        </button>
+                      )}
+                      <button onClick={() => setRevokeTarget(app)} disabled={actionLoading === app.id}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/20 text-red-400 text-xs hover:bg-red-500/10 transition-colors disabled:opacity-40 w-full">
+                        <Ban size={13} /> Revoke Access
+                      </button>
+                    </div>
+                  )}
+
+                  {tab === 'revoked' && (
+                    <span className="shrink-0 flex items-center gap-1.5 text-xs text-red-400/70 border border-red-500/20 rounded-lg px-3 py-2">
+                      <ShieldOff size={13} /> Access Revoked
+                    </span>
                   )}
                 </div>
               </div>
@@ -249,6 +276,39 @@ export default function AdminDashboard() {
               <button onClick={() => setCredentials(null)}
                 className="flex-1 py-3 rounded-xl bg-gold text-lenz-bg text-sm font-semibold hover:opacity-90 transition-opacity">
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Confirmation Modal */}
+      {revokeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setRevokeTarget(null)} />
+          <div className="relative bg-lenz-card border border-red-500/20 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-3">
+                <Ban size={22} className="text-red-400" />
+              </div>
+              <h2 className="text-xl font-serif text-white mb-1">Revoke Access</h2>
+              <p className="text-sm text-white/40">
+                <span className="text-white/70 font-medium">{revokeTarget.company}</span> will be locked out of the business portal immediately and notified by email.
+              </p>
+            </div>
+
+            <div className="bg-red-950/20 border border-red-500/15 rounded-xl px-4 py-3 mb-6 text-xs text-red-300/80 leading-relaxed">
+              Use this when a brand violates Lenzly's rules and guidelines. They won't be able to sign in until you re-approve them.
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setRevokeTarget(null)}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 text-sm font-medium hover:bg-white/5 transition-colors">
+                Cancel
+              </button>
+              <button onClick={confirmRevoke}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
+                <Ban size={14} /> Revoke Access
               </button>
             </div>
           </div>
