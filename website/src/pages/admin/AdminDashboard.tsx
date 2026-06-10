@@ -29,10 +29,12 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
+  const isAdmin = user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com'
+
   useEffect(() => {
     if (!authLoading && !user) navigate('/login?next=/admin')
-    else if (!authLoading && user?.email !== 'eisdorferjesse@gmail.com') navigate('/')
-  }, [user, authLoading, navigate])
+    else if (!authLoading && !isAdmin) navigate('/')
+  }, [user, authLoading, isAdmin, navigate])
 
   const fetchApps = useCallback(async () => {
     setLoading(true)
@@ -44,7 +46,7 @@ export default function AdminDashboard() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { if (user?.email === 'eisdorferjesse@gmail.com') fetchApps() }, [user, fetchApps])
+  useEffect(() => { if (isAdmin) fetchApps() }, [isAdmin, fetchApps])
 
   async function approve(app: Application) {
     setActionLoading(app.id)

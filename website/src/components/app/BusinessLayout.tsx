@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../lib/utils'
 
@@ -14,6 +14,7 @@ export default function BusinessLayout() {
   const { user, loading, profile, signOut } = useAuth()
   const { pathname } = useLocation()
   const isActive = (to: string, exact?: boolean) => exact ? pathname === to : pathname.startsWith(to)
+  const isAdmin = user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com'
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-lenz-bg"><div className="w-8 h-8 rounded-full border-2 border-gold/20 border-t-gold animate-spin" /></div>
   if (!user) return <Navigate to="/business/login" replace />
@@ -31,6 +32,11 @@ export default function BusinessLayout() {
           ))}
         </nav>
         <div className="space-y-1 pt-4 border-t border-white/5">
+          {isAdmin && (
+            <Link to="/admin" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-gold/70 hover:bg-gold/10 hover:text-gold transition-all">
+              <ShieldCheck size={20} strokeWidth={1.8} /> Admin
+            </Link>
+          )}
           <Link to="/app" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
             <ArrowLeft size={20} strokeWidth={1.8} /> Back to App
           </Link>

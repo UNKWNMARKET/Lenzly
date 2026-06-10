@@ -9,7 +9,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const { pathname } = useLocation()
   const { user } = useAuth()
-  const isAdmin = user?.email === 'eisdorferjesse@gmail.com'
+  const isAdmin = user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com'
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24)

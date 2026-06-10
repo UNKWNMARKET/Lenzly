@@ -14,7 +14,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (user?.email === 'eisdorferjesse@gmail.com') navigate('/admin', { replace: true })
+    if (user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com') navigate('/admin', { replace: true })
   }, [user, navigate])
 
   async function handleLogin(e: React.FormEvent) {
@@ -22,7 +22,7 @@ export default function AdminLogin() {
     setError(''); setLoading(true)
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) { setError(authError.message); setLoading(false); return }
-    if (data.user?.email !== 'eisdorferjesse@gmail.com') {
+    if (data.user?.email?.toLowerCase() !== 'eisdorferjesse@gmail.com') {
       await supabase.auth.signOut()
       setError('Access denied. Admin only.')
       setLoading(false)
