@@ -21,6 +21,7 @@ import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
 import Search from './pages/Search'
 import Explore from './pages/Explore'
+import Jobs from './pages/Jobs'
 import FindPhotographer from './pages/FindPhotographer'
 import Profile from './pages/Profile'
 import BrandsPage from './pages/BrandsPage'
@@ -125,6 +126,7 @@ function Router() {
       <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
       <Route path="/spot">{() => <ProtectedRoute component={PostSpot} />}</Route>
       <Route path="/explore">{() => <ProtectedRoute component={Explore} />}</Route>
+      <Route path="/jobs">{() => <ProtectedRoute component={Jobs} />}</Route>
       <Route path="/search">{() => <ProtectedRoute component={Search} />}</Route>
       <Route path="/find">{() => <ProtectedRoute component={FindPhotographer} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>

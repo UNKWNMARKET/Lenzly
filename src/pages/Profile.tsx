@@ -8,7 +8,7 @@ import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, Edit3, Camera,
   ChevronRight, Star, Building2, Share2, X,
-  MessageSquare
+  MessageSquare, Briefcase
 } from 'lucide-react'
 import { currentUser, photographers } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
@@ -242,6 +242,13 @@ export default function Profile() {
             className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors"
           >
             <Share2 size={17} />
+          </button>
+          <button
+            onClick={() => navigate('/jobs')}
+            className="p-2 rounded-full bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-colors"
+            title="Photography Jobs"
+          >
+            <Briefcase size={17} />
           </button>
           <button
             onClick={() => navigate('/settings')}
