@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Users, Image, Eye, TrendingUp, Activity, RefreshCw } from 'lucide-react'
+import { Users, Image, Eye, TrendingUp, Activity, RefreshCw, Globe, Smartphone } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 interface Stats {
   members_total: number; members_today: number; members_week: number; members_month: number
   posts_total: number; posts_today: number; posts_week: number; posts_month: number
   visitors_today: number; visitors_week: number; visitors_month: number
+  web_visitors_today: number; web_visitors_week: number; web_visitors_month: number
+  app_visitors_today: number; app_visitors_week: number; app_visitors_month: number
   views_today: number; views_week: number; views_month: number
   generated_at: string
 }
@@ -51,8 +53,10 @@ export default function AdminAnalytics() {
     }
   }, [load])
 
-  const cards: { label: string; icon: any; today: number; week: number; month: number; total?: number }[] = stats ? [
-    { label: 'Visitors', icon: Eye, today: stats.visitors_today, week: stats.visitors_week, month: stats.visitors_month },
+  type Split = { web: number; app: number }
+  const cards: { label: string; icon: any; today: number; week: number; month: number; total?: number; split?: Split }[] = stats ? [
+    { label: 'Visitors', icon: Eye, today: stats.visitors_today, week: stats.visitors_week, month: stats.visitors_month,
+      split: { web: stats.web_visitors_today, app: stats.app_visitors_today } },
     { label: 'Page Views', icon: Activity, today: stats.views_today, week: stats.views_week, month: stats.views_month },
     { label: 'New Posts', icon: Image, today: stats.posts_today, week: stats.posts_week, month: stats.posts_month, total: stats.posts_total },
     { label: 'New Members', icon: Users, today: stats.members_today, week: stats.members_week, month: stats.members_month, total: stats.members_total },
@@ -89,6 +93,16 @@ export default function AdminAnalytics() {
             </div>
             <div className="text-3xl font-semibold text-white tracking-tight">{c.today.toLocaleString()}</div>
             <div className="text-[11px] text-white/30 mt-0.5">today</div>
+            {c.split && (
+              <div className="flex items-center gap-3 mt-2">
+                <span className="flex items-center gap-1 text-[11px] text-white/50">
+                  <Globe size={11} className="text-white/30" /> {c.split.web.toLocaleString()} web
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-white/50">
+                  <Smartphone size={11} className="text-white/30" /> {c.split.app.toLocaleString()} app
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
               <div>
                 <div className="text-sm font-medium text-white/80">{c.week.toLocaleString()}</div>
