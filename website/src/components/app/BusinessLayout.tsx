@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../lib/utils'
 
@@ -32,6 +32,9 @@ export default function BusinessLayout() {
           ))}
         </nav>
         <div className="space-y-1 pt-4 border-t border-white/5">
+          <Link to="/business/change-password" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
+            <KeyRound size={20} strokeWidth={1.8} /> Change Password
+          </Link>
           {isAdmin && (
             <Link to="/admin" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-gold/70 hover:bg-gold/10 hover:text-gold transition-all">
               <ShieldCheck size={20} strokeWidth={1.8} /> Admin

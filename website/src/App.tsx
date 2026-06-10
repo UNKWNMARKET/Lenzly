@@ -27,6 +27,7 @@ import Notifications from './pages/app/Notifications'
 import UploadPage from './pages/app/Upload'
 import Settings from './pages/app/Settings'
 import EditProfile from './pages/app/EditProfile'
+import ChangePassword from './pages/app/ChangePassword'
 
 // Admin
 import AdminLogin from './pages/admin/AdminLogin'
@@ -72,6 +73,7 @@ export default function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="upload" element={<UploadPage />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="change-password" element={<ChangePassword />} />
             <Route path="edit-profile" element={<EditProfile />} />
             <Route path="post/:id" element={<PostView />} />
             <Route path="u/:username" element={<Profile />} />
@@ -89,6 +91,7 @@ export default function App() {
             <Route path="discover" element={<BusinessDiscover />} />
             <Route path="shortlist" element={<BusinessShortlist />} />
             <Route path="requests" element={<BusinessRequests />} />
+            <Route path="change-password" element={<ChangePassword />} />
             <Route path="photographer/:id" element={<BusinessPhotographer />} />
           </Route>
 

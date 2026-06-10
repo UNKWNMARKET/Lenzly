@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, Shield, Bell, CreditCard, FileText, LogOut, ChevronRight, Briefcase } from 'lucide-react'
+import { ArrowLeft, User, Shield, Bell, CreditCard, FileText, LogOut, ChevronRight, Briefcase, KeyRound } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 
@@ -10,6 +10,7 @@ export default function Settings() {
   const groups = [
     { title: 'Account', items: [
       { icon: User, label: 'Edit Profile', to: '/app/edit-profile' },
+      { icon: KeyRound, label: 'Change Password', to: '/app/change-password' },
       { icon: Shield, label: 'Privacy', to: '#' },
       { icon: Bell, label: 'Notifications', to: '#' },
     ]},
