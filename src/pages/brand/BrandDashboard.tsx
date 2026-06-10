@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
-import { Building2, Search, Bookmark, Send, LogOut, ChevronRight, Star, Users } from 'lucide-react'
+import { Building2, Search, Bookmark, Send, LogOut, ChevronRight, Users } from 'lucide-react'
 import { useBrandAuth } from '@/contexts/BrandAuthContext'
 
 interface HireRequest {
@@ -19,9 +19,7 @@ export default function BrandDashboard() {
 
   useEffect(() => {
     api('/hire-requests').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        setRecentRequests(data.slice(0, 3))
-      }
+      if (Array.isArray(data)) setRecentRequests(data.slice(0, 3))
     }).catch(() => {})
     api('/shortlist').then(r => r.json()).then(data => {
       if (Array.isArray(data)) setShortlistCount(data.length)
@@ -91,7 +89,7 @@ export default function BrandDashboard() {
             <button
               key={label}
               onClick={() => navigate(path)}
-              className="w-full flex items-center gap-4 px-5 py-4 border-b border-[#141414] last:border-0 hover:bg-white/3 transition-colors group"
+              className="w-full flex items-center gap-4 px-5 py-4 border-b border-[#141414] last:border-0 hover:bg-white/[0.03] transition-colors group"
             >
               <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
                 <Icon size={16} className="text-white/50" />
@@ -117,7 +115,7 @@ export default function BrandDashboard() {
                 <div key={r.id} className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl px-4 py-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-white/5 overflow-hidden shrink-0">
                     {r.photographer?.avatar_url
-                      ? <img src={r.photographer.avatar_url} className="w-full h-full object-cover" />
+                      ? <img src={r.photographer.avatar_url} className="w-full h-full object-cover" alt="" />
                       : <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">{r.photographer?.name?.[0] ?? '?'}</div>
                     }
                   </div>

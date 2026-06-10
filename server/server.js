@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
 
@@ -30,7 +31,7 @@ async function supabaseFetch(path, params = {}) {
 }
 
 // ── ADMIN CREDENTIALS ────────────────────────────────────────────────────────
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'eisdorferjesse1'
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'eisdorferjesse@gmail.com'
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH ||
   '$2a$10$PzBOLx78maOS51uisBtIhO6.MkxR6AS1oWTVdAx8EoJNz0A5QHuiS'
 
@@ -48,6 +49,7 @@ function readDB() {
   const raw = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'))
   if (!raw.brandUsers) raw.brandUsers = []
   if (!raw.hireRequests) raw.hireRequests = []
+  if (!raw.brandAccounts) raw.brandAccounts = []
   return raw
 }
 function writeDB(data) {
@@ -119,6 +121,30 @@ app.put('/api/admin/settings', requireAuth, (req, res) => {
   res.json(db.settings)
 })
 
+// ── Brand application (public) — supports both /api/brand/apply and /api/brands/apply ──
+function handleBrandApply(req, res) {
+  const { company, email, website, needs } = req.body
+  if (!company || !email) return res.status(400).json({ error: 'Company and email are required' })
+  const db = readDB()
+  if (db.brandApplications.some(b => b.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(409).json({ error: 'An application with this email already exists' })
+  }
+  const application = {
+    id: `ba_${Date.now()}`,
+    company: company.trim(),
+    email: email.trim().toLowerCase(),
+    website: (website ?? '').trim().replace(/^https?:\/\//, ''),
+    needs: Array.isArray(needs) ? needs : [],
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  }
+  db.brandApplications.unshift(application)
+  writeDB(db)
+  res.json({ ok: true, id: application.id })
+}
+app.post('/api/brand/apply', handleBrandApply)
+app.post('/api/brands/apply', handleBrandApply)
+
 // ── Brand applications (admin) ────────────────────────────────────────────────
 app.get('/api/admin/brands', requireAuth, (req, res) => {
   const db = readDB()
@@ -133,12 +159,10 @@ app.put('/api/admin/brands/:id/status', requireAuth, (req, res) => {
   app_.status = status
   app_.reviewedAt = new Date().toISOString()
 
-  // When approving: create brand user account if not already created
   if (status === 'approved') {
     const existing = db.brandUsers.find(u => u.applicationId === app_.id)
     if (!existing) {
-      // Generate a temporary password they'll need to reset
-      const tempPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase()
+      const tempPassword = crypto.randomBytes(5).toString('hex').toUpperCase() + '!'
       const passwordHash = bcrypt.hashSync(tempPassword, 10)
       const brandUser = {
         id: `bu_${Date.now()}`,
@@ -146,7 +170,7 @@ app.put('/api/admin/brands/:id/status', requireAuth, (req, res) => {
         company: app_.company,
         email: app_.email,
         passwordHash,
-        tempPassword, // returned once so admin can share with brand
+        tempPassword,
         shortlist: [],
         createdAt: new Date().toISOString(),
       }
@@ -155,6 +179,9 @@ app.put('/api/admin/brands/:id/status', requireAuth, (req, res) => {
       app_.tempPassword = tempPassword
       writeDB(db)
       return res.json({ ...app_, tempPassword })
+    } else {
+      writeDB(db)
+      return res.json({ ...app_, tempPassword: existing.tempPassword ?? null })
     }
   }
 
@@ -164,6 +191,10 @@ app.put('/api/admin/brands/:id/status', requireAuth, (req, res) => {
 
 app.delete('/api/admin/brands/:id', requireAuth, (req, res) => {
   const db = readDB()
+  const app_ = db.brandApplications.find(b => b.id === req.params.id)
+  if (app_?.brandUserId) {
+    db.brandUsers = db.brandUsers.filter(u => u.id !== app_.brandUserId)
+  }
   db.brandApplications = db.brandApplications.filter(b => b.id !== req.params.id)
   writeDB(db)
   res.json({ ok: true })
@@ -173,29 +204,6 @@ app.delete('/api/admin/brands/:id', requireAuth, (req, res) => {
 app.get('/api/admin/hire-requests', requireAuth, (req, res) => {
   const db = readDB()
   res.json(db.hireRequests ?? [])
-})
-
-// ── Brand application (public) ────────────────────────────────────────────────
-app.post('/api/brand/apply', (req, res) => {
-  const { company, email, website, needs } = req.body
-  if (!company || !email) return res.status(400).json({ error: 'Company and email are required' })
-  const db = readDB()
-  // Prevent duplicate applications from same email
-  if (db.brandApplications.some(b => b.email.toLowerCase() === email.toLowerCase())) {
-    return res.status(409).json({ error: 'An application with this email already exists' })
-  }
-  const application = {
-    id: `ba_${Date.now()}`,
-    company: company.trim(),
-    email: email.trim().toLowerCase(),
-    website: (website ?? '').trim(),
-    needs: Array.isArray(needs) ? needs : [],
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-  }
-  db.brandApplications.unshift(application)
-  writeDB(db)
-  res.json({ ok: true, id: application.id })
 })
 
 // ── Brand auth ────────────────────────────────────────────────────────────────
@@ -240,20 +248,13 @@ app.get('/api/brand/photographers', requireBrandAuth, async (req, res) => {
     const limit = 20
     const offset = parseInt(page) * limit
 
-    let query = 'profiles?is_pro=eq.true&select=id,username,name,avatar_url,bio,specialty,location,price_range,available,followers_count,posts_count'
-    query += `&limit=${limit}&offset=${offset}&order=followers_count.desc`
-
+    let query = `profiles?is_pro=eq.true&select=id,username,name,avatar_url,bio,specialty,location,price_range,available,followers_count,posts_count&limit=${limit}&offset=${offset}&order=followers_count.desc`
     if (available === 'true') query += '&available=eq.true'
 
-    let profiles = await supabaseFetch(query.replace('profiles?', 'profiles?'), {})
+    let profiles = await supabaseFetch(query)
 
-    // Filter client-side for specialty and search (Supabase array contains is complex via REST)
-    if (specialty) {
-      profiles = profiles.filter(p => p.specialty?.some(s => s.toLowerCase().includes(specialty.toLowerCase())))
-    }
-    if (location) {
-      profiles = profiles.filter(p => p.location?.toLowerCase().includes(location.toLowerCase()))
-    }
+    if (specialty) profiles = profiles.filter(p => p.specialty?.some(s => s.toLowerCase().includes(specialty.toLowerCase())))
+    if (location) profiles = profiles.filter(p => p.location?.toLowerCase().includes(location.toLowerCase()))
     if (search) {
       const q = search.toLowerCase()
       profiles = profiles.filter(p =>
@@ -271,7 +272,6 @@ app.get('/api/brand/photographers', requireBrandAuth, async (req, res) => {
   }
 })
 
-// Get a single photographer's posts for portfolio view
 app.get('/api/brand/photographers/:id/posts', requireBrandAuth, async (req, res) => {
   try {
     const posts = await supabaseFetch(`posts?user_id=eq.${req.params.id}&select=id,image_url,caption,likes_count,category&order=created_at.desc&limit=12`)
@@ -320,7 +320,6 @@ app.delete('/api/brand/shortlist/:photographerId', requireBrandAuth, (req, res) 
 app.get('/api/brand/hire-requests', requireBrandAuth, async (req, res) => {
   const db = readDB()
   const requests = (db.hireRequests ?? []).filter(r => r.brandId === req.brand.brandId)
-  // Enrich with photographer names
   try {
     const ids = [...new Set(requests.map(r => r.photographerId))]
     if (ids.length) {
@@ -336,7 +335,6 @@ app.post('/api/brand/hire-requests', requireBrandAuth, (req, res) => {
   const { photographerId, message, budget, projectType, startDate } = req.body
   if (!photographerId || !message) return res.status(400).json({ error: 'Photographer and message are required' })
   const db = readDB()
-  // Prevent duplicate pending requests to same photographer
   const existing = (db.hireRequests ?? []).find(
     r => r.brandId === req.brand.brandId && r.photographerId === photographerId && r.status === 'pending'
   )
@@ -417,6 +415,6 @@ app.get('/api/health', (req, res) => res.json({ ok: true, version: '2.0.0' }))
 
 app.listen(PORT, () => {
   console.log(`\n  LENZLY Admin + Brand API running on http://localhost:${PORT}`)
-  console.log(`  Admin login: ${ADMIN_USERNAME}`)
-  console.log(`  Brand portal: /brand-portal\n`)
+  console.log(`  Admin login: ${ADMIN_USERNAME} / lenzly2024`)
+  console.log(`  Brand portal: /brand-portal/login\n`)
 })

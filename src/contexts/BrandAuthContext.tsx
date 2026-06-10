@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 const API = 'http://localhost:3001/api/brand'
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 interface BrandUser { company: string; email: string; token: string; expiresAt: number }
 interface BrandAuthCtx {
@@ -9,6 +9,7 @@ interface BrandAuthCtx {
   login: (email: string, password: string) => Promise<string | null>
   logout: () => void
   api: (path: string, opts?: RequestInit) => Promise<Response>
+  brandApi: (path: string, opts?: RequestInit) => Promise<Response>
 }
 
 const Ctx = createContext<BrandAuthCtx>({} as BrandAuthCtx)
@@ -76,7 +77,7 @@ export function BrandAuthProvider({ children }: { children: ReactNode }) {
     api('/verify').then(r => { if (!r.ok) logout() }).catch(() => {})
   }, [])
 
-  return <Ctx.Provider value={{ brand, login, logout, api }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ brand, login, logout, api, brandApi: api }}>{children}</Ctx.Provider>
 }
 
 export const useBrandAuth = () => useContext(Ctx)

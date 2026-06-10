@@ -8,6 +8,7 @@ import PageErrorBoundary from './components/PageErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
+import { BrandAuthProvider, useBrandAuth } from './contexts/BrandAuthContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProProvider } from './contexts/ProContext'
 import { SpotModalProvider, useSpotModal } from './contexts/SpotModalContext'
@@ -50,8 +51,6 @@ import AdminPhotographers from './pages/admin/AdminPhotographers'
 import AdminPosts from './pages/admin/AdminPosts'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminSettings from './pages/admin/AdminSettings'
-import { useAdminAuth } from './contexts/AdminAuthContext'
-import { BrandAuthProvider, useBrandAuth } from './contexts/BrandAuthContext'
 import BrandLogin from './pages/brand/BrandLogin'
 import BrandDashboard from './pages/brand/BrandDashboard'
 import BrandSearch from './pages/brand/BrandSearch'
@@ -59,6 +58,7 @@ import BrandHireRequest from './pages/brand/BrandHireRequest'
 import BrandShortlist from './pages/brand/BrandShortlist'
 import BrandRequests from './pages/brand/BrandRequests'
 import BrandSettings from './pages/brand/BrandSettings'
+import { useAdminAuth } from './contexts/AdminAuthContext'
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { admin } = useAdminAuth()
@@ -91,12 +91,10 @@ function ProtectedRoute({ component: Component, skipOnboarding }: { component: R
     navigate('/auth/login')
     return null
   }
-  // New users who haven't set their display name yet → profile setup first.
   if (!skipOnboarding && profile && !profile.name && location !== '/profile/edit') {
     navigate('/profile/edit')
     return null
   }
-  // Then send through onboarding (follow suggestions etc.).
   if (!skipOnboarding && profile && profile.name && profile.onboarded === false && location !== '/onboarding') {
     navigate('/onboarding')
     return null
@@ -113,7 +111,7 @@ function Router() {
       <Route path="/auth/forgot-password" component={ForgotPassword} />
       <Route path="/auth/reset-password" component={ResetPassword} />
 
-      {/* Onboarding (protected, but exempt from the onboarding redirect) */}
+      {/* Onboarding */}
       <Route path="/onboarding">{() => <ProtectedRoute component={Onboarding} skipOnboarding />}</Route>
 
       {/* Protected app */}
@@ -136,17 +134,19 @@ function Router() {
       <Route path="/weddings">{() => <ProtectedRoute component={Weddings} />}</Route>
       <Route path="/story-archive">{() => <ProtectedRoute component={StoryArchive} />}</Route>
       <Route path="/brands" component={BrandsPage} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
 
       {/* Brand portal */}
       <Route path="/brand-portal/login" component={BrandLogin} />
+      <Route path="/brand/login" component={BrandLogin} />
       <Route path="/brand-portal">{() => <BrandRoute component={BrandDashboard} />}</Route>
+      <Route path="/brand/dashboard">{() => <BrandRoute component={BrandDashboard} />}</Route>
       <Route path="/brand-portal/search">{() => <BrandRoute component={BrandSearch} />}</Route>
       <Route path="/brand-portal/shortlist">{() => <BrandRoute component={BrandShortlist} />}</Route>
       <Route path="/brand-portal/requests">{() => <BrandRoute component={BrandRequests} />}</Route>
       <Route path="/brand-portal/settings">{() => <BrandRoute component={BrandSettings} />}</Route>
       <Route path="/brand-portal/hire/:id">{() => <BrandRoute component={BrandHireRequest} />}</Route>
-      <Route path="/privacy" component={PrivacyPolicy} />
-      <Route path="/terms" component={TermsOfService} />
 
       {/* Admin */}
       <Route path="/admin">{() => <AdminRoute component={AdminDashboard} />}</Route>
@@ -168,31 +168,31 @@ export default function App() {
       <ThemeProvider defaultTheme="dark">
         <AuthProvider>
           <ProProvider>
-          <AdminAuthProvider>
-          <BrandAuthProvider>
-          <SpotModalProvider>
-            <SwipeWrapper>
-              <OfflineBanner />
-              <DeepLinkHandler />
-              <Router />
-              <BottomNavWrapper />
-            </SwipeWrapper>
-            <GlobalSpotModal />
-            <Toaster
-              theme="dark"
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: '#111111',
-                  border: '1px solid #1e1e1e',
-                  color: '#f5f5f5',
-                  fontFamily: 'Inter, sans-serif',
-                },
-              }}
-            />
-          </SpotModalProvider>
-          </BrandAuthProvider>
-          </AdminAuthProvider>
+            <AdminAuthProvider>
+              <BrandAuthProvider>
+                <SpotModalProvider>
+                  <SwipeWrapper>
+                    <OfflineBanner />
+                    <DeepLinkHandler />
+                    <Router />
+                    <BottomNavWrapper />
+                  </SwipeWrapper>
+                  <GlobalSpotModal />
+                  <Toaster
+                    theme="dark"
+                    position="top-center"
+                    toastOptions={{
+                      style: {
+                        background: '#111111',
+                        border: '1px solid #1e1e1e',
+                        color: '#f5f5f5',
+                        fontFamily: 'Inter, sans-serif',
+                      },
+                    }}
+                  />
+                </SpotModalProvider>
+              </BrandAuthProvider>
+            </AdminAuthProvider>
           </ProProvider>
         </AuthProvider>
       </ThemeProvider>
@@ -205,7 +205,6 @@ function DeepLinkHandler() {
   useEffect(() => {
     const handler = CapApp.addListener('appUrlOpen', async ({ url }) => {
       if (!url.startsWith('lenzly://')) return
-      // Parse tokens from the URL hash: lenzly://auth/reset-password#access_token=...&type=recovery
       const hash = url.split('#')[1] ?? ''
       const params = new URLSearchParams(hash)
       const accessToken = params.get('access_token')
@@ -236,14 +235,13 @@ function GlobalSpotModal() {
   return <SpotDetailModal spot={currentSpot} onClose={closeSpot} />
 }
 
-// Routes where the bottom nav is hidden (full-screen or dedicated pages)
 const NAV_HIDDEN_EXACT = new Set([
   '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password',
   '/spot', '/onboarding', '/search', '/brands', '/privacy', '/terms',
   '/upload', '/profile/edit', '/settings', '/pro', '/pro/checkout',
   '/notifications', '/messages', '/story-archive',
 ])
-const NAV_HIDDEN_PREFIX = ['/admin', '/chat/', '/photographer/', '/post/']
+const NAV_HIDDEN_PREFIX = ['/admin', '/brand-portal', '/brand/', '/chat/', '/photographer/', '/post/']
 
 function BottomNavWrapper() {
   const [location] = useLocation()

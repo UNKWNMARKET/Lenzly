@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, ChevronRight, Shield, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle, Camera, MapPin, Star, Search, Shield, TrendingUp, LogIn } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { photographers } from '@/data/mockData'
 import { toast } from 'sonner'
@@ -56,6 +56,15 @@ export default function BrandsPage() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl font-bold tracking-[0.12em] gold-text">FOR BRANDS</h1>
+        <div className="ml-auto">
+          <button
+            onClick={() => navigate('/brand-portal/login')}
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-[#C9A84C] transition-colors"
+          >
+            <LogIn size={14} />
+            Brand Login
+          </button>
+        </div>
       </header>
 
       {/* Hero */}
@@ -74,23 +83,11 @@ export default function BrandsPage() {
             Connect with verified, talented photographers for editorial, commercial, and brand campaigns. Trusted by leading companies worldwide.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex gap-3">
-            <button
-              onClick={() => setActiveTab('signup')}
-              className="flex-1 btn-primary"
-            >
-              Create Brand Account
-            </button>
-            <button
-              onClick={() => setActiveTab('discover')}
-              className="flex-1 btn-ghost"
-            >
-              Browse Talent
-            </button>
+            <button onClick={() => setActiveTab('signup')} className="flex-1 btn-primary">Create Brand Account</button>
+            <button onClick={() => setActiveTab('discover')} className="flex-1 btn-ghost">Browse Talent</button>
           </div>
 
-          {/* Trusted by */}
           <div className="mt-5">
             <p className="text-[10px] text-white/20 tracking-widest uppercase mb-2">Trusted by</p>
             <div className="flex gap-4 overflow-x-auto no-scrollbar">
@@ -119,7 +116,6 @@ export default function BrandsPage() {
 
       {activeTab === 'discover' ? (
         <div className="px-4 space-y-4 animate-fade-in">
-          {/* Perks */}
           <div className="grid grid-cols-2 gap-3 mb-2">
             {perks.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="card p-3">
@@ -130,7 +126,6 @@ export default function BrandsPage() {
             ))}
           </div>
 
-          {/* Featured photographers for brands */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-white/50 tracking-wider uppercase">Featured Talent</p>
@@ -168,12 +163,9 @@ export default function BrandsPage() {
                         </div>
                       </div>
                     </div>
-                    <button className="shrink-0 btn-primary text-xs py-1.5 px-3">
-                      Hire
-                    </button>
+                    <button className="shrink-0 btn-primary text-xs py-1.5 px-3">Hire</button>
                   </div>
 
-                  {/* Photo strip */}
                   <div className="grid grid-cols-4 gap-1 mt-3">
                     {p.photos.slice(0, 4).map((photo, i) => (
                       <div key={i} className="aspect-square rounded-md overflow-hidden bg-lenz-muted">
@@ -200,54 +192,52 @@ export default function BrandsPage() {
               </button>
             </div>
           ) : (
-          <form onSubmit={handleApply} className="card p-5 space-y-4">
-            <div className="text-center mb-2">
-              <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
-                <Building2 size={26} className="text-lenz-bg" />
+            <form onSubmit={handleApply} className="card p-5 space-y-4">
+              <div className="text-center mb-2">
+                <div className="w-14 h-14 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
+                  <Building2 size={26} className="text-lenz-bg" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Create Brand Account</h3>
+                <p className="text-xs text-white/30 mt-1">Start hiring photographers today</p>
               </div>
-              <h3 className="text-lg font-bold text-white">Create Brand Account</h3>
-              <p className="text-xs text-white/30 mt-1">Start hiring photographers today</p>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Company Name *</label>
-              <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Your company name..." required
-                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Work Email *</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required
-                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Website</label>
-              <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="company.com"
-                className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign'].map(need => (
-                  <button type="button" key={need} onClick={() => toggleNeed(need)}
-                    className={`text-xs py-2 rounded-lg border transition-all ${
-                      selectedNeeds.includes(need)
-                        ? 'bg-gold/15 border-gold/40 text-gold'
-                        : 'text-white/50 bg-lenz-muted border-lenz-border hover:border-gold/40 hover:text-gold'
-                    }`}>
-                    {need}
-                  </button>
-                ))}
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Company Name *</label>
+                <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Your company name..." required
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
               </div>
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Work Email *</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Website</label>
+                <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="company.com"
+                  className="w-full bg-lenz-muted border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors" />
+              </div>
 
-            <button type="submit" disabled={submitting} className="w-full btn-primary py-3.5 text-sm disabled:opacity-50">
-              {submitting ? 'Submitting…' : 'Request Brand Access'}
-            </button>
-            <p className="text-[10px] text-white/20 text-center">
-              Our team will review your request within 24 hours.
-            </p>
-          </form>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 tracking-wider uppercase mb-1.5">Photography Needs</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Editorial', 'Commercial', 'Events', 'Product', 'Fashion', 'Campaign'].map(need => (
+                    <button type="button" key={need} onClick={() => toggleNeed(need)}
+                      className={`text-xs py-2 rounded-lg border transition-all ${
+                        selectedNeeds.includes(need)
+                          ? 'bg-gold/15 border-gold/40 text-gold'
+                          : 'text-white/50 bg-lenz-muted border-lenz-border hover:border-gold/40 hover:text-gold'
+                      }`}>
+                      {need}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button type="submit" disabled={submitting} className="w-full btn-primary py-3.5 text-sm disabled:opacity-50">
+                {submitting ? 'Submitting…' : 'Request Brand Access'}
+              </button>
+              <p className="text-[10px] text-white/20 text-center">Our team will review your request within 24 hours.</p>
+            </form>
           )}
         </div>
       )}

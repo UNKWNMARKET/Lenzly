@@ -37,15 +37,16 @@ export default function AdminLogin() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-white/40 tracking-widest uppercase mb-2">
-              Username
+              Email
             </label>
             <div className="relative">
               <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
               <input
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="admin"
-                autoComplete="username"
+                placeholder="you@email.com"
+                type="email"
+                autoComplete="email"
                 className="w-full bg-[#111] border border-[#1e1e1e] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A84C]/50 transition-colors"
               />
             </div>
