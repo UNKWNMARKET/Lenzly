@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { trackVisit } from './lib/trackVisit'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 
@@ -48,10 +50,17 @@ function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (<><Navbar /><main>{children}</main><Footer /></>)
 }
 
+function VisitTracker() {
+  const location = useLocation()
+  useEffect(() => { trackVisit(location.pathname) }, [location.pathname])
+  return null
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <VisitTracker />
         <Routes>
           {/* Marketing */}
           <Route path="/" element={<MarketingLayout><Home /></MarketingLayout>} />

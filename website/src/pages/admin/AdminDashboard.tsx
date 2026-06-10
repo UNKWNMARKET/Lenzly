@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, Copy, LogOut, Building2, Globe, Mail, RefreshCw, Ban, ShieldOff, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import AdminAnalytics from './AdminAnalytics'
 
 interface Application {
   id: string
@@ -125,6 +126,8 @@ export default function AdminDashboard() {
       </header>
 
       <main className="relative max-w-5xl mx-auto px-6 py-10">
+        <AdminAnalytics />
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-serif text-white mb-1">Brand Applications</h1>

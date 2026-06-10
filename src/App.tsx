@@ -2,6 +2,7 @@ import { Route, Switch, useLocation } from 'wouter'
 import { useEffect } from 'react'
 import { App as CapApp } from '@capacitor/app'
 import { supabase } from '@/lib/supabase'
+import { trackVisit } from '@/lib/trackVisit'
 import { Toaster } from 'sonner'
 import ErrorBoundary from './components/ErrorBoundary'
 import PageErrorBoundary from './components/PageErrorBoundary'
@@ -102,6 +103,12 @@ function ProtectedRoute({ component: Component, skipOnboarding }: { component: R
   return <PageErrorBoundary><Component /></PageErrorBoundary>
 }
 
+function VisitTracker() {
+  const [location] = useLocation()
+  useEffect(() => { trackVisit(location) }, [location])
+  return null
+}
+
 function Router() {
   return (
     <Switch>
@@ -174,6 +181,7 @@ export default function App() {
                   <SwipeWrapper>
                     <OfflineBanner />
                     <DeepLinkHandler />
+                    <VisitTracker />
                     <Router />
                     <BottomNavWrapper />
                   </SwipeWrapper>
