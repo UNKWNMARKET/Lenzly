@@ -4,7 +4,7 @@ import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 
 export default function AppLayout() {
-  const { user, loading } = useAuth()
+  const { user, loading, isBusiness, isAdmin } = useAuth()
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-lenz-bg">
@@ -12,6 +12,8 @@ export default function AppLayout() {
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
+  // Business/brand accounts are confined to the brand area. Admin keeps both.
+  if (isBusiness && !isAdmin) return <Navigate to="/business" replace />
 
   return (
     <div className="min-h-screen bg-lenz-bg">

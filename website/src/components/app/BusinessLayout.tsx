@@ -45,9 +45,11 @@ export default function BusinessLayout() {
               <ShieldCheck size={20} strokeWidth={1.8} /> Admin
             </Link>
           )}
-          <Link to="/app" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
-            <ArrowLeft size={20} strokeWidth={1.8} /> Back to App
-          </Link>
+          {isAdmin && (
+            <Link to="/app" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
+              <ArrowLeft size={20} strokeWidth={1.8} /> Back to App
+            </Link>
+          )}
           <button onClick={signOut} className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
             <LogOut size={20} strokeWidth={1.8} /> Sign Out
           </button>
@@ -95,10 +97,12 @@ export default function BusinessLayout() {
                   <ShieldCheck size={20} strokeWidth={1.8} /> Admin Portal
                 </Link>
               )}
-              <Link to="/app" onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
-                <ArrowLeft size={20} strokeWidth={1.8} /> Back to App
-              </Link>
+              {isAdmin && (
+                <Link to="/app" onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
+                  <ArrowLeft size={20} strokeWidth={1.8} /> Back to App
+                </Link>
+              )}
               <button onClick={() => { setMobileMenuOpen(false); signOut() }}
                 className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[15px] font-medium text-white/55 hover:bg-white/5 hover:text-white transition-all">
                 <LogOut size={20} strokeWidth={1.8} /> Sign Out
