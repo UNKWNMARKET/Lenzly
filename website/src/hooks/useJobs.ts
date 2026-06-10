@@ -65,5 +65,15 @@ export function useMyJobs(userId: string | undefined) {
     await update(job.id, { status: job.status === 'open' ? 'closed' : 'open' })
   }, [update])
 
-  return { jobs, loading, create, update, remove, toggleStatus, reload: load }
+  // Master switch: open or close every job at once
+  const setAll = useCallback(async (status: 'open' | 'closed') => {
+    if (!userId) return
+    await supabase
+      .from('photography_jobs')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+    setJobs(prev => prev.map(j => ({ ...j, status })))
+  }, [userId])
+
+  return { jobs, loading, create, update, remove, toggleStatus, setAll, reload: load }
 }

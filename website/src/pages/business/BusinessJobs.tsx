@@ -13,14 +13,15 @@ function fmtDate(d: string | null) {
 
 export default function BusinessJobs() {
   const { user } = useAuth()
-  const { jobs, loading, create, remove, toggleStatus } = useMyJobs(user?.id)
+  const { jobs, loading, create, remove, toggleStatus, setAll } = useMyJobs(user?.id)
   const [showForm, setShowForm] = useState(false)
 
   const openCount = jobs.filter(j => j.status === 'open').length
+  const boardActive = openCount > 0
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-8 py-8">
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-[11px] text-gold/60 tracking-[0.25em] uppercase font-semibold mb-2">Hiring</p>
           <h1 className="text-3xl font-serif text-white mb-2">Photography Jobs</h1>
@@ -31,6 +32,26 @@ export default function BusinessJobs() {
           <Plus size={15} /> Post a Job
         </button>
       </div>
+
+      {/* Master board switch */}
+      {jobs.length > 0 && (
+        <div className="card px-5 py-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${boardActive ? 'bg-green-500/10 border-green-500/20' : 'bg-white/5 border-white/10'}`}>
+              <Briefcase size={16} className={boardActive ? 'text-green-400' : 'text-white/40'} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Job board {boardActive ? 'active' : 'paused'}</p>
+              <p className="text-xs text-white/35">{boardActive ? 'Your jobs are visible to photographers.' : 'All jobs hidden from photographers.'}</p>
+            </div>
+          </div>
+          <button onClick={() => setAll(boardActive ? 'closed' : 'open')}
+            title={boardActive ? 'Pause job board' : 'Activate job board'}
+            className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${boardActive ? 'bg-gold' : 'bg-white/15'}`}>
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${boardActive ? 'left-6' : 'left-0.5'}`} />
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16 text-white/30 text-sm">Loading…</div>
