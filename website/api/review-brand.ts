@@ -64,21 +64,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (action === 'approve') {
     const tempPassword = generatePassword()
 
-    // Create Supabase auth user
+    // Create Supabase auth user. If the email already has an account, update
+    // that account's password instead so the credentials we show stay valid.
+    let brandUserId: string | null = null
     const { data: userData, error: createErr } = await admin.auth.admin.createUser({
       email: app.email,
       password: tempPassword,
       email_confirm: true,
     })
-    if (createErr && !createErr.message?.includes('already')) {
-      return res.status(500).json({ error: `Could not create brand account: ${createErr.message}` })
+
+    if (createErr) {
+      const alreadyExists = createErr.message?.toLowerCase().includes('already') ||
+        (createErr as any).code === 'email_exists'
+      if (!alreadyExists) {
+        return res.status(500).json({ error: `Could not create brand account: ${createErr.message}` })
+      }
+      // Find the existing user by email and reset their password to the new temp one
+      const { data: list } = await admin.auth.admin.listUsers()
+      const existing = list?.users?.find(u => u.email?.toLowerCase() === app.email.toLowerCase())
+      if (!existing) {
+        return res.status(500).json({ error: 'Account exists but could not be located to reset password.' })
+      }
+      brandUserId = existing.id
+      const { error: updErr } = await admin.auth.admin.updateUserById(existing.id, {
+        password: tempPassword,
+        email_confirm: true,
+      })
+      if (updErr) {
+        return res.status(500).json({ error: `Could not reset password: ${updErr.message}` })
+      }
+    } else {
+      brandUserId = userData?.user?.id || null
     }
 
     // Update application
     await admin.from('brand_applications').update({
       status: 'approved',
       temp_password: tempPassword,
-      brand_user_id: userData?.user?.id || null,
+      brand_user_id: brandUserId,
       reviewed_at: new Date().toISOString(),
     }).eq('id', applicationId)
 
@@ -116,7 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `
     )
 
-    return res.status(200).json({ success: true, tempPassword, brandUserId: userData?.user?.id, emailError })
+    return res.status(200).json({ success: true, tempPassword, brandUserId, emailError })
   }
 
   if (action === 'reject') {
