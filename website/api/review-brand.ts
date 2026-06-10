@@ -8,8 +8,8 @@ const SITE_URL = process.env.SITE_URL || 'https://lenzly-git-master-eisdorferjes
 // Resend requires a verified sender. Gmail addresses can't be verified, so we
 // send from Resend's address (or a custom domain via FROM_EMAIL) and set
 // reply-to so responses go to the work Gmail.
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Lenzly <onboarding@resend.dev>'
-const REPLY_TO = process.env.REPLY_TO || 'lenzlyadmin@gmail.com'
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Lenzly <admin@golenzly.com>'
+const REPLY_TO = process.env.REPLY_TO || 'admin@golenzly.com'
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -164,7 +164,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
           If you believe this is an error or have questions, please reply to this email.
         </p>
-        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · admin@golenzly.com</p>
       </div>
       `
     )
@@ -210,7 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 28px;">
           If you believe this was made in error, please reply to this email to appeal.
         </p>
-        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · admin@golenzly.com</p>
       </div>
       `
     )
@@ -258,7 +258,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Sign In →
           </a>
         </div>
-        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · lenzlyadmin@gmail.com</p>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;margin:0;">© Lenzly · admin@golenzly.com</p>
       </div>
       `
     )

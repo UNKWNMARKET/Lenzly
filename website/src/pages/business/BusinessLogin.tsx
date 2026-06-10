@@ -48,6 +48,9 @@ export default function BusinessLogin() {
             <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25"><Eye size={16} />{showPass ? <EyeOff size={16} /> : null}</button>
           </div>
           {error && <div className="bg-red-950/30 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">{error}</div>}
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs text-white/35 hover:text-gold transition-colors">Forgot password?</Link>
+          </div>
           <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-gold text-lenz-bg font-semibold text-sm disabled:opacity-50 hover:opacity-90 shadow-lg shadow-gold/20">
             {loading ? 'Signing in…' : 'Sign In to Business Portal'}
           </button>

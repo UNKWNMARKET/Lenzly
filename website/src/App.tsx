@@ -13,6 +13,7 @@ import PostDetail from './pages/PostDetail'
 // Auth
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
+import ForgotPassword from './pages/auth/ForgotPassword'
 
 // App (authenticated)
 import AppLayout from './components/app/AppLayout'
@@ -62,6 +63,7 @@ export default function App() {
           {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Authenticated app */}
           <Route path="/app" element={<AppLayout />}>
