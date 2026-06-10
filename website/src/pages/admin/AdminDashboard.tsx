@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [credentials, setCredentials] = useState<Credentials | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const isAdmin = user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com'
 
@@ -48,31 +49,33 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (isAdmin) fetchApps() }, [isAdmin, fetchApps])
 
-  async function approve(app: Application) {
+  async function review(app: Application, action: 'approve' | 'reject') {
     setActionLoading(app.id)
-    const res = await fetch('/api/review-brand', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ applicationId: app.id, action: 'approve' }),
-    })
-    const data = await res.json()
-    if (data.tempPassword) {
-      setCredentials({ company: app.company, email: app.email, password: data.tempPassword })
+    setErrorMsg('')
+    try {
+      const res = await fetch('/api/review-brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: app.id, action }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setErrorMsg(data.error || `Request failed (${res.status})`)
+      } else {
+        if (data.emailError) setErrorMsg(`${action === 'approve' ? 'Approved' : 'Rejected'}, but the email failed to send: ${data.emailError}`)
+        if (action === 'approve' && data.tempPassword) {
+          setCredentials({ company: app.company, email: app.email, password: data.tempPassword })
+        }
+      }
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Network error')
     }
     await fetchApps()
     setActionLoading(null)
   }
 
-  async function reject(app: Application) {
-    setActionLoading(app.id)
-    await fetch('/api/review-brand', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ applicationId: app.id, action: 'reject' }),
-    })
-    await fetchApps()
-    setActionLoading(null)
-  }
+  const approve = (app: Application) => review(app, 'approve')
+  const reject = (app: Application) => review(app, 'reject')
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text)
@@ -133,6 +136,13 @@ export default function AdminDashboard() {
             )
           })}
         </div>
+
+        {errorMsg && (
+          <div className="mb-6 bg-red-950/30 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400 flex items-start justify-between gap-3">
+            <span>{errorMsg}</span>
+            <button onClick={() => setErrorMsg('')} className="text-red-400/50 hover:text-red-400 shrink-0">✕</button>
+          </div>
+        )}
 
         {/* Applications list */}
         {loading ? (

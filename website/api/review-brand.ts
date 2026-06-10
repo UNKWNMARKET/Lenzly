@@ -5,6 +5,11 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zdmtiyyfljzwveaowjxq.s
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const SITE_URL = process.env.SITE_URL || 'https://lenzly-git-master-eisdorferjesse-1667s-projects.vercel.app'
+// Resend requires a verified sender. Gmail addresses can't be verified, so we
+// send from Resend's address (or a custom domain via FROM_EMAIL) and set
+// reply-to so responses go to the work Gmail.
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Lenzly <onboarding@resend.dev>'
+const REPLY_TO = process.env.REPLY_TO || 'lenzlyadmin@gmail.com'
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -13,7 +18,8 @@ function generatePassword() {
   return p + '!'
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string): Promise<string | null> {
+  if (!RESEND_API_KEY) return 'RESEND_API_KEY is not set in Vercel environment variables'
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -21,13 +27,18 @@ async function sendEmail(to: string, subject: string, html: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Lenzly <lenzlyadmin@gmail.com>',
+      from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject,
       html,
     }),
   })
-  return res.ok
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    return `Resend error ${res.status}: ${body.slice(0, 300)}`
+  }
+  return null
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -35,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { applicationId, action } = req.body as { applicationId: string; action: 'approve' | 'reject' }
   if (!applicationId || !action) return res.status(400).json({ error: 'Missing fields' })
+  if (!SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not set in Vercel environment variables' })
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -53,11 +65,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const tempPassword = generatePassword()
 
     // Create Supabase auth user
-    const { data: userData } = await admin.auth.admin.createUser({
+    const { data: userData, error: createErr } = await admin.auth.admin.createUser({
       email: app.email,
       password: tempPassword,
       email_confirm: true,
     })
+    if (createErr && !createErr.message?.includes('already')) {
+      return res.status(500).json({ error: `Could not create brand account: ${createErr.message}` })
+    }
 
     // Update application
     await admin.from('brand_applications').update({
@@ -70,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const loginUrl = `${SITE_URL}/business/login`
     const onboardingUrl = `${SITE_URL}/business/onboarding`
 
-    await sendEmail(
+    const emailError = await sendEmail(
       app.email,
       `You're approved — Welcome to Lenzly, ${app.company}!`,
       `
@@ -101,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `
     )
 
-    return res.status(200).json({ success: true, tempPassword, brandUserId: userData?.user?.id })
+    return res.status(200).json({ success: true, tempPassword, brandUserId: userData?.user?.id, emailError })
   }
 
   if (action === 'reject') {
@@ -110,7 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reviewed_at: new Date().toISOString(),
     }).eq('id', applicationId)
 
-    await sendEmail(
+    const emailError = await sendEmail(
       app.email,
       `Update on your Lenzly brand application`,
       `
@@ -131,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `
     )
 
-    return res.status(200).json({ success: true })
+    return res.status(200).json({ success: true, emailError })
   }
 
   return res.status(400).json({ error: 'Invalid action' })
