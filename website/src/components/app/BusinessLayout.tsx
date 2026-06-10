@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft, ShieldCheck, KeyRound, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Search, Bookmark, Send, LogOut, ArrowLeft, ShieldCheck, KeyRound, Menu, X, Building2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../lib/utils'
 
 const nav = [
   { to: '/business', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/business/page', icon: Building2, label: 'Company Page' },
   { to: '/business/discover', icon: Search, label: 'Discover' },
   { to: '/business/shortlist', icon: Bookmark, label: 'Shortlist' },
   { to: '/business/requests', icon: Send, label: 'Hire Requests' },

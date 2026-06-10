@@ -45,6 +45,7 @@ import BusinessDiscover from './pages/business/BusinessDiscover'
 import BusinessPhotographer from './pages/business/BusinessPhotographer'
 import BusinessShortlist from './pages/business/BusinessShortlist'
 import BusinessRequests from './pages/business/BusinessRequests'
+import BusinessPage from './pages/business/BusinessPage'
 
 function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (<><Navbar /><main>{children}</main><Footer /></>)
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="discover" element={<BusinessDiscover />} />
             <Route path="shortlist" element={<BusinessShortlist />} />
             <Route path="requests" element={<BusinessRequests />} />
+            <Route path="page" element={<BusinessPage />} />
             <Route path="change-password" element={<ChangePassword />} />
             <Route path="photographer/:id" element={<BusinessPhotographer />} />
           </Route>
