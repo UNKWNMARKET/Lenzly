@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Search as SearchIcon, X, MapPin, Compass } from 'lucide-react'
+import { ArrowLeft, Search as SearchIcon, X, MapPin, Compass, AlertCircle, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { img } from '@/lib/image'
+import Spinner from '@/components/Spinner'
+
+const PAGE_SIZE = 30
 
 type UserResult = {
   id: string
@@ -23,27 +27,66 @@ export default function Search() {
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState<UserResult[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Store the last successful query so loadMore can paginate the right term
+  const lastQueryRef = useRef('')
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
   const runSearch = useCallback(async (q: string) => {
     const term = q.trim()
-    if (term.length < 1) { setUsers([]); setSearched(false); return }
+    if (term.length < 1) { setUsers([]); setSearched(false); setError(null); setHasMore(false); return }
     setLoading(true)
-    const { data, error } = await supabase
+    setError(null)
+    lastQueryRef.current = term
+    const { data, error: err } = await supabase
       .from('profiles')
       .select('id, username, name, avatar_url, location, is_pro, followers_count')
       .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
       .order('followers_count', { ascending: false })
-      .limit(30)
-    if (error) console.error('[Search]', error.message, error.code, error.details)
+      .limit(PAGE_SIZE)
+    if (err) {
+      setError('Search failed. Tap to retry.')
+      setLoading(false)
+      setSearched(true)
+      return
+    }
     const rows = (data ?? []).filter(u => u.id !== user?.id && !blockedIds.has(u.id))
     setUsers(rows as UserResult[])
+    setHasMore((data?.length ?? 0) === PAGE_SIZE)
     setLoading(false)
     setSearched(true)
   }, [user?.id, blockedIds])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || users.length === 0) return
+    const term = lastQueryRef.current
+    if (!term) return
+    setLoadingMore(true)
+    const last = users[users.length - 1]
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, username, name, avatar_url, location, is_pro, followers_count')
+      .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
+      .order('followers_count', { ascending: false })
+      .lt('followers_count', last.followers_count)
+      .limit(PAGE_SIZE)
+    const rows = (data ?? []).filter(u => u.id !== user?.id && !blockedIds.has(u.id))
+    if (rows.length > 0) {
+      setUsers(prev => {
+        const seen = new Set(prev.map(u => u.id))
+        return [...prev, ...rows.filter(u => !seen.has(u.id))]
+      })
+    }
+    setHasMore((data?.length ?? 0) === PAGE_SIZE)
+    setLoadingMore(false)
+  }, [loadingMore, users, user?.id, blockedIds])
+
+  const sentinelRef = useInfiniteScroll(loadMore, { hasMore, loading: loadingMore })
 
   // Debounced search as the user types
   useEffect(() => {
@@ -92,6 +135,23 @@ export default function Search() {
           </div>
         </button>
 
+        {/* Error state */}
+        {error && (
+          <button
+            onClick={() => runSearch(query)}
+            className="flex items-center gap-3 w-full px-4 py-5 text-left active:bg-white/5"
+          >
+            <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
+              <AlertCircle size={17} className="text-rose-400" />
+            </div>
+            <div>
+              <p className="text-sm text-rose-400 font-medium">{error}</p>
+              <p className="text-xs text-white/30 mt-0.5">Tap to retry</p>
+            </div>
+          </button>
+        )}
+
+        {/* Skeleton loader */}
         {loading && (
           <div className="px-4 pt-4 space-y-0">
             {[...Array(5)].map((_, i) => (
@@ -106,14 +166,19 @@ export default function Search() {
           </div>
         )}
 
-        {!loading && searched && users.length === 0 && (
+        {/* Empty state */}
+        {!loading && !error && searched && users.length === 0 && (
           <div className="text-center py-16 px-8">
-            <p className="text-white/40 text-sm">No people found for “{query}”</p>
+            <div className="w-14 h-14 rounded-2xl bg-lenz-card border border-lenz-border flex items-center justify-center mx-auto mb-3">
+              <Users size={22} className="text-white/20" />
+            </div>
+            <p className="text-white/40 text-sm">No people found for "{query}"</p>
             <p className="text-white/25 text-xs mt-2">Try a different name or username.</p>
           </div>
         )}
 
-        {!loading && users.length > 0 && (
+        {/* Results */}
+        {!loading && !error && users.length > 0 && (
           <div>
             <p className="px-4 pt-4 pb-1 text-[10px] font-bold tracking-[0.2em] text-white/25 uppercase">People</p>
             {users.map(u => (
@@ -143,16 +208,35 @@ export default function Search() {
                 )}
               </button>
             ))}
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="py-6 flex items-center justify-center">
+              {loadingMore && <Spinner size="sm" />}
+              {!hasMore && users.length >= PAGE_SIZE && (
+                <p className="text-[11px] text-white/20 tracking-wider uppercase">End of results</p>
+              )}
+            </div>
           </div>
         )}
 
-        {!searched && !loading && (
+        {/* Pre-search idle state */}
+        {!searched && !loading && !error && (
           <div className="px-4 pt-10 text-center">
             <div className="w-14 h-14 rounded-2xl bg-lenz-card border border-lenz-border flex items-center justify-center mx-auto mb-3">
               <SearchIcon size={24} className="text-white/25" />
             </div>
             <p className="text-white/40 text-sm">Search for people</p>
             <p className="text-white/25 text-xs mt-1.5">Find by name or @username</p>
+            <div className="mt-6 flex flex-col gap-2 items-center">
+              <p className="text-[10px] font-bold tracking-widest text-white/15 uppercase">Looking for spots?</p>
+              <button
+                onClick={() => navigate('/explore')}
+                className="flex items-center gap-2 text-gold text-xs font-semibold border border-gold/30 rounded-full px-4 py-2 hover:bg-gold/10 transition-colors"
+              >
+                <MapPin size={12} />
+                Browse Explore
+              </button>
+            </div>
           </div>
         )}
       </div>

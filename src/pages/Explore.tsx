@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import type { PhotoSpot } from '@/data/mockData'
 import { useSpotModal } from '@/contexts/SpotModalContext'
@@ -169,7 +169,9 @@ export default function Explore() {
   const [, navigate] = useLocation()
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [communityError, setCommunityError] = useState(false)
   const [activeState, setActiveState] = useState('All')
   const [activeFlCity, setActiveFlCity] = useState('All')
   const [activeEngState, setActiveEngState] = useState('All')
@@ -180,7 +182,20 @@ export default function Explore() {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([])
   const [communityLoading, setCommunityLoading] = useState(true)
 
-  const fetchCommunityPosts = async () => {
+  // Debounce search input — filters run on debouncedQuery, not every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 250)
+    return () => clearTimeout(t)
+  }, [query])
+
+  // Close suggestions when user scrolls the page
+  useEffect(() => {
+    const onScroll = () => setShowSuggestions(false)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const fetchCommunityPosts = useCallback(async () => {
     // Step 1: fetch posts with location tags (user_id → auth.users, NOT profiles — must join separately)
     const { data: postsData, error } = await supabase
       .from('posts')
@@ -190,7 +205,8 @@ export default function Explore() {
       .neq('archived', true)
       .order('created_at', { ascending: false })
       .limit(500)
-    if (error) { console.error('[community]', error.message); setCommunityLoading(false); return }
+    if (error) { console.error('[community]', error.message); setCommunityError(true); setCommunityLoading(false); return }
+    setCommunityError(false)
     if (!postsData || postsData.length === 0) { setCommunityPosts([]); setCommunityLoading(false); return }
 
     // Step 2: fetch profiles for those users separately
@@ -208,7 +224,7 @@ export default function Explore() {
       .filter((p: any) => !p.profiles?.private_account)
     setCommunityPosts(rows)
     setCommunityLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     fetchCommunityPosts()
@@ -219,7 +235,7 @@ export default function Explore() {
   }, [])
 
   const ptr = usePullToRefresh({ onRefresh: fetchCommunityPosts })
-  const locQuery = useLocationSearch(query)
+  const locQuery = useLocationSearch(debouncedQuery)
 
   // Live location suggestions as the user types — every US city + spot locations
   const locationSuggestions = useMemo(() => {
@@ -244,101 +260,105 @@ export default function Explore() {
 
   const filteredCommunityPosts = useMemo(() =>
     communityPosts.filter(p => {
-      if (!query) return true
+      if (!debouncedQuery) return true
       const loc = p.location_name?.toLowerCase() ?? ''
-      return loc.includes(query.toLowerCase()) ||
-        (p.profiles?.username ?? '').toLowerCase().includes(query.toLowerCase())
-    }), [communityPosts, query])
+      return loc.includes(debouncedQuery.toLowerCase()) ||
+        (p.profiles?.username ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+    }), [communityPosts, debouncedQuery])
 
-const filteredPosts = useMemo(() => posts.filter(p => {
-    const matchesFilter = activeFilter === 'All' || activeFilter === 'Architecture'
-      ? activeFilter !== 'Architecture'
-      : p.category === activeFilter
-    if (!query) return matchesFilter
+  // Architecture filter bug fix: the original ternary was inverted —
+  // `activeFilter === 'Architecture' ? activeFilter !== 'Architecture'` always returned false.
+  const filteredPosts = useMemo(() => posts.filter(p => {
+    const matchesFilter =
+      activeFilter === 'All' ||
+      activeFilter === 'Architecture' ||
+      p.category === activeFilter
+    if (!debouncedQuery) return matchesFilter
     if (locQuery.isLocationSearch) {
       return matchesFilter && spotMatchesLocation({ location: p.location }, locQuery)
     }
     const matchesQuery =
-      p.caption.toLowerCase().includes(query.toLowerCase()) ||
-      p.location.toLowerCase().includes(query.toLowerCase()) ||
-      p.photographer.name.toLowerCase().includes(query.toLowerCase())
+      p.caption.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      p.location.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      p.photographer.name.toLowerCase().includes(debouncedQuery.toLowerCase())
     return matchesFilter && matchesQuery
-  }), [activeFilter, query, locQuery])
+  }), [activeFilter, debouncedQuery, locQuery])
 
   const filteredArchSpots = useMemo(() => {
     return architectureSpots.filter(s => {
       const stateOk = activeState === 'All' || s.state === activeState
-      if (!query) return stateOk
+      if (!debouncedQuery) return stateOk
       if (locQuery.isLocationSearch) {
         return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
       }
       return stateOk && (
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase()) ||
-        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase())
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.architectureStyle ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
       )
     })
-  }, [activeState, query, locQuery])
+  }, [activeState, debouncedQuery, locQuery])
 
   const filteredFlSpots = useMemo(() =>
     allFloridaSpots.filter(s => {
       const cityOk = activeFlCity === 'All' || s.city === activeFlCity
-      if (!query) return cityOk
+      if (!debouncedQuery) return cityOk
       if (locQuery.isLocationSearch) {
         return cityOk && spotMatchesLocation({ city: s.city, state: 'FL', name: s.name }, locQuery)
       }
       return cityOk && (
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        s.city.toLowerCase().includes(query.toLowerCase()) ||
-        (s.architectureStyle ?? '').toLowerCase().includes(query.toLowerCase())
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.architectureStyle ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
       )
-    }), [activeFlCity, query, locQuery])
+    }), [activeFlCity, debouncedQuery, locQuery])
 
   const filteredEngSpots = useMemo(() =>
     allEngagementSpots.filter(s => {
       const stateOk = activeEngState === 'All' || s.state === activeEngState
-      if (!query) return stateOk
+      if (!debouncedQuery) return stateOk
       if (locQuery.isLocationSearch) {
         return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
       }
       return stateOk && (
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase())
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase())
       )
-    }), [activeEngState, query, locQuery])
+    }), [activeEngState, debouncedQuery, locQuery])
 
   const filteredCarSpots = useMemo(() =>
     carSpotData.filter(s => {
       const stateOk = activeCarState === 'All' || s.state === activeCarState
-      if (!query) return stateOk
+      if (!debouncedQuery) return stateOk
       if (locQuery.isLocationSearch) {
         return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
       }
       return stateOk && (
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.city + ' ' + s.state).toLowerCase().includes(query.toLowerCase())
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase())
       )
-    }), [activeCarState, query, locQuery])
+    }), [activeCarState, debouncedQuery, locQuery])
 
-  // Generic photoSpots filter used by "AI-Discovered" and "All Photo Spots"
-  const matchPhotoSpot = (s: typeof photoSpots[number]) => {
-    if (!query) return true
-    if (locQuery.isLocationSearch) {
-      return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
-    }
-    return (
-      s.name.toLowerCase().includes(query.toLowerCase()) ||
-      s.city.toLowerCase().includes(query.toLowerCase()) ||
-      (s.state ?? '').toLowerCase().includes(query.toLowerCase())
-    )
-  }
-  // Base photo-spot pool: original spots + new per-state spots + FL extras
   const allPhotoSpotsPool = useMemo(
     () => [...photoSpots, ...statesSpots, ...floridaExtraSpots],
     []
   )
-  const filteredAiSpots = useMemo(() => allPhotoSpotsPool.filter(s => s.aiDiscovered && matchPhotoSpot(s)), [allPhotoSpotsPool, query, locQuery])
-  const filteredAllSpots = useMemo(() => allPhotoSpotsPool.filter(matchPhotoSpot), [allPhotoSpotsPool, query, locQuery])
+  const filteredAiSpots = useMemo(() => allPhotoSpotsPool.filter(s => {
+    if (!s.aiDiscovered) return false
+    if (!debouncedQuery) return true
+    if (locQuery.isLocationSearch) return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+    return s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      (s.state ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+  }), [allPhotoSpotsPool, debouncedQuery, locQuery])
+
+  const filteredAllSpots = useMemo(() => allPhotoSpotsPool.filter(s => {
+    if (!debouncedQuery) return true
+    if (locQuery.isLocationSearch) return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+    return s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      (s.state ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+  }), [allPhotoSpotsPool, debouncedQuery, locQuery])
 
   const isAll = activeFilter === 'All'
 
@@ -465,6 +485,21 @@ const filteredPosts = useMemo(() => posts.filter(p => {
                   {[...Array(4)].map((_, i) => (
                     <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
                   ))}
+                </div>
+              ) : communityError ? (
+                <div className="rounded-2xl bg-lenz-card border border-rose-500/20 p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
+                    <AlertCircle size={18} className="text-rose-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/60">Could not load community posts</p>
+                    <button
+                      onClick={() => { setCommunityLoading(true); setCommunityError(false); fetchCommunityPosts() }}
+                      className="flex items-center gap-1.5 text-xs text-gold mt-1.5 font-medium"
+                    >
+                      <RefreshCw size={11} /> Retry
+                    </button>
+                  </div>
                 </div>
               ) : filteredCommunityPosts.length === 0 ? (
                 <div className="rounded-2xl bg-lenz-card border border-lenz-border p-6 text-center">
