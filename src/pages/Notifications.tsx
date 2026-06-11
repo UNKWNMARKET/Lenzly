@@ -45,6 +45,7 @@ const typeIcon = (type: string) => {
     case 'story_comment':   return <MessageCircle size={14} className="text-purple-400" />
     case 'message':         return <MessageCircle size={14} className="text-blue-400" />
     case 'founder':         return <Shield size={14} className="text-gold fill-gold" />
+    case 'collab_tag':      return <Camera size={14} className="text-purple-400" />
     default:               return <Bell size={14} className="text-white/50" />
   }
 }

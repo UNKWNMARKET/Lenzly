@@ -432,6 +432,102 @@ function HashtagInput({ value, onChange }: { value: string; onChange: (v: string
   )
 }
 
+// ── Collaborator Tagger ───────────────────────────────────────────────────────
+type CollabProfile = { id: string; username: string; name: string | null; avatar_url: string | null }
+
+function CollaboratorInput({
+  collaborators,
+  onAdd,
+  onRemove,
+  currentUserId,
+}: {
+  collaborators: CollabProfile[]
+  onAdd: (p: CollabProfile) => void
+  onRemove: (id: string) => void
+  currentUserId: string
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<CollabProfile[]>([])
+  const [loading, setLoading] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(async () => {
+      setLoading(true)
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, name, avatar_url')
+        .ilike('username', `%${query.trim()}%`)
+        .neq('id', currentUserId)
+        .limit(6)
+      setResults((data ?? []).filter((p: CollabProfile) => !collaborators.find(c => c.id === p.id)))
+      setLoading(false)
+    }, 300)
+  }, [query, collaborators, currentUserId])
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-white/40 font-medium tracking-wide uppercase px-1">Tag Collaborators</p>
+
+      {/* Chips */}
+      {collaborators.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-1">
+          {collaborators.map(c => (
+            <div key={c.id} className="flex items-center gap-1.5 bg-gold/10 border border-gold/30 rounded-full pl-1 pr-2 py-1">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-lenz-bg">
+                {c.avatar_url
+                  ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white/40">{(c.username || '?')[0].toUpperCase()}</div>
+                }
+              </div>
+              <span className="text-xs text-gold font-medium">@{c.username}</span>
+              <button onClick={() => onRemove(c.id)} className="text-white/30 hover:text-white/60 transition-colors ml-0.5">
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative">
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search by username..."
+          className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+        />
+        {loading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-gold/40 border-t-gold rounded-full animate-spin" />}
+
+        {results.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1 bg-[#141414] border border-lenz-border rounded-2xl overflow-hidden shadow-2xl z-30">
+            {results.map(r => (
+              <button
+                key={r.id}
+                onClick={() => { onAdd(r); setQuery(''); setResults([]) }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/8 transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-lenz-bg shrink-0">
+                  {r.avatar_url
+                    ? <img src={r.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/40">{(r.username || '?')[0].toUpperCase()}</div>
+                  }
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">@{r.username}</p>
+                  {r.name && <p className="text-xs text-white/40">{r.name}</p>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Upload Page ──────────────────────────────────────────────────────────
 export default function UploadPost() {
   const { user } = useAuth()
@@ -447,6 +543,7 @@ export default function UploadPost() {
   const [lng, setLng] = useState<number | null>(null)
   const [category, setCategory] = useState('Portrait')
   const [tags, setTags] = useState('')
+  const [collaborators, setCollaborators] = useState<CollabProfile[]>([])
   const [addToCommunity, setAddToCommunity] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -523,13 +620,32 @@ export default function UploadPost() {
 
       const parsedTags = tags.split(/[\s,]+/).filter(t => t.startsWith('#')).map(t => t.toLowerCase())
 
-      const { error: insertError } = await supabase.from('posts').insert({
+      const collaboratorIds = collaborators.map(c => c.id)
+      const { data: insertedPost, error: insertError } = await supabase.from('posts').insert({
         user_id: user.id, image_url: publicUrl,
         caption: caption.trim(), location_name: locationName.trim() || null,
         lat, lng, tags: parsedTags, category,
         show_in_community: locationName.trim() ? addToCommunity : false,
+        ...(collaboratorIds.length > 0 ? { collaborators: collaboratorIds } : {}),
       }).select().single()
       if (insertError) throw insertError
+
+      // Notify tagged collaborators
+      if (insertedPost && collaboratorIds.length > 0) {
+        const uploaderProfile = await supabase
+          .from('profiles').select('username').eq('id', user.id).single()
+        const uploaderUsername = uploaderProfile.data?.username ?? 'Someone'
+        await Promise.all(collaboratorIds.map(uid =>
+          supabase.from('notifications').insert({
+            user_id: uid,
+            type: 'collab_tag',
+            actor_id: user.id,
+            post_id: insertedPost.id,
+            message: `@${uploaderUsername} tagged you as a collaborator on a post.`,
+            read: false,
+          })
+        ))
+      }
 
       if (locationName.trim()) {
         const spotName = locationName.trim().split(',')[0].trim()
@@ -717,6 +833,13 @@ export default function UploadPost() {
         </div>
 
         <HashtagInput value={tags} onChange={setTags} />
+
+        <CollaboratorInput
+          collaborators={collaborators}
+          onAdd={p => setCollaborators(prev => [...prev, p])}
+          onRemove={id => setCollaborators(prev => prev.filter(c => c.id !== id))}
+          currentUserId={user?.id ?? ''}
+        />
       </div>
     </div>
     </div>

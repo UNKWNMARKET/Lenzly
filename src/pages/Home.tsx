@@ -60,8 +60,25 @@ export default function Home() {
       const profileMap: Record<string, any> = {}
       for (const p of profilesData ?? []) profileMap[p.id] = p
 
-      // Merge profiles onto posts
-      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      // Batch-fetch collaborator profiles
+      const allCollabIds = [...new Set(
+        postsData.flatMap((p: any) => (p.collaborators ?? []) as string[])
+      )].filter(id => !profileMap[id])
+      if (allCollabIds.length > 0) {
+        const { data: collabProfiles } = await supabase
+          .from('profiles').select('id, username, avatar_url, created_at')
+          .in('id', allCollabIds)
+        for (const c of collabProfiles ?? []) profileMap[c.id] = c
+      }
+
+      // Merge profiles onto posts, attach collaborator_profiles
+      const merged = postsData.map((p: any) => ({
+        ...p,
+        profiles: profileMap[p.user_id] ?? null,
+        collaborator_profiles: ((p.collaborators ?? []) as string[])
+          .map((id: string) => profileMap[id])
+          .filter(Boolean),
+      }))
       setRealPosts(merged)
       setHasMore(postsData.length === PAGE_SIZE)
 
@@ -92,7 +109,16 @@ export default function Home() {
         .from('profiles').select('id, username, name, avatar_url, is_pro, private_account, created_at').in('id', userIds)
       const profileMap: Record<string, any> = {}
       for (const p of profilesData ?? []) profileMap[p.id] = p
-      const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      const collabIds = [...new Set(postsData.flatMap((p: any) => (p.collaborators ?? []) as string[]))].filter(id => !profileMap[id])
+      if (collabIds.length > 0) {
+        const { data: cp } = await supabase.from('profiles').select('id, username, avatar_url, created_at').in('id', collabIds)
+        for (const c of cp ?? []) profileMap[c.id] = c
+      }
+      const merged = postsData.map((p: any) => ({
+        ...p,
+        profiles: profileMap[p.user_id] ?? null,
+        collaborator_profiles: ((p.collaborators ?? []) as string[]).map((id: string) => profileMap[id]).filter(Boolean),
+      }))
       setRealPosts(prev => {
         const seen = new Set(prev.map(p => p.id))
         return [...prev, ...merged.filter((p: any) => !seen.has(p.id))]

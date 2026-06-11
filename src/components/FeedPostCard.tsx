@@ -26,6 +26,8 @@ export type FeedPost = {
   created_at: string
   archived?: boolean
   profile: { id: string; username: string | null; name: string | null; avatar_url: string | null; is_pro: boolean; created_at?: string | null } | null
+  collaborators?: string[]
+  collaborator_profiles?: { id: string; username: string | null; avatar_url: string | null }[]
 }
 
 type Comment = {
@@ -384,7 +386,7 @@ export default function FeedPostCard({
   return (
     <article className="mx-3 my-3 bg-lenz-card rounded-3xl overflow-hidden border border-lenz-border/60 shadow-xl shadow-black/30" onClick={() => menuOpen && setMenuOpen(false)}>
       {/* Author row */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+      <div className={`flex items-center gap-3 px-4 pt-4 ${post.collaborator_profiles?.length ? 'pb-1' : 'pb-3'}`}>
         <div className="relative shrink-0">
           <button
             onClick={handleAvatarClick}
@@ -448,6 +450,31 @@ export default function FeedPostCard({
           )}
         </div>
       </div>
+
+      {/* Collaborator bar */}
+      {post.collaborator_profiles && post.collaborator_profiles.length > 0 && (
+        <div className="flex items-center gap-2 px-4 pb-3 -mt-0.5">
+          <div className="flex -space-x-2">
+            {post.collaborator_profiles.slice(0, 3).map(c => (
+              <div key={c.id} className="w-5 h-5 rounded-full border border-lenz-card bg-lenz-bg overflow-hidden">
+                {c.avatar_url
+                  ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white/40">{(c.username || '?')[0].toUpperCase()}</div>
+                }
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-white/35">
+            with{' '}
+            {post.collaborator_profiles.map((c, i) => (
+              <span key={c.id}>
+                <span className="text-white/55 font-medium">@{c.username}</span>
+                {i < post.collaborator_profiles!.length - 1 ? ', ' : ''}
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
 
       {/* Image — double-tap to like, long-press for options */}
       <div

@@ -54,5 +54,6 @@ export type Post = {
   comments_count: number
   category: string
   created_at: string
+  collaborators?: string[]
   profiles?: Profile
 }
