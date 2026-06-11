@@ -157,6 +157,7 @@ export default function Chat() {
   const [nowTick, setNowTick] = useState(Date.now())
   const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [convKey, setConvKey] = useState<CryptoKey | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -527,7 +528,7 @@ export default function Chat() {
                           alt="photo"
                           className="max-w-[240px] max-h-[300px] object-cover rounded-2xl cursor-pointer active:scale-[0.97] transition-transform"
                           onLoad={() => bottomRef.current?.scrollIntoView()}
-                          onClick={() => window.open(msg.image_url!, '_blank')}
+                          onClick={() => setLightboxUrl(msg.image_url!)}
                         />
                   ) : msg.content}
               </div>
@@ -714,6 +715,31 @@ export default function Chat() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Photo lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center"
+          style={{ backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', backgroundColor: 'rgba(0,0,0,0.72)' }}
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <X size={18} className="text-white" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Photo"
+            className="max-w-[92vw] max-h-[82vh] rounded-3xl shadow-2xl object-contain"
+            draggable={false}
+            onContextMenu={e => e.preventDefault()}
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitTouchCallout: 'none', userSelect: 'none' } as React.CSSProperties}
+          />
         </div>
       )}
     </div>
