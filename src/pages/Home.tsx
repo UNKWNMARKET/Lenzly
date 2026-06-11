@@ -34,7 +34,16 @@ export default function Home() {
   const edgeSwipeActive = useRef(false)
   const [cameraSwipeX, setCameraSwipeX] = useState(0)
   const [followingIds, setFollowingIds] = useState<string[]>([])
+  const [scrolled, setScrolled] = useState(false)
   const { blockedIds } = useBlockedUsers()
+
+  useEffect(() => {
+    const el = document.getElementById('home-scroll')
+    if (!el) return
+    const handler = () => setScrolled(el.scrollTop > 40)
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => el.removeEventListener('scroll', handler)
+  }, [])
 
   // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
@@ -288,7 +297,7 @@ export default function Home() {
         </div>
       </div>
     )}
-    <div className="min-h-full pb-24 md:pb-8">
+    <div id="home-scroll" className="min-h-full pb-24 md:pb-8 overflow-y-auto h-full">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div className="md:hidden">
@@ -308,7 +317,7 @@ export default function Home() {
           <button onClick={() => navigate('/notifications')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <Bell size={20} className="text-white/60" />
             {unreadNotifs > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5">
+              <span className={`absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5 transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`}>
                 {unreadNotifs > 9 ? '9+' : unreadNotifs}
               </span>
             )}
@@ -316,7 +325,7 @@ export default function Home() {
           <button onClick={() => navigate('/messages')} className="relative p-2 rounded-full hover:bg-white/5 transition-colors">
             <MessageCircle size={20} className="text-white/60" />
             {unreadMsgs > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5">
+              <span className={`absolute top-1.5 right-1.5 min-w-[14px] h-[14px] rounded-full bg-gold border border-lenz-bg flex items-center justify-center text-[8px] font-bold text-lenz-bg px-0.5 transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`}>
                 {unreadMsgs > 9 ? '9+' : unreadMsgs}
               </span>
             )}

@@ -1,17 +1,141 @@
-import { useEffect } from 'react'
-import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, MapPin, Star, Camera, Clock, Navigation, Zap, Wind, Droplets, CheckCircle, Share2, Search, Send } from 'lucide-react'
 import { useWeather } from '@/hooks/useWeather'
 import type { PhotoSpot } from '@/data/mockData'
 import { formatCount, cn } from '@/lib/utils'
 import SmartSpotImage from './SmartSpotImage'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+import { toast } from 'sonner'
 
 interface Props {
   spot: PhotoSpot
   onClose: () => void
 }
 
+interface Conversation {
+  id: string
+  other_name: string
+  other_avatar: string | null
+  other_id: string
+}
+
+function ShareSheet({ spot, onClose }: { spot: PhotoSpot; onClose: () => void }) {
+  const { user } = useAuth()
+  const [convos, setConvos] = useState<Conversation[]>([])
+  const [search, setSearch] = useState('')
+  const [sending, setSending] = useState<string | null>(null)
+  const [sent, setSent] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user.id)
+      .then(async ({ data: mine }) => {
+        if (!mine?.length) return
+        const ids = mine.map(r => r.conversation_id)
+        const { data: others } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id, user_id, profiles(name, avatar_url)')
+          .in('conversation_id', ids)
+          .neq('user_id', user.id)
+        const list: Conversation[] = (others ?? []).map((r: any) => ({
+          id: r.conversation_id,
+          other_id: r.user_id,
+          other_name: r.profiles?.name ?? 'User',
+          other_avatar: r.profiles?.avatar_url ?? null,
+        }))
+        setConvos(list)
+      })
+  }, [user])
+
+  const sendSpot = async (convo: Conversation) => {
+    if (!user || sending) return
+    setSending(convo.id)
+    const msg = `📍 **${spot.name}** — ${spot.city ?? ''}${spot.state ? `, ${spot.state}` : ''}\n${spot.description?.slice(0, 120) ?? ''}…\n\n_Best time: ${spot.bestTime}_`
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: convo.id,
+      sender_id: user.id,
+      content: msg,
+      unsent: false,
+    })
+    setSending(null)
+    if (error) { toast.error('Failed to send'); return }
+    setSent(prev => new Set([...prev, convo.id]))
+    toast.success(`Sent to ${convo.other_name}`)
+  }
+
+  const filtered = convos.filter(c => c.other_name.toLowerCase().includes(search.toLowerCase()))
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative w-full bg-lenz-bg border-t border-white/10 rounded-t-3xl max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+          <h3 className="text-white font-semibold text-base">Share this spot</h3>
+          <button onClick={onClose} className="text-white/40 hover:text-white/70 transition-colors"><X size={20} /></button>
+        </div>
+
+        {/* Spot preview pill */}
+        <div className="mx-5 mb-3 bg-white/5 border border-white/8 rounded-2xl px-3 py-2.5 flex items-center gap-2.5 shrink-0">
+          <MapPin size={14} className="text-gold shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">{spot.name}</p>
+            <p className="text-[11px] text-white/40 truncate">{spot.city}{spot.state ? `, ${spot.state}` : ''}</p>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative mx-5 mb-3 shrink-0">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+          <input
+            type="text" placeholder="Search conversations…" value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full bg-white/5 border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/40 transition-colors"
+          />
+        </div>
+
+        {/* Conversation list */}
+        <div className="overflow-y-auto pb-6 px-5">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-white/30 text-center py-6">No conversations yet</p>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(c => (
+                <div key={c.id} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0">
+                    {c.other_avatar
+                      ? <img src={c.other_avatar} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-semibold">{c.other_name[0]}</div>
+                    }
+                  </div>
+                  <p className="flex-1 text-sm text-white font-medium truncate">{c.other_name}</p>
+                  <button
+                    onClick={() => sendSpot(c)}
+                    disabled={!!sending || sent.has(c.id)}
+                    className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      sent.has(c.id)
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 active:scale-95 disabled:opacity-50'
+                    }`}
+                  >
+                    {sending === c.id ? '…' : sent.has(c.id) ? 'Sent ✓' : 'Send'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SpotDetailModal({ spot, onClose }: Props) {
   const { forecast, loading, error } = useWeather(spot.lat, spot.lng)
+  const [showShare, setShowShare] = useState(false)
 
   // Lock body scroll while modal is open (fixes iOS WKWebView bounce)
   useEffect(() => {
@@ -231,16 +355,26 @@ export default function SpotDetailModal({ spot, onClose }: Props) {
             )}
           </div>
 
-          {/* Directions CTA */}
-          <button
-            onClick={navigate}
-            className="mt-5 mb-6 w-full btn-primary py-4 flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-transform"
-          >
-            <Navigation size={15} />
-            Navigate to This Spot
-          </button>
+          {/* Action buttons */}
+          <div className="mt-5 mb-6 flex gap-3">
+            <button
+              onClick={navigate}
+              className="flex-1 btn-primary py-4 flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-transform"
+            >
+              <Navigation size={15} />
+              Navigate
+            </button>
+            <button
+              onClick={() => setShowShare(true)}
+              className="w-14 py-4 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-[0.98] transition-all text-white/60 hover:text-white"
+            >
+              <Share2 size={18} />
+            </button>
+          </div>
         </div>
       </div>
+
+      {showShare && <ShareSheet spot={spot} onClose={() => setShowShare(false)} />}
     </div>
   )
 }
