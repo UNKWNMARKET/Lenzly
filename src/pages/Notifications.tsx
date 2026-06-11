@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon, Camera } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon, Camera, Shield } from 'lucide-react'
+import OGBadge from '@/components/OGBadge'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,7 @@ const typeIcon = (type: string) => {
     case 'story_like':      return <Heart size={14} className="fill-rose-500 text-rose-500" />
     case 'story_comment':   return <MessageCircle size={14} className="text-purple-400" />
     case 'message':         return <MessageCircle size={14} className="text-blue-400" />
+    case 'founder':         return <Shield size={14} className="text-gold fill-gold" />
     default:               return <Bell size={14} className="text-white/50" />
   }
 }
@@ -264,14 +266,20 @@ export default function Notifications() {
             <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="w-11 h-11 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
-                  {n.actor?.avatar_url
-                    ? <img src={n.actor.avatar_url} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-white/20 text-lg font-bold">
-                        {n.actor?.username?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                  }
-                </div>
+                {n.type === 'founder' ? (
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-yellow-900/60 to-black border border-gold/40 flex items-center justify-center">
+                    <OGBadge size="md" />
+                  </div>
+                ) : (
+                  <div className="w-11 h-11 rounded-full bg-lenz-card overflow-hidden border border-lenz-border">
+                    {n.actor?.avatar_url
+                      ? <img src={n.actor.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-white/20 text-lg font-bold">
+                          {n.actor?.username?.[0]?.toUpperCase() ?? '?'}
+                        </div>
+                    }
+                  </div>
+                )}
                 <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-lenz-bg flex items-center justify-center">
                   {typeIcon(n.type)}
                 </div>

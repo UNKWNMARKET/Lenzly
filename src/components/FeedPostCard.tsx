@@ -10,6 +10,8 @@ import { img } from '@/lib/image'
 import { haptics } from '@/lib/haptics'
 import ZoomableImage from './ZoomableImage'
 import ProtectedImage from './ProtectedImage'
+import OGBadge from './OGBadge'
+import { loadFounderIds, isFounder } from '@/lib/founderUtils'
 
 export type FeedPost = {
   id: string
@@ -73,6 +75,7 @@ export default function FeedPostCard({
   const [imgError, setImgError] = useState(false)
   const [profileStories, setProfileStories] = useState<SpotStory[] | null>(null)
   const [storyViewerOpen, setStoryViewerOpen] = useState(false)
+  const [postAuthorIsFounder, setPostAuthorIsFounder] = useState(false)
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('viewed_spots') ?? '[]')) } catch { return new Set() }
   })
@@ -88,6 +91,12 @@ export default function FeedPostCard({
   const profile = post.profile
 
   // Load the viewer's like/save state for this post
+  useEffect(() => {
+    loadFounderIds().then(ids => {
+      setPostAuthorIsFounder(ids.has(post.user_id))
+    })
+  }, [post.user_id])
+
   useEffect(() => {
     if (!currentUserId) return
     let active = true
@@ -377,17 +386,22 @@ export default function FeedPostCard({
     <article className="mx-3 my-3 bg-lenz-card rounded-3xl overflow-hidden border border-lenz-border/60 shadow-xl shadow-black/30" onClick={() => menuOpen && setMenuOpen(false)}>
       {/* Author row */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <button
-          onClick={handleAvatarClick}
-          className={`shrink-0 rounded-full transition-transform active:scale-90 ${hasStory ? (storyUnseen ? 'p-[2.5px] bg-gradient-to-tr from-gold via-yellow-300 to-amber-200 shadow-[0_0_10px_2px_rgba(201,168,76,0.4)]' : 'p-[2.5px] bg-white/20') : ''}`}
-        >
-          <div className={`w-10 h-10 rounded-full overflow-hidden bg-lenz-bg shrink-0 ${hasStory ? 'border-2 border-lenz-bg' : 'border-2 border-lenz-border'}`}>
-            {profile?.avatar_url
-              ? <img src={img.avatar(profile.avatar_url)} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
-            }
-          </div>
-        </button>
+        <div className="relative shrink-0">
+          <button
+            onClick={handleAvatarClick}
+            className={`rounded-full transition-transform active:scale-90 ${hasStory ? (storyUnseen ? 'p-[2.5px] bg-gradient-to-tr from-gold via-yellow-300 to-amber-200 shadow-[0_0_10px_2px_rgba(201,168,76,0.4)]' : 'p-[2.5px] bg-white/20') : ''}`}
+          >
+            <div className={`w-10 h-10 rounded-full overflow-hidden bg-lenz-bg shrink-0 ${hasStory ? 'border-2 border-lenz-bg' : 'border-2 border-lenz-border'}`}>
+              {profile?.avatar_url
+                ? <img src={img.avatar(profile.avatar_url)} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-sm">{(profile?.name || '?')[0].toUpperCase()}</div>
+              }
+            </div>
+          </button>
+          {postAuthorIsFounder && (
+            <OGBadge size="sm" className="absolute -bottom-1 -right-1 pointer-events-none" />
+          )}
+        </div>
         <button className="flex-1 min-w-0 text-left" onClick={e => { e.stopPropagation(); goToProfile() }}>
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-bold text-white truncate">{profile?.username || profile?.name || 'Photographer'}</p>

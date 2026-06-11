@@ -4,6 +4,8 @@ import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
 import VerifiedBadge from '@/components/VerifiedBadge'
+import OGBadge from '@/components/OGBadge'
+import { loadFounderIds } from '@/lib/founderUtils'
 import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, Edit3, Camera,
@@ -55,6 +57,12 @@ export default function Profile() {
   const [liveFollowers, setLiveFollowers] = useState<number | null>(null)
   const [liveFollowing, setLiveFollowing] = useState<number | null>(null)
   const [livePostCount, setLivePostCount] = useState<number | null>(null)
+  const [isSelfFounder, setIsSelfFounder] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    loadFounderIds().then(ids => setIsSelfFounder(ids.has(user.id)))
+  }, [user?.id])
 
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
@@ -267,15 +275,20 @@ export default function Profile() {
       {/* Avatar + edit */}
       <div className="px-4 -mt-14 relative z-10">
         <div className="flex items-end justify-between">
-          <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
-            <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
-              {u.avatar
-                ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
-              }
+          <div className="relative inline-block">
+            <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
+              <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+                {u.avatar
+                  ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                }
+              </div>
             </div>
+            {isSelfFounder && (
+              <OGBadge size="lg" className="absolute -bottom-1 -right-1 pointer-events-none" />
+            )}
           </div>
 
           <div className="flex items-center gap-2 mb-2">
