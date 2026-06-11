@@ -59,7 +59,7 @@ export default function HashtagFeed() {
   }, [tag, user])
 
   return (
-    <div className="min-h-screen bg-lenz-bg overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+    <div className="absolute inset-0 overflow-y-auto bg-lenz-bg" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
       <header className="sticky top-0 z-20 glass border-b border-white/5 safe-top">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate('/')} className="text-white/60 hover:text-white transition-colors">
