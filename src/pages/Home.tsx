@@ -120,12 +120,24 @@ export default function Home() {
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
 
   useEffect(() => {
-    const el = ptr.scrollRef.current
-    if (!el) return
-    const handler = () => setScrolled(el.scrollTop > 40)
-    el.addEventListener('scroll', handler, { passive: true })
-    return () => el.removeEventListener('scroll', handler)
-  }, [ptr.scrollRef])
+    // ptr.scrollRef.current is null on first paint — wait a tick
+    const timer = setTimeout(() => {
+      const el = ptr.scrollRef.current
+      if (!el) return
+      const handler = () => setScrolled(el.scrollTop > 40)
+      el.addEventListener('scroll', handler, { passive: true })
+      // store cleanup on the element itself so we can remove it later
+      ;(el as any).__scrollCleanup = () => el.removeEventListener('scroll', handler)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      const el = ptr.scrollRef.current
+      if (el && (el as any).__scrollCleanup) {
+        ;(el as any).__scrollCleanup()
+        delete (el as any).__scrollCleanup
+      }
+    }
+  }, [])
 
   // Re-fetch once auth settles so we get the full authenticated view
   const hasFetched = useRef(false)
