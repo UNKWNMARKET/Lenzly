@@ -365,7 +365,7 @@ export default function Chat() {
 
       const rand = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, '0')).join('')
       const ext = file.type === 'image/png' ? 'png' : file.type === 'image/gif' ? 'gif' : file.type === 'image/webp' ? 'webp' : 'jpg'
-      const path = `messages/${convId}/${rand}.${ext}`
+      const path = `${user.id}/messages-${rand}.${ext}`
 
       const { error: upErr } = await supabase.storage
         .from('avatars')
