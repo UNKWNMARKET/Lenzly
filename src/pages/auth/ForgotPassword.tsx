@@ -117,11 +117,11 @@ export default function ForgotPassword() {
                   <p className="text-white/35 text-sm mt-1">Code sent to <span className="text-white/60">{email}</span></p>
                 </div>
                 <form onSubmit={verifyCode} className="space-y-3">
-                  <input inputMode="numeric" autoFocus placeholder="· · · · · ·"
+                  <input inputMode="numeric" autoFocus placeholder="· · · · · · · ·"
                     value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.6em] font-mono text-white placeholder-white/15 outline-none transition-all"
+                    className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.5em] font-mono text-white placeholder-white/15 outline-none transition-all"
                   />
-                  <button type="submit" disabled={loading || code.length < 6}
+                  <button type="submit" disabled={loading || code.length < 8}
                     className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
                     {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : <>Verify <ArrowRight size={15} /></>}
                   </button>

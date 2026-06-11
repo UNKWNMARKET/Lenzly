@@ -120,7 +120,7 @@ export default function SignUp() {
   }
 
   const verifyOtp = async () => {
-    if (otp.length !== 6) { toast.error('Enter the 6-digit code'); return }
+    if (otp.length !== 8) { toast.error('Enter the 8-digit code'); return }
     setLoading(true)
     const { error } = await supabase.auth.verifyOtp({
       email: email.trim().toLowerCase(),
@@ -247,14 +247,15 @@ export default function SignUp() {
                   <>
                     <div className="space-y-1.5">
                       <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
-                        placeholder="· · · · · ·"
-                        value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                        placeholder="· · · · · · · ·"
+                        maxLength={8}
+                        value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         autoFocus
-                        className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.6em] font-mono text-white placeholder-white/15 outline-none transition-all"
+                        className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.5em] font-mono text-white placeholder-white/15 outline-none transition-all"
                       />
                       <p className="text-[11px] text-white/25 text-center">Code sent to {email}</p>
                     </div>
-                    <button onClick={verifyOtp} disabled={loading || otp.length !== 6}
+                    <button onClick={verifyOtp} disabled={loading || otp.length !== 8}
                       className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
                       {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : <>{`Verify`} <ArrowRight size={15} /></>}
                     </button>
