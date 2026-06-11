@@ -37,14 +37,6 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const { blockedIds } = useBlockedUsers()
 
-  useEffect(() => {
-    const el = document.getElementById('home-scroll')
-    if (!el) return
-    const handler = () => setScrolled(el.scrollTop > 40)
-    el.addEventListener('scroll', handler, { passive: true })
-    return () => el.removeEventListener('scroll', handler)
-  }, [])
-
   // Initial load / pull-to-refresh — newest page, resets the cursor
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -123,6 +115,14 @@ export default function Home() {
   }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
+
+  useEffect(() => {
+    const el = ptr.scrollRef.current
+    if (!el) return
+    const handler = () => setScrolled(el.scrollTop > 40)
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => el.removeEventListener('scroll', handler)
+  }, [ptr.scrollRef])
 
   // Re-fetch once auth settles so we get the full authenticated view
   const hasFetched = useRef(false)
@@ -297,7 +297,7 @@ export default function Home() {
         </div>
       </div>
     )}
-    <div id="home-scroll" className="min-h-full pb-24 md:pb-8 overflow-y-auto h-full">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 py-3 flex items-center justify-between safe-top">
         <div className="md:hidden">
