@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'wouter'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import Spinner from '@/components/Spinner'
 import { ArrowLeft, Heart, MessageCircle, UserPlus, Bell, Aperture, CheckCheck, Clapperboard, Lock, UserCheck, X as XIcon, Camera, Shield } from 'lucide-react'
 import OGBadge from '@/components/OGBadge'
 import { supabase } from '@/lib/supabase'
@@ -74,28 +76,16 @@ export default function Notifications() {
   const { user } = useAuth()
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [followBackDone, setFollowBackDone] = useState<Set<string>>(new Set())
   const [requestDone, setRequestDone] = useState<Set<string>>(new Set())
 
-  const fetchNotifs = useCallback(async () => {
-    if (!user) { setLoading(false); return }
-    const { data: rows, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(60)
+  const PAGE_SIZE = 30
 
-    if (error) {
-      toast.error('Notifications error: ' + error.message)
-      setLoading(false)
-      return
-    }
-
-    const safeRows = rows ?? []
-
-    // Batch-fetch actor profiles
-    const actorIds = [...new Set(safeRows.map((r: any) => r.actor_id).filter(Boolean))]
+  // Attach actor profiles to a batch of notification rows
+  const attachActors = useCallback(async (rows: any[]): Promise<Notif[]> => {
+    const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))]
     const profileMap: Record<string, { username: string; avatar_url: string | null }> = {}
     if (actorIds.length > 0) {
       const { data: profiles } = await supabase
@@ -106,14 +96,56 @@ export default function Notifications() {
         for (const p of profiles) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url }
       }
     }
+    return rows.map(r => ({ ...r, actor: r.actor_id ? (profileMap[r.actor_id] ?? null) : null })) as Notif[]
+  }, [])
 
-    const merged = safeRows.map((r: any) => ({
-      ...r,
-      actor: r.actor_id ? (profileMap[r.actor_id] ?? null) : null,
-    }))
-    setNotifs(merged as Notif[])
+  const fetchNotifs = useCallback(async () => {
+    if (!user) { setLoading(false); return }
+    const { data: rows, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZE)
+
+    if (error) {
+      toast.error('Notifications error: ' + error.message)
+      setLoading(false)
+      return
+    }
+
+    const safeRows = rows ?? []
+    setNotifs(await attachActors(safeRows))
+    setHasMore(safeRows.length === PAGE_SIZE)
     setLoading(false)
-  }, [user])
+  }, [user, attachActors])
+
+  // Load the next page using the oldest loaded notification's created_at as the cursor
+  const loadMore = useCallback(async () => {
+    if (loadingMore || notifs.length === 0 || !user) return
+    setLoadingMore(true)
+    const oldest = notifs[notifs.length - 1].created_at
+    const { data: rows } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .lt('created_at', oldest)
+      .limit(PAGE_SIZE)
+
+    const safeRows = rows ?? []
+    if (safeRows.length > 0) {
+      const merged = await attachActors(safeRows)
+      setNotifs(prev => {
+        const seen = new Set(prev.map(n => n.id))
+        return [...prev, ...merged.filter(n => !seen.has(n.id))]
+      })
+    }
+    setHasMore(safeRows.length === PAGE_SIZE)
+    setLoadingMore(false)
+  }, [loadingMore, notifs, user, attachActors])
+
+  const sentinelRef = useInfiniteScroll(loadMore, { hasMore, loading: loadingMore })
 
   const ptr = usePullToRefresh({ onRefresh: fetchNotifs })
 
@@ -325,6 +357,14 @@ export default function Notifications() {
             )}
             </div>
           ))}
+
+          {/* Infinite-scroll sentinel */}
+          <div ref={sentinelRef} className="py-6 flex items-center justify-center">
+            {loadingMore && <Spinner size="sm" />}
+            {!hasMore && notifs.length >= PAGE_SIZE && (
+              <p className="text-[11px] text-white/20 tracking-wider uppercase">You're all caught up</p>
+            )}
+          </div>
         </div>
       )}
     </div>
