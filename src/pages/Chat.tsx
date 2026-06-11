@@ -226,6 +226,7 @@ export default function Chat() {
     supabase.from('conversation_participants')
       .update({ last_read_at: new Date().toISOString() })
       .eq('conversation_id', convId).eq('user_id', user.id)
+      .then(() => {})
   }, [convId, user])
 
   useEffect(() => {
@@ -243,6 +244,7 @@ export default function Chat() {
           if (user) supabase.from('conversation_participants')
             .update({ last_read_at: new Date().toISOString() })
             .eq('conversation_id', convId).eq('user_id', user.id)
+            .then(() => {})
         })
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },

@@ -163,7 +163,9 @@ export default function Home() {
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', p.conversation_id)
             .neq('sender_id', user.id)
+            .eq('unsent', false)
           if (p.last_read_at) query.gt('sent_at', p.last_read_at)
+          else continue // no last_read_at means never opened — skip to avoid false badge
           const { count } = await query
           if ((count ?? 0) > 0) unread++
         }
