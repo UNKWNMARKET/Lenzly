@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-const CACHE_KEY = 'lenzly_founder_cutoff'
+const CACHE_KEY = 'lenzly_founder_cutoff_v2'
 let cutoffDate: string | null | undefined = undefined // undefined = not loaded yet
 let loadPromise: Promise<string | null> | null = null
 
@@ -32,14 +32,23 @@ export async function getFounderCutoff(): Promise<string | null> {
       .order('created_at', { ascending: true })
       .range(99, 99)
 
-    if (error || !data || data.length === 0) {
+    if (error) {
       // Don't cache failures — retry next time
       loadPromise = null
       cutoffDate = undefined
       return null
     }
 
-    const date = data[0].created_at as string
+    let date: string
+    if (data && data.length > 0) {
+      // 100+ profiles exist — use the 100th signup date as the cutoff
+      date = data[0].created_at as string
+    } else {
+      // Fewer than 100 profiles total — every existing member is a founder
+      // Use a far-future date so all current profiles pass the <= check
+      date = '2099-01-01T00:00:00.000Z'
+    }
+
     cutoffDate = date
 
     try {
