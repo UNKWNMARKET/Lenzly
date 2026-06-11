@@ -5,7 +5,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import AppLogo from '@/components/AppLogo'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import OGBadge from '@/components/OGBadge'
-import { loadFounderIds } from '@/lib/founderUtils'
+import { getFounderCutoff, isFounderByDate } from '@/lib/founderUtils'
 import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, Edit3, Camera,
@@ -57,12 +57,11 @@ export default function Profile() {
   const [liveFollowers, setLiveFollowers] = useState<number | null>(null)
   const [liveFollowing, setLiveFollowing] = useState<number | null>(null)
   const [livePostCount, setLivePostCount] = useState<number | null>(null)
-  const [isSelfFounder, setIsSelfFounder] = useState(false)
+  const [founderCutoffLoaded, setFounderCutoffLoaded] = useState(false)
 
   useEffect(() => {
-    if (!user) return
-    loadFounderIds().then(ids => setIsSelfFounder(ids.has(user.id)))
-  }, [user?.id])
+    getFounderCutoff().then(() => setFounderCutoffLoaded(true))
+  }, [])
 
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
@@ -286,7 +285,7 @@ export default function Profile() {
                 }
               </div>
             </div>
-            {isSelfFounder && (
+            {founderCutoffLoaded && isFounderByDate(profile?.created_at) && (
               <OGBadge size="lg" className="absolute -bottom-1 -right-1 pointer-events-none" />
             )}
           </div>

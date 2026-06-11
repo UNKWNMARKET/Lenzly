@@ -16,7 +16,7 @@ import ReportSheet from '@/components/ReportSheet'
 import Spinner from '@/components/Spinner'
 import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 import OGBadge from '@/components/OGBadge'
-import { loadFounderIds } from '@/lib/founderUtils'
+import { getFounderCutoff, isFounderByDate } from '@/lib/founderUtils'
 
 type HireStep = 'idle' | 'form' | 'sent'
 
@@ -130,12 +130,11 @@ export default function PhotographerProfile() {
   const [blockLoading, setBlockLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
-  const [viewedIsFounder, setViewedIsFounder] = useState(false)
+  const [founderCutoffLoaded, setFounderCutoffLoaded] = useState(false)
 
   useEffect(() => {
-    if (!id) return
-    loadFounderIds().then(ids => setViewedIsFounder(ids.has(id)))
-  }, [id])
+    getFounderCutoff().then(() => setFounderCutoffLoaded(true))
+  }, [])
 
   const isUuidId = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const isSelf = !!user && user.id === id
@@ -485,10 +484,10 @@ export default function PhotographerProfile() {
                 <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
               </div>
             </div>
-            {p.available && !viewedIsFounder && (
+            {p.available && !(founderCutoffLoaded && isFounderByDate((p as any).profile_created_at)) && (
               <span className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-lenz-bg" />
             )}
-            {viewedIsFounder && (
+            {founderCutoffLoaded && isFounderByDate((p as any).profile_created_at) && (
               <OGBadge size="lg" className="absolute -bottom-1 -right-1 pointer-events-none" />
             )}
           </div>

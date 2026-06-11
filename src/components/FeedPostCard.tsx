@@ -11,7 +11,7 @@ import { haptics } from '@/lib/haptics'
 import ZoomableImage from './ZoomableImage'
 import ProtectedImage from './ProtectedImage'
 import OGBadge from './OGBadge'
-import { loadFounderIds, isFounder } from '@/lib/founderUtils'
+import { getFounderCutoff, isFounderByDate } from '@/lib/founderUtils'
 
 export type FeedPost = {
   id: string
@@ -25,7 +25,7 @@ export type FeedPost = {
   category: string
   created_at: string
   archived?: boolean
-  profile: { id: string; username: string | null; name: string | null; avatar_url: string | null; is_pro: boolean } | null
+  profile: { id: string; username: string | null; name: string | null; avatar_url: string | null; is_pro: boolean; created_at?: string | null } | null
 }
 
 type Comment = {
@@ -75,7 +75,7 @@ export default function FeedPostCard({
   const [imgError, setImgError] = useState(false)
   const [profileStories, setProfileStories] = useState<SpotStory[] | null>(null)
   const [storyViewerOpen, setStoryViewerOpen] = useState(false)
-  const [postAuthorIsFounder, setPostAuthorIsFounder] = useState(false)
+  const [, forceUpdate] = useState(0)
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('viewed_spots') ?? '[]')) } catch { return new Set() }
   })
@@ -92,10 +92,9 @@ export default function FeedPostCard({
 
   // Load the viewer's like/save state for this post
   useEffect(() => {
-    loadFounderIds().then(ids => {
-      setPostAuthorIsFounder(ids.has(post.user_id))
-    })
-  }, [post.user_id])
+    // Pre-load the cutoff date; once it's cached, isFounderByDate() works synchronously
+    getFounderCutoff().then(() => forceUpdate(n => n + 1))
+  }, [])
 
   useEffect(() => {
     if (!currentUserId) return
@@ -398,7 +397,7 @@ export default function FeedPostCard({
               }
             </div>
           </button>
-          {postAuthorIsFounder && (
+          {isFounderByDate(post.profile?.created_at) && (
             <OGBadge size="sm" className="absolute -bottom-1 -right-1 pointer-events-none" />
           )}
         </div>

@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .single()
     if (data) setProfile(data)
+    return data
   }
 
   const refreshProfile = async () => {
@@ -53,9 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(sess)
       setUser(sess?.user ?? null)
       if (sess?.user) {
-        fetchProfile(sess.user.id)
+        fetchProfile(sess.user.id).then((prof: any) => {
+          if (prof?.created_at) sendFounderNotificationIfNeeded(sess.user!.id, prof.created_at)
+        })
         initOneSignal(sess.user.id)
-        sendFounderNotificationIfNeeded(sess.user.id)
       } else {
         setProfile(null)
       }

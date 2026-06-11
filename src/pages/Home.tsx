@@ -55,7 +55,7 @@ export default function Home() {
       // Fetch profiles for these posts separately
       const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
       const { data: profilesData } = await supabase
-        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account, created_at')
         .in('id', userIds)
       const profileMap: Record<string, any> = {}
       for (const p of profilesData ?? []) profileMap[p.id] = p
@@ -89,7 +89,7 @@ export default function Home() {
     if (postsData && postsData.length > 0) {
       const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
       const { data: profilesData } = await supabase
-        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account').in('id', userIds)
+        .from('profiles').select('id, username, name, avatar_url, is_pro, private_account, created_at').in('id', userIds)
       const profileMap: Record<string, any> = {}
       for (const p of profilesData ?? []) profileMap[p.id] = p
       const merged = postsData.map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
@@ -153,7 +153,7 @@ export default function Home() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async payload => {
         const newPost = payload.new as any
         const { data: prof } = await supabase
-          .from('profiles').select('id, username, name, avatar_url, is_pro, private_account')
+          .from('profiles').select('id, username, name, avatar_url, is_pro, private_account, created_at')
           .eq('id', newPost.user_id).single()
         const merged = { ...newPost, profiles: prof ?? null }
         setRealPosts(prev => {
