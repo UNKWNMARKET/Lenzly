@@ -73,29 +73,54 @@ export async function isFounderAsync(profileCreatedAt: string | null | undefined
   return profileCreatedAt <= cutoff
 }
 
+// In-memory set to prevent duplicate sends within the same app session
+const founderNotifSentThisSession = new Set<string>()
+
 export async function sendFounderNotificationIfNeeded(
   userId: string,
   profileCreatedAt: string,
 ): Promise<void> {
+  // Fast path: already sent this session (covers rapid re-renders / auth re-fires)
+  if (founderNotifSentThisSession.has(userId)) return
+
+  // Persist guard: if we already sent on a previous session, skip
+  const lsKey = `lenzly_og_notif_sent_${userId}`
+  if (localStorage.getItem(lsKey) === '1') return
+
   const isOG = await isFounderAsync(profileCreatedAt)
   if (!isOG) return
 
+  // Mark in-memory immediately to prevent concurrent calls
+  founderNotifSentThisSession.add(userId)
+
+  // Check DB to avoid duplicates if user cleared localStorage or uses multiple devices
   const { data: existing } = await supabase
     .from('notifications')
     .select('id')
     .eq('user_id', userId)
     .eq('type', 'founder')
-    .maybeSingle()
+    .limit(1)
 
-  if (existing) return
+  if (existing && existing.length > 0) {
+    // Already in DB — just persist the local guard so we skip next time
+    localStorage.setItem(lsKey, '1')
+    return
+  }
 
-  await supabase.from('notifications').insert({
+  const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     type: 'founder',
     actor_id: null,
     message: 'Thank you for being a founding member — we appreciate you! 🙏 You have been gifted an exclusive OG badge.',
     read: false,
   })
+
+  if (!error) {
+    localStorage.setItem(lsKey, '1')
+  } else {
+    // Insert failed — remove in-memory guard so it retries once next session
+    founderNotifSentThisSession.delete(userId)
+  }
 }
 
 export function invalidateFounderCache() {
