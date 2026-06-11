@@ -726,7 +726,8 @@ export default function Chat() {
           onClick={() => setLightboxUrl(null)}
         >
           <button
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center"
+            className="absolute right-5 w-10 h-10 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center"
+            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
             onClick={() => setLightboxUrl(null)}
           >
             <X size={18} className="text-white" />
