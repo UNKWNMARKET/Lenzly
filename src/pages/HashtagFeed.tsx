@@ -6,23 +6,19 @@ import { useAuth } from '@/contexts/AuthContext'
 import FeedPostCard from '@/components/FeedPostCard'
 import type { FeedPost } from '@/components/FeedPostCard'
 
-function toFeedPost(p: Post): FeedPost {
+function toFeedPost(p: Post, profile: any): FeedPost {
   return {
     id: p.id,
     user_id: p.user_id,
     image_url: p.image_url,
     caption: p.caption,
     location_name: p.location_name,
-    lat: p.lat,
-    lng: p.lng,
     tags: p.tags ?? [],
     likes_count: p.likes_count,
     comments_count: p.comments_count,
     category: p.category,
     created_at: p.created_at,
-    profiles: p.profiles as any,
-    liked: false,
-    saved: false,
+    profile: profile ?? null,
   }
 }
 
@@ -57,19 +53,7 @@ export default function HashtagFeed() {
         const pm: Record<string, any> = {}
         for (const p of profiles ?? []) pm[p.id] = p
 
-        // Attach liked/saved state
-        let likedSet = new Set<string>()
-        let savedSet = new Set<string>()
-        if (user) {
-          const [{ data: likes }, { data: saves }] = await Promise.all([
-            supabase.from('likes').select('post_id').eq('user_id', user.id).in('post_id', list.map(p => p.id)),
-            supabase.from('saved_posts').select('post_id').eq('user_id', user.id).in('post_id', list.map(p => p.id)),
-          ])
-          likedSet = new Set((likes ?? []).map((l: any) => l.post_id))
-          savedSet = new Set((saves ?? []).map((s: any) => s.post_id))
-        }
-
-        setPosts(list.map(p => ({ ...toFeedPost({ ...p, profiles: pm[p.user_id] }), liked: likedSet.has(p.id), saved: savedSet.has(p.id) })))
+        setPosts(list.map(p => toFeedPost(p, pm[p.user_id])))
         setLoading(false)
       })
   }, [tag, user])
@@ -115,9 +99,7 @@ export default function HashtagFeed() {
             <FeedPostCard
               key={post.id}
               post={post}
-              onLikeToggle={(id, liked, count) =>
-                setPosts(prev => prev.map(p => p.id === id ? { ...p, liked, likes_count: count } : p))
-              }
+              currentUserId={user?.id ?? null}
             />
           ))}
         </div>
