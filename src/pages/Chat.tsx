@@ -8,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
-import { deriveConvKey, encryptBlob, clearDecryptedCache } from '@/lib/crypto'
-import EncryptedImage from '@/components/EncryptedImage'
+import { deriveConvKey, clearDecryptedCache } from '@/lib/crypto'
 import Spinner from '@/components/Spinner'
 
 // ── Hire proposal card ───────────────────────────────────────────────────────
@@ -362,23 +361,19 @@ export default function Chat() {
     setUploadingImage(true)
     try {
       const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
-      const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif']
-      const rawExt = (file.name.split('.').pop() ?? '').toLowerCase()
-      // Validate both MIME type (harder to spoof) and extension
-      if (!ALLOWED_MIME.includes(file.type) || !ALLOWED_EXTS.includes(rawExt)) throw new Error('Unsupported file type')
+      if (!ALLOWED_MIME.includes(file.type)) throw new Error('Unsupported file type')
 
-      // Encrypt before upload — ciphertext stored in storage, not plaintext
-      const key = convKey ?? await deriveConvKey(convId!)
-      const encrypted = await encryptBlob(file, key)
-      // Random filename — never expose user ID or timestamp in path
-      const rand = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')
-      const path = `${rand}.enc`
+      const rand = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, '0')).join('')
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/gif' ? 'gif' : file.type === 'image/webp' ? 'webp' : 'jpg'
+      const path = `messages/${convId}/${rand}.${ext}`
+
       const { error: upErr } = await supabase.storage
-        .from('chat-photos').upload(path, encrypted, { contentType: 'application/octet-stream' })
+        .from('avatars')
+        .upload(path, file, { contentType: file.type, upsert: false })
       if (upErr) throw upErr
-      // Store the storage path — not a public URL (bucket is private)
-      const storageRef = `chat-photos/${path}`
-      await sendMessage('', storageRef)
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      await sendMessage('', publicUrl)
     } catch (err: any) {
       toast.error(err.message ?? 'Could not send image')
     }
@@ -521,12 +516,18 @@ export default function Chat() {
                         : `❌ Hire request declined. Thanks for reaching out.`)} />
                   : msg.image_url ? (
                     msg.image_url.endsWith('.enc')
-                      ? <EncryptedImage src={msg.image_url} convKey={convKey} />
+                      ? (
+                        <div className="w-44 h-28 rounded-2xl bg-white/5 border border-white/8 flex flex-col items-center justify-center gap-1.5">
+                          <span className="text-lg">🖼️</span>
+                          <span className="text-[10px] text-white/25">Photo unavailable</span>
+                        </div>
+                      )
                       : <img
                           src={msg.image_url}
                           alt="photo"
-                          className="max-w-[240px] max-h-[300px] object-cover rounded-2xl"
+                          className="max-w-[240px] max-h-[300px] object-cover rounded-2xl cursor-pointer active:scale-[0.97] transition-transform"
                           onLoad={() => bottomRef.current?.scrollIntoView()}
+                          onClick={() => window.open(msg.image_url!, '_blank')}
                         />
                   ) : msg.content}
               </div>
