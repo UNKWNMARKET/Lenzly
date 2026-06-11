@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Bell, MessageCircle, Search, Clock } from 'lucide-react'
 import { useLocation } from 'wouter'
 import StoriesBar from '@/components/StoriesBar'
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { useBlockedUsers } from '@/hooks/useBlockedUsers'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { buildTagWeights, rankPosts } from '@/lib/feedAlgorithm'
 
 const PAGE_SIZE = 20
 
@@ -35,6 +36,7 @@ export default function Home() {
   const [cameraSwipeX, setCameraSwipeX] = useState(0)
   const [followingIds, setFollowingIds] = useState<string[]>([])
   const [scrolled, setScrolled] = useState(false)
+  const [tagWeights, setTagWeights] = useState<Record<string, number>>({})
   const { blockedIds } = useBlockedUsers()
 
   // Initial load / pull-to-refresh — newest page, resets the cursor
@@ -112,6 +114,7 @@ export default function Home() {
       .then(({ data }) => {
         if (data) setFollowingIds(data.map(f => f.following_id))
       })
+    buildTagWeights(user.id).then(setTagWeights)
   }, [user])
 
   const ptr = usePullToRefresh({ onRefresh: fetchPosts })
@@ -261,13 +264,18 @@ export default function Home() {
   }
 
   const notBlocked = realPosts.filter(p => !blockedIds.has(p.user_id))
+  const forYouPosts = useMemo(() => {
+    const base = notBlocked.filter(p =>
+      p.user_id === user?.id ||
+      !(p.profiles as any)?.private_account ||
+      followingIds.includes(p.user_id)
+    )
+    return rankPosts(base as any, tagWeights) as typeof base
+  }, [notBlocked, followingIds, tagWeights, user])
+
   const visiblePosts = feedTab === 'following'
     ? notBlocked.filter(p => p.user_id === user?.id || followingIds.includes(p.user_id))
-    : notBlocked.filter(p =>
-        p.user_id === user?.id ||                        // always show own posts
-        !(p.profiles as any)?.private_account ||         // public accounts visible to all
-        followingIds.includes(p.user_id)                 // private accounts: only if following
-      )
+    : forYouPosts
   const hasPosts = visiblePosts.length > 0
 
   return (

@@ -45,6 +45,7 @@ import PhotographerProfile from './pages/PhotographerProfile'
 import PostDetail from './pages/PostDetail'
 import Weddings from './pages/Weddings'
 import StoryArchive from './pages/StoryArchive'
+import HashtagFeed from './pages/HashtagFeed'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -142,6 +143,7 @@ function Router() {
       <Route path="/post/:id">{() => <ProtectedRoute component={PostDetail} />}</Route>
       <Route path="/weddings">{() => <ProtectedRoute component={Weddings} />}</Route>
       <Route path="/story-archive">{() => <ProtectedRoute component={StoryArchive} />}</Route>
+      <Route path="/hashtag/:tag">{() => <ProtectedRoute component={HashtagFeed} />}</Route>
       <Route path="/brands" component={BrandsPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
@@ -251,7 +253,7 @@ const NAV_HIDDEN_EXACT = new Set([
   '/upload', '/profile/edit', '/settings', '/pro', '/pro/checkout',
   '/notifications', '/messages', '/story-archive',
 ])
-const NAV_HIDDEN_PREFIX = ['/admin', '/brand-portal', '/brand/', '/chat/', '/photographer/', '/post/']
+const NAV_HIDDEN_PREFIX = ['/admin', '/brand-portal', '/brand/', '/chat/', '/photographer/', '/post/', '/hashtag/']
 
 function BottomNavWrapper() {
   const [location] = useLocation()

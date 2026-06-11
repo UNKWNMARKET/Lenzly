@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { useLocation } from 'wouter'
 import { MapPin, X, Image, ChevronDown, Info, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { suggestHashtags } from '@/data/hashtags'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
@@ -381,6 +382,56 @@ function CropEditor({ src, onConfirm, onCancel }: {
   )
 }
 
+// ── Hashtag input with live suggestions ───────────────────────────────────────
+function HashtagInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [focused, setFocused] = useState(false)
+
+  const activeWord = useMemo(() => {
+    const words = value.split(/\s+/)
+    const last = words[words.length - 1] ?? ''
+    return last.startsWith('#') && last.length > 1 ? last : ''
+  }, [value])
+
+  const suggestions = useMemo(() =>
+    activeWord ? suggestHashtags(activeWord.slice(1), 10) : [],
+  [activeWord])
+
+  const pickTag = (tag: string) => {
+    const words = value.trimEnd().split(/\s+/)
+    if (words[words.length - 1]?.startsWith('#')) words.pop()
+    onChange([...words, tag, ''].join(' '))
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Tags: #portrait #nyc #goldenhour"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+        className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors"
+      />
+      {focused && suggestions.length > 0 && (
+        <div className="absolute top-full mt-1 left-0 right-0 z-30 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-xl">
+          <div className="flex flex-wrap gap-1.5 p-3">
+            {suggestions.map(tag => (
+              <button
+                key={tag}
+                onMouseDown={e => { e.preventDefault(); pickTag(tag) }}
+                className="px-2.5 py-1 bg-gold/10 hover:bg-gold/20 text-gold text-xs rounded-full transition-colors"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Upload Page ──────────────────────────────────────────────────────────
 export default function UploadPost() {
   const { user } = useAuth()
@@ -665,9 +716,7 @@ export default function UploadPost() {
           <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
         </div>
 
-        <input type="text" placeholder="Tags: #portrait #nyc #goldenhour" value={tags}
-          onChange={e => setTags(e.target.value)}
-          className="w-full bg-lenz-card border border-lenz-border rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/25 outline-none focus:border-gold/50 transition-colors" />
+        <HashtagInput value={tags} onChange={setTags} />
       </div>
     </div>
     </div>

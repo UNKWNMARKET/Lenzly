@@ -602,7 +602,17 @@ export default function FeedPostCard({
 
       {/* Tags */}
       {post.tags?.length > 0 && (
-        <p className="px-4 pt-1 text-sm text-gold/60">{post.tags.join(' ')}</p>
+        <div className="px-4 pt-1 flex flex-wrap gap-x-1.5 gap-y-0.5">
+          {post.tags.map(tag => (
+            <button
+              key={tag}
+              onClick={e => { e.stopPropagation(); navigate(`/hashtag/${tag.replace(/^#/, '')}`) }}
+              className="text-sm text-gold/70 hover:text-gold transition-colors active:scale-95"
+            >
+              {tag.startsWith('#') ? tag : `#${tag}`}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* View comments toggle */}

@@ -246,7 +246,7 @@ export default function SignUp() {
                 ) : (
                   <>
                     <div className="space-y-1.5">
-                      <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+                      <input type="text" inputMode="numeric" pattern="[0-9]*"
                         placeholder="· · · · · · · ·"
                         maxLength={8}
                         value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
