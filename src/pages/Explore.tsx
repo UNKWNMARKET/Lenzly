@@ -229,7 +229,7 @@ export default function Explore() {
   useEffect(() => {
     fetchCommunityPosts()
     const channel = supabase.channel('community_posts_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchCommunityPosts)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchCommunityPosts)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])

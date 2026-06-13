@@ -43,7 +43,7 @@ export async function buildTagWeights(userId: string): Promise<TagWeights> {
 
   // Liked posts — strong signal (weight 3)
   const { data: likes } = await supabase
-    .from('likes')
+    .from('post_likes')
     .select('post_id')
     .eq('user_id', userId)
     .limit(200)
