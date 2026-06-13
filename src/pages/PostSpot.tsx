@@ -52,8 +52,9 @@ function LayoutIcon({ layout, size = 36 }: { layout: LayoutDef; size?: number })
 
 // ── CropEditor ────────────────────────────────────────────────────────────────
 // Full-screen professional crop modal.
-// slotAspect = (slot.w * 1080) / (slot.h * 1920) — the pixel aspect of this slot.
-// onDone returns a JPEG data URL cropped to exactly the slot's dimensions.
+// Registers non-passive touch listeners so preventDefault works on iOS.
+// Uses background-image so we never render a huge natural-size DOM element.
+// Exports canvas crop from fresh Image element to avoid stale-ref issues.
 function CropEditor({
   src, slotAspect, outputW, outputH, onDone, onCancel,
 }: {
@@ -64,111 +65,190 @@ function CropEditor({
   onDone: (dataUrl: string) => void
   onCancel: () => void
 }) {
-  const imgRef = useRef<HTMLImageElement>(null)
-  const [imgSize, setImgSize] = useState({ w: 1, h: 1 })
-  const [frameSize, setFrameSize] = useState({ w: 390, h: 692 })
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const [userScale, setUserScale] = useState(1) // 1 = pure cover, user zooms up
-  const [showGrid, setShowGrid] = useState(false)
-  const touchRef = useRef<{
+  const containerRef = useRef<HTMLDivElement>(null)
+  const frameRef    = useRef<HTMLDivElement>(null)
+
+  // Render state
+  const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 })
+  const [frameSize,  setFrameSize]  = useState({ w: 300, h: 533 })
+  const [offset,     setOffset]     = useState({ x: 0, y: 0 })
+  const [userScale,  setUserScale]  = useState(1)
+  const [showGrid,   setShowGrid]   = useState(false)
+  const [exporting,  setExporting]  = useState(false)
+
+  // Refs for event handlers — avoid stale closures entirely
+  const imgNaturalRef = useRef({ w: 1, h: 1 })
+  const frameSizeRef  = useRef({ w: 300, h: 533 })
+  const offsetRef     = useRef({ x: 0, y: 0 })
+  const userScaleRef  = useRef(1)
+  const coverScaleRef = useRef(1)
+
+  const gestureRef = useRef<{
     type: 'pan' | 'pinch'
-    x0: number; y0: number
-    ox: number; oy: number
+    x0: number; y0: number; ox: number; oy: number
     dist0: number; scale0: number
   } | null>(null)
 
-  // Frame fills available screen area at the target aspect ratio
+  // Load image natural dimensions
   useEffect(() => {
-    const compute = () => {
-      const vw = window.innerWidth
-      const availH = window.innerHeight - 130 // header + footer
-      let fw = vw
-      let fh = fw / slotAspect
-      if (fh > availH) { fh = availH; fw = fh * slotAspect }
-      setFrameSize({ w: Math.round(fw), h: Math.round(fh) })
+    const img = new Image()
+    img.onload = () => {
+      const nat = { w: img.naturalWidth, h: img.naturalHeight }
+      setImgNatural(nat); imgNaturalRef.current = nat
+      setOffset({ x: 0, y: 0 }); offsetRef.current = { x: 0, y: 0 }
+      setUserScale(1); userScaleRef.current = 1
     }
-    compute()
-    window.addEventListener('resize', compute)
-    return () => window.removeEventListener('resize', compute)
+    img.src = src
+  }, [src])
+
+  // Measure available container and fit frame to slot aspect
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      let fw = width
+      let fh = fw / slotAspect
+      if (fh > height) { fh = height; fw = fh * slotAspect }
+      fw = Math.floor(fw); fh = Math.floor(fh)
+      setFrameSize({ w: fw, h: fh }); frameSizeRef.current = { w: fw, h: fh }
+      // recompute coverScale whenever frame changes
+      const { w: iw, h: ih } = imgNaturalRef.current
+      if (iw > 1) {
+        coverScaleRef.current = Math.max(fw / iw, fh / ih)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [slotAspect])
 
-  // Cover scale: minimum scale at which image fully covers the frame
-  const coverScale = useMemo(() => {
-    if (!imgSize.w || !imgSize.h) return 1
-    return Math.max(frameSize.w / imgSize.w, frameSize.h / imgSize.h)
-  }, [imgSize, frameSize])
+  // Keep coverScale ref in sync whenever imgNatural or frameSize change
+  useMemo(() => {
+    const cs = (imgNatural.w > 1)
+      ? Math.max(frameSize.w / imgNatural.w, frameSize.h / imgNatural.h)
+      : 1
+    coverScaleRef.current = cs
+  }, [imgNatural, frameSize])
 
-  const dispScale = userScale * coverScale
+  const coverScale = coverScaleRef.current
+  const dispScale  = userScale * coverScale
 
-  // Clamp offset: image must always fully cover the frame
-  const clampOffset = useCallback((ox: number, oy: number, s: number) => {
-    const maxX = Math.max(0, (imgSize.w * s - frameSize.w) / 2)
-    const maxY = Math.max(0, (imgSize.h * s - frameSize.h) / 2)
+  const clampXY = (ox: number, oy: number, ds: number) => {
+    const { w: iw, h: ih } = imgNaturalRef.current
+    const { w: fw, h: fh } = frameSizeRef.current
+    const maxX = Math.max(0, (iw * ds - fw) / 2)
+    const maxY = Math.max(0, (ih * ds - fh) / 2)
     return {
       x: Math.max(-maxX, Math.min(maxX, ox)),
       y: Math.max(-maxY, Math.min(maxY, oy)),
     }
-  }, [imgSize, frameSize])
-
-  const handleImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImgSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })
-    setOffset({ x: 0, y: 0 })
-    setUserScale(1)
   }
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault()
-    setShowGrid(true)
-    if (e.touches.length === 1) {
-      touchRef.current = { type: 'pan', x0: e.touches[0].clientX, y0: e.touches[0].clientY, ox: offset.x, oy: offset.y, dist0: 0, scale0: userScale }
-    } else if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX
-      const dy = e.touches[0].clientY - e.touches[1].clientY
-      touchRef.current = { type: 'pinch', dist0: Math.hypot(dx, dy), scale0: userScale, x0: 0, y0: 0, ox: offset.x, oy: offset.y }
+  // Non-passive touch events (React synthetic events are passive on iOS — can't preventDefault)
+  useEffect(() => {
+    const el = frameRef.current
+    if (!el) return
+
+    const onStart = (e: TouchEvent) => {
+      e.preventDefault()
+      setShowGrid(true)
+      const t = e.touches
+      if (t.length === 1) {
+        gestureRef.current = {
+          type: 'pan',
+          x0: t[0].clientX, y0: t[0].clientY,
+          ox: offsetRef.current.x, oy: offsetRef.current.y,
+          dist0: 0, scale0: userScaleRef.current,
+        }
+      } else if (t.length >= 2) {
+        gestureRef.current = {
+          type: 'pinch',
+          x0: (t[0].clientX + t[1].clientX) / 2,
+          y0: (t[0].clientY + t[1].clientY) / 2,
+          ox: offsetRef.current.x, oy: offsetRef.current.y,
+          dist0: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY),
+          scale0: userScaleRef.current,
+        }
+      }
     }
-  }
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault()
-    if (!touchRef.current) return
-    if (touchRef.current.type === 'pan' && e.touches.length >= 1) {
-      const dx = e.touches[0].clientX - touchRef.current.x0
-      const dy = e.touches[0].clientY - touchRef.current.y0
-      setOffset(clampOffset(touchRef.current.ox + dx, touchRef.current.oy + dy, dispScale))
-    } else if (touchRef.current.type === 'pinch' && e.touches.length >= 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX
-      const dy = e.touches[0].clientY - e.touches[1].clientY
-      const newUserScale = Math.min(5, Math.max(1, touchRef.current.scale0 * (Math.hypot(dx, dy) / touchRef.current.dist0)))
-      const newDispScale = newUserScale * coverScale
-      setUserScale(newUserScale)
-      setOffset(clampOffset(touchRef.current.ox, touchRef.current.oy, newDispScale))
+    const onMove = (e: TouchEvent) => {
+      e.preventDefault()
+      const g = gestureRef.current
+      if (!g) return
+      const t = e.touches
+      const cs = coverScaleRef.current
+
+      if (g.type === 'pan' && t.length >= 1) {
+        const dx = t[0].clientX - g.x0
+        const dy = t[0].clientY - g.y0
+        const ds = userScaleRef.current * cs
+        const clamped = clampXY(g.ox + dx, g.oy + dy, ds)
+        setOffset(clamped); offsetRef.current = clamped
+
+      } else if (g.type === 'pinch' && t.length >= 2) {
+        const dist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+        const newUS  = Math.min(5, Math.max(1, g.scale0 * dist / g.dist0))
+        const newDS  = newUS * cs
+        const clamped = clampXY(g.ox, g.oy, newDS)
+        setUserScale(newUS);  userScaleRef.current = newUS
+        setOffset(clamped);   offsetRef.current = clamped
+      }
     }
+
+    const onEnd = () => { gestureRef.current = null; setShowGrid(false) }
+
+    el.addEventListener('touchstart',  onStart, { passive: false })
+    el.addEventListener('touchmove',   onMove,  { passive: false })
+    el.addEventListener('touchend',    onEnd)
+    el.addEventListener('touchcancel', onEnd)
+    return () => {
+      el.removeEventListener('touchstart',  onStart)
+      el.removeEventListener('touchmove',   onMove)
+      el.removeEventListener('touchend',    onEnd)
+      el.removeEventListener('touchcancel', onEnd)
+    }
+  }, []) // intentionally empty — reads only refs
+
+  const handleReset = () => {
+    setOffset({ x: 0, y: 0 }); offsetRef.current = { x: 0, y: 0 }
+    setUserScale(1);            userScaleRef.current = 1
   }
 
-  const onTouchEnd = () => { touchRef.current = null; setShowGrid(false) }
-
-  const handleReset = () => { setOffset({ x: 0, y: 0 }); setUserScale(1) }
-
-  // Render the cropped region to canvas → data URL
+  // Export: load a fresh Image to avoid any cached/scaled-DOM issues
   const handleDone = () => {
-    const img = imgRef.current
-    if (!img) return
-    const s = dispScale
-    // Image top-left in frame coords
-    const imgLeft = frameSize.w / 2 - imgSize.w * s / 2 + offset.x
-    const imgTop  = frameSize.h / 2 - imgSize.h * s / 2 + offset.y
-    // Visible crop rect in image-natural coords
-    const srcX = (0 - imgLeft) / s
-    const srcY = (0 - imgTop)  / s
-    const srcW = frameSize.w   / s
-    const srcH = frameSize.h   / s
+    if (exporting) return
+    setExporting(true)
+    const { w: iw, h: ih } = imgNaturalRef.current
+    const { w: fw, h: fh } = frameSizeRef.current
+    const cs = coverScaleRef.current
+    const us = userScaleRef.current
+    const s  = us * cs
+    const { x: ox, y: oy } = offsetRef.current
+    const imgLeft = fw / 2 - iw * s / 2 + ox
+    const imgTop  = fh / 2 - ih * s / 2 + oy
+    const srcX = -imgLeft / s
+    const srcY = -imgTop  / s
+    const srcW = fw / s
+    const srcH = fh / s
     const canvas = document.createElement('canvas')
-    canvas.width  = outputW
-    canvas.height = outputH
+    canvas.width = outputW; canvas.height = outputH
     const ctx = canvas.getContext('2d')!
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outputW, outputH)
-    onDone(canvas.toDataURL('image/jpeg', 0.93))
+    const img = new Image()
+    img.onload = () => {
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outputW, outputH)
+      setExporting(false)
+      onDone(canvas.toDataURL('image/jpeg', 0.93))
+    }
+    img.onerror = () => setExporting(false)
+    img.src = src
   }
+
+  // Display: background-image avoids rendering a natural-size DOM element
+  const dispW = Math.round(imgNatural.w * dispScale)
+  const dispH = Math.round(imgNatural.h * dispScale)
+  const bgX   = Math.round(frameSize.w / 2 - dispW / 2 + offset.x)
+  const bgY   = Math.round(frameSize.h / 2 - dispH / 2 + offset.y)
 
   return (
     <div className="fixed inset-0 z-[70] bg-black flex flex-col select-none">
@@ -186,66 +266,52 @@ function CropEditor({
         </div>
         <button
           onClick={handleDone}
-          className="w-10 h-10 rounded-full bg-gold flex items-center justify-center active:scale-90 transition-transform"
+          disabled={exporting}
+          className="w-10 h-10 rounded-full bg-gold flex items-center justify-center active:scale-90 transition-transform disabled:opacity-60"
         >
-          <Check size={18} className="text-lenz-bg" strokeWidth={2.5} />
+          {exporting
+            ? <div className="w-4 h-4 border-2 border-lenz-bg/40 border-t-lenz-bg rounded-full animate-spin" />
+            : <Check size={18} className="text-lenz-bg" strokeWidth={2.5} />}
         </button>
       </div>
 
-      {/* Crop frame */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* Crop frame — container takes all remaining space */}
+      <div ref={containerRef} className="flex-1 flex items-center justify-center min-h-0 px-0">
         <div
-          className="relative overflow-hidden bg-black"
-          style={{ width: frameSize.w, height: frameSize.h, touchAction: 'none' }}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          onTouchCancel={onTouchEnd}
+          ref={frameRef}
+          className="relative overflow-hidden bg-zinc-900"
+          style={{ width: frameSize.w, height: frameSize.h }}
         >
-          {/* The image — centered, scaled */}
-          <img
-            ref={imgRef}
-            src={src}
-            alt=""
-            onLoad={handleImgLoad}
-            draggable={false}
-            className="absolute pointer-events-none"
+          {/* Image displayed via background-image (no huge DOM element) */}
+          <div
+            className="absolute inset-0"
             style={{
-              width: imgSize.w,
-              height: imgSize.h,
-              left: '50%',
-              top: '50%',
-              marginLeft: -imgSize.w / 2,
-              marginTop: -imgSize.h / 2,
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${dispScale})`,
-              transformOrigin: 'center center',
+              backgroundImage: `url("${src}")`,
+              backgroundSize: `${dispW}px ${dispH}px`,
+              backgroundPosition: `${bgX}px ${bgY}px`,
+              backgroundRepeat: 'no-repeat',
             }}
           />
 
-          {/* Rule-of-thirds grid — fades in on touch */}
+          {/* Rule-of-thirds grid */}
           <div
-            className="absolute inset-0 pointer-events-none transition-opacity duration-150"
+            className="absolute inset-0 pointer-events-none transition-opacity duration-100"
             style={{ opacity: showGrid ? 1 : 0 }}
           >
-            {/* Thirds lines */}
-            <div className="absolute top-0 bottom-0 border-r border-white/25" style={{ left: '33.33%', width: 0 }} />
-            <div className="absolute top-0 bottom-0 border-r border-white/25" style={{ left: '66.66%', width: 0 }} />
-            <div className="absolute left-0 right-0 border-b border-white/25" style={{ top: '33.33%', height: 0 }} />
-            <div className="absolute left-0 right-0 border-b border-white/25" style={{ top: '66.66%', height: 0 }} />
+            <div className="absolute inset-y-0 border-r border-white/30" style={{ left: '33.33%' }} />
+            <div className="absolute inset-y-0 border-r border-white/30" style={{ left: '66.66%' }} />
+            <div className="absolute inset-x-0 border-b border-white/30" style={{ top: '33.33%' }} />
+            <div className="absolute inset-x-0 border-b border-white/30" style={{ top: '66.66%' }} />
           </div>
 
           {/* Frame border */}
-          <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)' }} />
+          <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/20" />
 
           {/* Corner L-brackets */}
-          {([
-            'top-0 left-0 border-t-2 border-l-2 rounded-tl',
-            'top-0 right-0 border-t-2 border-r-2 rounded-tr',
-            'bottom-0 left-0 border-b-2 border-l-2 rounded-bl',
-            'bottom-0 right-0 border-b-2 border-r-2 rounded-br',
-          ] as const).map(cls => (
-            <div key={cls} className={`absolute w-7 h-7 border-white pointer-events-none ${cls}`} />
-          ))}
+          <div className="absolute top-0 left-0  w-7 h-7 border-t-[3px] border-l-[3px] border-white pointer-events-none" />
+          <div className="absolute top-0 right-0 w-7 h-7 border-t-[3px] border-r-[3px] border-white pointer-events-none" />
+          <div className="absolute bottom-0 left-0  w-7 h-7 border-b-[3px] border-l-[3px] border-white pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3px] border-r-[3px] border-white pointer-events-none" />
         </div>
       </div>
 
