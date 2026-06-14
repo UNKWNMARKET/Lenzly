@@ -285,9 +285,9 @@ export default function Settings() {
   const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
     <button
       onClick={e => { e.stopPropagation(); onChange() }}
-      className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${value ? 'bg-gold' : 'bg-white/15'}`}
+      className={`w-[52px] h-[30px] rounded-full transition-colors relative shrink-0 ${value ? 'bg-gold' : 'bg-white/15'}`}
     >
-      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+      <span className={`absolute top-[5px] w-5 h-5 rounded-full bg-white shadow-md transition-all duration-200 ${value ? 'left-[27px]' : 'left-[5px]'}`} />
     </button>
   )
 
