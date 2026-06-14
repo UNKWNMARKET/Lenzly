@@ -235,7 +235,7 @@ export default function Settings() {
       setShowLocation(!next)
       toast.error('Could not save setting')
     } else {
-      toast.success(next ? 'Location shown on posts' : 'Location hidden from posts')
+      toast.success(next ? 'Location visible on posts & map' : 'Location hidden from posts & map')
     }
   }
   const [expanded, setExpanded] = useState<SectionKey>(null)
@@ -381,7 +381,8 @@ export default function Settings() {
           />
           <Row
             icon={Eye}
-            label="Show Location on Posts"
+            label="Show My Location Publicly"
+            sublabel="Appears on posts and the photographer map"
             onPress={toggleShowLocation}
             right={<Toggle value={showLocation} onChange={toggleShowLocation} />}
           />

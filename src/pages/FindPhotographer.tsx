@@ -141,6 +141,7 @@ export default function FindPhotographer() {
   useEffect(() => {
     if (view !== 'map') return
     const toGeocode = allPhotographers.filter(p =>
+      p.show_location !== false &&
       p.location && p.location.trim() && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0))
     )
     if (toGeocode.length === 0) return
@@ -354,6 +355,8 @@ export default function FindPhotographer() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
                 {filtered.map(p => {
+                  // Respect the user's "Show My Location Publicly" setting
+                  if (p.show_location === false) return null
                   const gc = geocodedCoords[String(p.id)]
                   const lat = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lat : gc?.lat
                   const lng = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lng : gc?.lng
