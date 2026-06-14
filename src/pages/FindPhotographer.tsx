@@ -15,6 +15,24 @@ import { cn, formatCount } from '@/lib/utils'
 // Lazy-load the map to avoid SSR issues
 let MapContainer: any, TileLayer: any, Marker: any, Popup: any, L: any
 
+// Geocode cache: location string → {lat, lng} or null (if not found)
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>()
+
+async function geocodeLocation(location: string): Promise<{ lat: number; lng: number } | null> {
+  const key = location.trim().toLowerCase()
+  if (geocodeCache.has(key)) return geocodeCache.get(key)!
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1&countrycodes=us`
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    const data = await res.json()
+    const result = data[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null
+    geocodeCache.set(key, result)
+    return result
+  } catch {
+    return null
+  }
+}
+
 async function loadLeaflet() {
   const [leafletModule, reactLeafletModule] = await Promise.all([
     import('leaflet'),
@@ -103,6 +121,8 @@ export default function FindPhotographer() {
   const [query, setQuery] = useState('')
   const [mapReady, setMapReady] = useState(false)
   const mapLoadedRef = useRef(false)
+  // Geocoded coords for photographers whose profile only has a text location
+  const [geocodedCoords, setGeocodedCoords] = useState<Record<string, { lat: number; lng: number }>>({})
 
   useEffect(() => {
     if (view === 'map' && !mapLoadedRef.current) {
@@ -116,6 +136,25 @@ export default function FindPhotographer() {
   const { photographers: realPhotographers } = useRealPhotographers({ refreshKey })
   const { blockedIds } = useBlockedUsers()
   const allPhotographers = realPhotographers.filter(p => !blockedIds.has(String(p.id)))
+
+  // When map opens, geocode any photographer that has a location string but no real lat/lng
+  useEffect(() => {
+    if (view !== 'map') return
+    const toGeocode = allPhotographers.filter(p =>
+      p.location && p.location.trim() && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0))
+    )
+    if (toGeocode.length === 0) return
+    // Stagger requests to respect Nominatim's 1 req/sec limit
+    toGeocode.forEach((p, i) => {
+      setTimeout(async () => {
+        const coords = await geocodeLocation(p.location)
+        if (coords) {
+          setGeocodedCoords(prev => ({ ...prev, [String(p.id)]: coords }))
+        }
+      }, i * 1100)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, allPhotographers.length])
 
   const handleRefresh = useCallback(async () => {
     setRefreshKey(k => k + 1)
@@ -290,6 +329,18 @@ export default function FindPhotographer() {
       {/* Map View */}
       {view === 'map' && (
         <div className="px-4">
+          {/* Geocoding progress hint */}
+          {(() => {
+            const needsGeocode = filtered.filter(p => p.location && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0)))
+            const resolved = needsGeocode.filter(p => geocodedCoords[String(p.id)])
+            return needsGeocode.length > 0 && resolved.length < needsGeocode.length ? (
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0" />
+                <p className="text-[11px] text-white/30">Placing {resolved.length}/{needsGeocode.length} photographers on map…</p>
+              </div>
+            ) : null
+          })()}
+
           <div className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
             {mapReady && MapContainer ? (
               <MapContainer
@@ -302,9 +353,13 @@ export default function FindPhotographer() {
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
-                {filtered.map(p => (
-                  <PhotographerMapPin key={p.id} photographer={p} />
-                ))}
+                {filtered.map(p => {
+                  const gc = geocodedCoords[String(p.id)]
+                  const lat = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lat : gc?.lat
+                  const lng = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lng : gc?.lng
+                  if (!lat || !lng) return null
+                  return <PhotographerMapPin key={p.id} photographer={{ ...p, lat, lng }} />
+                })}
               </MapContainer>
             ) : (
               <div className="w-full h-full bg-lenz-card flex items-center justify-center">
