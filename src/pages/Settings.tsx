@@ -376,14 +376,12 @@ export default function Settings() {
             icon={Lock}
             label="Private Account"
             sublabel="Only approved followers can see your posts"
-            onPress={togglePrivateAccount}
             right={<Toggle value={privateAccount} onChange={togglePrivateAccount} />}
           />
           <Row
             icon={Eye}
             label="Show My Location Publicly"
             sublabel="Appears on posts and the photographer map"
-            onPress={toggleShowLocation}
             right={<Toggle value={showLocation} onChange={toggleShowLocation} />}
           />
           <Row
