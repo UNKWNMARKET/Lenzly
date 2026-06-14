@@ -49,7 +49,8 @@ export function useRealPhotographers(options?: { refreshKey?: number }) {
     supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('followers_count', { ascending: false })
+      .order('posts_count', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
         if (error) console.error('[useRealPhotographers]', error.message, error.code)

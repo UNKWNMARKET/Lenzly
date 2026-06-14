@@ -134,11 +134,14 @@ export default function FindPhotographer() {
           !p.specialty.join(' ').toLowerCase().includes(query.toLowerCase())) return false
       return true
     })
-    // Pro members surface first when brands/companies are searching
+    // Pro and verified surface first, then sort by followers + posts activity
     .sort((a, b) => {
       if (a.pro !== b.pro) return a.pro ? -1 : 1
       if (a.verified !== b.verified) return a.verified ? -1 : 1
-      return (b.rating ?? 0) - (a.rating ?? 0)
+      // Activity score: followers weighted higher than post count
+      const scoreA = (a.followers ?? 0) * 3 + (a.posts ?? 0)
+      const scoreB = (b.followers ?? 0) * 3 + (b.posts ?? 0)
+      return scoreB - scoreA
     })
 
   return (
