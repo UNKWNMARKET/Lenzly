@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw, ChevronRight } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import type { PhotoSpot } from '@/data/mockData'
 import { useSpotModal } from '@/contexts/SpotModalContext'
@@ -181,6 +181,7 @@ export default function Explore() {
   // Community Discovered: real posts from the DB that have a tagged location
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([])
   const [communityLoading, setCommunityLoading] = useState(true)
+  const [showAllCommunity, setShowAllCommunity] = useState(false)
 
   // Debounce search input — filters run on debouncedQuery, not every keystroke
   useEffect(() => {
@@ -462,7 +463,7 @@ export default function Explore() {
               <span className="text-white/40 text-xl font-light shrink-0">›</span>
             </div>
 
-            {/* Community Discovered — real posts from DB with a tagged location */}
+            {/* Community Discovered — horizontal scroll row + See All */}
             <section>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -474,16 +475,26 @@ export default function Explore() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-[10px] text-white/30">Live</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-white/30">Live</span>
+                  </div>
+                  {!communityLoading && !communityError && filteredCommunityPosts.length > 0 && (
+                    <button
+                      onClick={() => setShowAllCommunity(true)}
+                      className="flex items-center gap-0.5 text-xs text-gold font-semibold active:opacity-70"
+                    >
+                      See All <ChevronRight size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
 
               {communityLoading ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex gap-3 overflow-hidden">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="aspect-[4/3] rounded-xl bg-lenz-card animate-pulse" />
+                    <div key={i} className="w-40 shrink-0 aspect-[3/4] rounded-xl bg-lenz-card animate-pulse" />
                   ))}
                 </div>
               ) : communityError ? (
@@ -508,13 +519,54 @@ export default function Explore() {
                   <p className="text-white/20 text-xs mt-1">Upload a photo and tag a location to appear here</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {filteredCommunityPosts.map(post => (
-                    <CommunityPostCard key={post.id} post={post} />
-                  ))}
+                <div className="-mx-4 px-4">
+                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    {filteredCommunityPosts.slice(0, 20).map(post => (
+                      <div key={post.id} className="w-40 shrink-0">
+                        <CommunityPostCard post={post} />
+                      </div>
+                    ))}
+                    {/* See All end cap */}
+                    {filteredCommunityPosts.length > 20 && (
+                      <div className="w-40 shrink-0 aspect-[3/4] rounded-xl bg-lenz-card border border-lenz-border flex flex-col items-center justify-center gap-2 cursor-pointer active:bg-white/5"
+                        onClick={() => setShowAllCommunity(true)}>
+                        <div className="w-10 h-10 rounded-full bg-gold/15 flex items-center justify-center">
+                          <ChevronRight size={20} className="text-gold" />
+                        </div>
+                        <p className="text-xs font-bold text-gold">See All</p>
+                        <p className="text-[10px] text-white/30">{filteredCommunityPosts.length} spots</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </section>
+
+            {/* Community Discovered — full-screen modal */}
+            {showAllCommunity && (
+              <div className="fixed inset-0 z-50 bg-lenz-bg flex flex-col">
+                <header className="sticky top-0 z-10 glass-dark px-4 py-3 flex items-center gap-3 safe-top border-b border-lenz-border">
+                  <button onClick={() => setShowAllCommunity(false)} className="p-2 -ml-2 active:opacity-60">
+                    <X size={20} className="text-white/70" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
+                    <p className="text-[10px] text-white/30 mt-0.5">{filteredCommunityPosts.length} spots tagged by photographers</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-white/30">Live</span>
+                  </div>
+                </header>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-3 p-4 pb-24">
+                    {filteredCommunityPosts.map(post => (
+                      <CommunityPostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Category preview rows — one tidy swipeable strip each */}
             <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => window.scrollTo({ top: 0 })} />
