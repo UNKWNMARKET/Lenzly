@@ -499,10 +499,11 @@ export default function PhotographerProfile() {
           {/* Avatar */}
           <div className="relative shrink-0">
             <button
-              onClick={() => hasActiveStory ? setStoryViewerOpen(true) : undefined}
-              className={hasActiveStory ? 'active:scale-95 transition-transform' : ''}
+              type="button"
+              onClick={() => { if (hasActiveStory) setStoryViewerOpen(true) }}
+              className={hasActiveStory ? 'active:scale-95 transition-transform block' : 'block cursor-default'}
             >
-              <div className={hasActiveStory ? 'story-ring-active' : p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
+              <div className={hasActiveStory ? 'story-ring-active' : p.verified ? 'story-ring' : 'story-ring-seen'}>
                 <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
                   <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
                 </div>

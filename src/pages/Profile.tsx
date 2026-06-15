@@ -290,10 +290,11 @@ export default function Profile() {
         <div className="flex items-end justify-between">
           <div className="relative inline-block">
             <button
-              onClick={() => myStories.length > 0 ? setStoryViewerOpen(true) : undefined}
-              className={myStories.length > 0 ? 'active:scale-95 transition-transform' : ''}
+              type="button"
+              onClick={() => { if (myStories.length > 0) setStoryViewerOpen(true) }}
+              className={myStories.length > 0 ? 'active:scale-95 transition-transform block' : 'block cursor-default'}
             >
-              <div className={myStories.length > 0 ? 'story-ring-active' : u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
+              <div className={myStories.length > 0 ? 'story-ring-active' : u.verified ? 'story-ring' : 'story-ring-seen'}>
                 <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
                   {u.avatar
                     ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />

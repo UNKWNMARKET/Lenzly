@@ -219,10 +219,10 @@ export default function Explore() {
     const profileMap: Record<string, any> = {}
     for (const p of profilesData ?? []) profileMap[p.id] = p
 
-    // Step 3: merge, exclude private accounts
+    // Step 3: merge, exclude private accounts, exclude empty location names
     const rows = postsData
       .map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
-      .filter((p: any) => !p.profiles?.private_account)
+      .filter((p: any) => !p.profiles?.private_account && p.location_name?.trim())
     setCommunityPosts(rows)
     setCommunityLoading(false)
   }, [])
