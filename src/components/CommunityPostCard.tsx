@@ -104,10 +104,10 @@ export default function CommunityPostCard({ post }: Props) {
         </div>
       )}
 
-      {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-0 p-2.5 space-y-1.5">
+      {/* Bottom gradient info */}
+      <div className="absolute bottom-0 left-0 right-0 p-2.5 space-y-1">
         {/* Location */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 pr-20">
           <MapPin size={9} className="text-gold shrink-0" />
           <p className="text-[11px] font-bold text-white truncate leading-tight">{post.location_name || 'Unknown Location'}</p>
         </div>
@@ -123,30 +123,28 @@ export default function CommunityPostCard({ post }: Props) {
           </div>
         )}
 
-        {/* Photographer + directions */}
-        <div className="flex items-center justify-between gap-1">
-          {post.profiles?.username ? (
-            <div className="flex items-center gap-1 min-w-0">
-              <div className="w-4 h-4 rounded-full bg-white/20 overflow-hidden shrink-0">
-                {post.profiles.avatar_url
-                  ? <img src={img.avatar(post.profiles.avatar_url)} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-[7px] text-white font-bold">{post.profiles.username[0].toUpperCase()}</div>
-                }
-              </div>
-              <span className="text-[9px] text-white/60 truncate">@{post.profiles.username}</span>
+        {/* Photographer */}
+        {post.profiles?.username && (
+          <div className="flex items-center gap-1 min-w-0 pr-20">
+            <div className="w-4 h-4 rounded-full bg-white/20 overflow-hidden shrink-0">
+              {post.profiles.avatar_url
+                ? <img src={img.avatar(post.profiles.avatar_url)} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-[7px] text-white font-bold">{post.profiles.username[0].toUpperCase()}</div>
+              }
             </div>
-          ) : <div />}
-
-          {/* Directions button */}
-          <button
-            onClick={openDirections}
-            className="flex items-center gap-1 bg-gold/20 border border-gold/30 rounded-full px-2 py-1 shrink-0 active:bg-gold/40"
-          >
-            <Navigation size={8} className="text-gold" />
-            <span className="text-[9px] text-gold font-semibold">Directions</span>
-          </button>
-        </div>
+            <span className="text-[9px] text-white/60 truncate">@{post.profiles.username}</span>
+          </div>
+        )}
       </div>
+
+      {/* Directions button — always visible, absolutely anchored bottom-right */}
+      <button
+        onClick={openDirections}
+        className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-gold/40 rounded-full px-2 py-1 active:bg-gold/30"
+      >
+        <Navigation size={8} className="text-gold" />
+        <span className="text-[9px] text-gold font-semibold">Directions</span>
+      </button>
     </div>
   )
 }

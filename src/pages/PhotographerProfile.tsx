@@ -501,12 +501,10 @@ export default function PhotographerProfile() {
             <button
               type="button"
               onClick={() => { if (hasActiveStory) setStoryViewerOpen(true) }}
-              className={hasActiveStory ? 'active:scale-95 transition-transform block' : 'block cursor-default'}
+              className={`rounded-full transition-transform ${hasActiveStory ? 'active:scale-95 p-[3px] bg-gradient-to-tr from-gold via-yellow-300 to-amber-200 shadow-[0_0_14px_4px_rgba(201,168,76,0.5)]' : ''}`}
             >
-              <div className={hasActiveStory ? 'story-ring-active' : p.verified ? 'story-ring' : 'story-ring-seen'}>
-                <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
-                  <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-                </div>
+              <div className={`w-[86px] h-[86px] rounded-full overflow-hidden bg-lenz-card ${hasActiveStory ? 'border-[3px] border-lenz-bg' : p.verified ? 'border-2 border-gold/60' : 'border-2 border-lenz-border'}`}>
+                <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
               </div>
             </button>
             {p.available && !(founderCutoffLoaded && isFounderByDate((p as any).profile_created_at)) && (

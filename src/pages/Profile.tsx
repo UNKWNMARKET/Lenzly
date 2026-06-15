@@ -292,17 +292,15 @@ export default function Profile() {
             <button
               type="button"
               onClick={() => { if (myStories.length > 0) setStoryViewerOpen(true) }}
-              className={myStories.length > 0 ? 'active:scale-95 transition-transform block' : 'block cursor-default'}
+              className={`rounded-full transition-transform ${myStories.length > 0 ? 'active:scale-95 p-[3px] bg-gradient-to-tr from-gold via-yellow-300 to-amber-200 shadow-[0_0_14px_4px_rgba(201,168,76,0.5)]' : ''}`}
             >
-              <div className={myStories.length > 0 ? 'story-ring-active' : u.verified ? 'story-ring' : 'story-ring-seen'}>
-                <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
-                  {u.avatar
-                    ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                  }
-                </div>
+              <div className={`w-24 h-24 rounded-full overflow-hidden bg-lenz-card ${myStories.length > 0 ? 'border-[3px] border-lenz-bg' : u.verified ? 'border-2 border-gold/60' : 'border-2 border-lenz-border'}`}>
+                {u.avatar
+                  ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                }
               </div>
             </button>
             {founderCutoffLoaded && isFounderByDate(profile?.created_at) && (
