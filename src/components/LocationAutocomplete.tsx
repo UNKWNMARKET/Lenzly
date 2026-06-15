@@ -111,7 +111,7 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
       <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 z-10" />
       <input
         type="text"
-        placeholder={placeholder ?? 'Location (e.g. Wynwood Walls, Miami FL)'}
+        placeholder={placeholder ?? 'Location (city, landmark, or address worldwide)'}
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}

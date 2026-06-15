@@ -69,8 +69,7 @@ export default function CommunityPostCard({ post }: Props) {
     const q = post.lat && post.lng
       ? `${post.lat},${post.lng}`
       : encodeURIComponent(post.location_name)
-    // Opens Apple Maps on iOS, Google Maps on Android/web
-    window.open(`https://maps.apple.com/?daddr=${q}`, '_blank')
+    window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank')
   }
 
   return (

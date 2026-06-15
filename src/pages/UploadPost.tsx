@@ -773,7 +773,7 @@ export default function UploadPost() {
           <div className="flex items-start gap-1.5 px-1">
             <Info size={11} className="text-gold/50 mt-0.5 shrink-0" />
             <p className="text-[10px] text-white/30 leading-relaxed">
-              Add the <span className="text-white/50">city &amp; state</span> (e.g. "Wynwood Walls, Miami FL") so others can find this spot.
+              Add the <span className="text-white/50">location name</span> (e.g. "Eiffel Tower, Paris" or "Wynwood Walls, Miami FL") so others can find this spot.
             </p>
           </div>
           <button onClick={getLocation} disabled={gettingLocation}
