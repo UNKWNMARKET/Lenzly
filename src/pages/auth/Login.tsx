@@ -52,7 +52,6 @@ export default function Login() {
       toast.error(error.message)
       setLoading(false)
     } else {
-      // Offer to save credentials as passkey (Face ID / Touch ID)
       const saved = await savePasskeyCredential(email, password)
       if (saved) setShowPasskeyBtn(true)
     }
@@ -81,27 +80,35 @@ export default function Login() {
 
   const fieldClass = (name: string) =>
     `w-full bg-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm text-white placeholder-white/20 outline-none border transition-all duration-200 ${
-      focused === name ? 'border-gold/60 bg-white/8' : 'border-white/8 hover:border-white/15'
+      focused === name ? 'border-gold/60 bg-white/8 shadow-[0_0_0_3px_rgba(201,168,76,0.08)]' : 'border-white/8 hover:border-white/15'
     }`
 
   return (
     <div className="min-h-screen bg-[#060606] flex flex-col safe-top safe-bottom overflow-hidden relative">
-      {/* Ambient glow */}
+
+      {/* Animated ambient orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#C9A84C]/8 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[#C9A84C]/4 blur-[80px]" />
+        <div className="orb-top absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#C9A84C]/8 blur-[100px]" />
+        <div className="orb-bot absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[#C9A84C]/4 blur-[80px]" />
+        {/* Subtle grid */}
+        <div className="absolute inset-0 opacity-[0.025]" style={{
+          backgroundImage: 'linear-gradient(rgba(201,168,76,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.4) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
       </div>
 
       <div className="relative flex-1 flex flex-col items-center justify-center px-6 py-10">
-        {/* Hero */}
-        <div className="text-center mb-10 flex flex-col items-center gap-3">
+
+        {/* Logo */}
+        <div className="login-logo text-center mb-10 flex flex-col items-center gap-3">
           <AppLogo className="h-11" />
-          <p className="text-[10px] text-white/25 tracking-[0.45em] uppercase">Photography Platform</p>
+          <p className="login-sub text-[10px] text-white/25 tracking-[0.45em] uppercase">Photography Platform</p>
         </div>
 
         {/* Card */}
-        <div className="w-full max-w-sm">
-          <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-7 backdrop-blur-sm shadow-2xl">
+        <div className="login-card w-full max-w-sm">
+          <div className="card-shimmer bg-white/[0.03] border border-white/8 rounded-3xl p-7 backdrop-blur-sm shadow-2xl shadow-black/60">
+
             <h2 className="text-white font-semibold text-lg mb-1">Welcome back</h2>
             <p className="text-white/35 text-sm mb-6">Sign in to your account</p>
 
@@ -111,7 +118,7 @@ export default function Login() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={passkeyLoading}
-                className="w-full mb-4 flex items-center justify-center gap-3 bg-white/5 border border-gold/30 hover:border-gold/60 active:scale-[0.98] rounded-2xl py-4 transition-all duration-150 disabled:opacity-50"
+                className="w-full mb-4 flex items-center justify-center gap-3 bg-white/5 border border-gold/30 hover:border-gold/60 active:scale-[0.98] rounded-2xl py-4 transition-all duration-200 disabled:opacity-50 hover:bg-white/8 hover:shadow-[0_0_20px_rgba(201,168,76,0.1)]"
               >
                 {passkeyLoading ? (
                   <span className="w-5 h-5 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
@@ -135,7 +142,7 @@ export default function Login() {
             <form onSubmit={handleLogin} className="space-y-3" autoComplete="on">
               {/* Email */}
               <div className="relative">
-                <Mail size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'email' ? 'text-gold/60' : 'text-white/25'}`} />
+                <Mail size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focused === 'email' ? 'text-gold/70' : 'text-white/25'}`} />
                 <input
                   type="email" name="email" placeholder="Email address" value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -147,7 +154,7 @@ export default function Login() {
 
               {/* Password */}
               <div className="relative">
-                <Lock size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'password' ? 'text-gold/60' : 'text-white/25'}`} />
+                <Lock size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focused === 'password' ? 'text-gold/70' : 'text-white/25'}`} />
                 <input
                   type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -156,7 +163,7 @@ export default function Login() {
                   className={`${fieldClass('password')} pr-12`}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors p-0.5">
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors p-0.5">
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
@@ -165,8 +172,8 @@ export default function Login() {
               <div className="flex items-center justify-between pt-0.5">
                 <button type="button" onClick={() => setRememberMe(r => !r)}
                   className="flex items-center gap-2 group">
-                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                    rememberMe ? 'bg-gold border-gold' : 'border-white/20 group-hover:border-white/40'
+                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all duration-200 ${
+                    rememberMe ? 'bg-gold border-gold shadow-[0_0_8px_rgba(201,168,76,0.4)]' : 'border-white/20 group-hover:border-white/40'
                   }`}>
                     {rememberMe && (
                       <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
@@ -182,8 +189,11 @@ export default function Login() {
               </div>
 
               {/* Submit */}
-              <button type="submit" disabled={loading}
-                className="w-full mt-1 bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-1 bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(201,168,76,0.3)] hover:shadow-[0_6px_28px_rgba(201,168,76,0.45)]"
+              >
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
@@ -196,8 +206,8 @@ export default function Login() {
             </form>
           </div>
 
-          {/* Footer */}
-          <p className="text-center text-sm text-white/25 mt-5">
+          {/* Footer link */}
+          <p className="login-footer text-center text-sm text-white/25 mt-5">
             New to LENZLY?{' '}
             <Link href="/auth/signup">
               <span className="text-gold hover:text-gold/80 font-medium cursor-pointer transition-colors">Create an account</span>
@@ -207,7 +217,7 @@ export default function Login() {
       </div>
 
       {/* Bottom tagline */}
-      <p className="relative text-center text-[10px] text-white/10 pb-5 tracking-widest uppercase">The Photography Community</p>
+      <p className="login-tagline relative text-center text-[10px] text-white/10 pb-5 tracking-widest uppercase">The Photography Community</p>
     </div>
   )
 }

@@ -193,6 +193,56 @@
     animation: camera-float 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
+  /* Login screen entrance animations */
+  @keyframes login-fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes login-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes login-scale-in {
+    from { opacity: 0; transform: scale(0.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes orb-drift {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    50%       { transform: translate(-50%, -18px) scale(1.07); }
+  }
+  @keyframes orb-drift-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%       { transform: translate(12px, -10px) scale(1.05); }
+  }
+  @keyframes shimmer-line {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+
+  .login-logo    { animation: login-fade-up  0.55s cubic-bezier(0.4,0,0.2,1) 0.05s both; }
+  .login-sub     { animation: login-fade-in  0.5s  cubic-bezier(0.4,0,0.2,1) 0.25s both; }
+  .login-card    { animation: login-scale-in 0.6s  cubic-bezier(0.4,0,0.2,1) 0.15s both; }
+  .login-footer  { animation: login-fade-in  0.5s  cubic-bezier(0.4,0,0.2,1) 0.55s both; }
+  .login-tagline { animation: login-fade-in  0.5s  cubic-bezier(0.4,0,0.2,1) 0.7s  both; }
+
+  .orb-top  { animation: orb-drift   8s ease-in-out infinite; }
+  .orb-bot  { animation: orb-drift-2 11s ease-in-out infinite; }
+
+  /* Card shimmer highlight */
+  .card-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .card-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    animation: shimmer-line 3.5s ease-in-out 1s infinite;
+    pointer-events: none;
+  }
+
   /* Slide up animation for sheets */
   @keyframes slide-up {
     from { transform: translateY(100%); }
