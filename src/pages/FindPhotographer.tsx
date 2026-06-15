@@ -121,6 +121,22 @@ export default function FindPhotographer() {
   const [query, setQuery] = useState('')
   const [mapReady, setMapReady] = useState(false)
   const mapLoadedRef = useRef(false)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+
+  // Prevent map touch events from bubbling up and triggering page swipe
+  useEffect(() => {
+    const el = mapContainerRef.current
+    if (!el) return
+    const stop = (e: TouchEvent) => e.stopPropagation()
+    el.addEventListener('touchstart', stop, { passive: true })
+    el.addEventListener('touchmove', stop, { passive: true })
+    el.addEventListener('touchend', stop, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', stop)
+      el.removeEventListener('touchmove', stop)
+      el.removeEventListener('touchend', stop)
+    }
+  }, [])
   // Geocoded coords for photographers whose profile only has a text location
   const [geocodedCoords, setGeocodedCoords] = useState<Record<string, { lat: number; lng: number }>>({})
 
@@ -342,7 +358,7 @@ export default function FindPhotographer() {
             ) : null
           })()}
 
-          <div className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
+          <div ref={mapContainerRef} className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}
