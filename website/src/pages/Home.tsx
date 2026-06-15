@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform, useMotionValue, useSpring, type Variants } from 'framer-motion'
 import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap, Users, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import GpsMapBackground from '../components/GpsMapBackground'
 
 interface Post { id: string; image_url: string; caption: string | null; profiles?: { name: string; avatar_url: string | null } }
 
@@ -166,6 +167,9 @@ export default function Home() {
             background: 'radial-gradient(circle, rgba(236,200,92,0.04) 0%, transparent 70%)',
           }}
         />
+
+        {/* GPS map animation */}
+        <GpsMapBackground />
 
         {/* Background layers */}
         <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
