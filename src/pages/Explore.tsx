@@ -556,11 +556,11 @@ export default function Explore() {
             )}
 
             {/* Category preview rows — one tidy swipeable strip each */}
-            <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => window.scrollTo({ top: 0 })} />
-            <PreviewRow icon={Building2}  title="Architecture" subtitle="50 States" spots={filteredArchSpots} onSeeAll={() => setActiveFilter('Architecture')} />
-            <PreviewRow icon={Sun}        title="Florida"      subtitle="Buildings & Locations" spots={filteredFlSpots} onSeeAll={() => setActiveFilter('Florida')} />
-            <PreviewRow icon={Heart}      title="Engagement"   subtitle="50 States" spots={filteredEngSpots}  onSeeAll={() => setActiveFilter('Engagement')} />
-            <PreviewRow icon={Car}        title="Car Photography" subtitle="50 States" spots={filteredCarSpots} onSeeAll={() => setActiveFilter('Car')} />
+            <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => ptr.scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} />
+            <PreviewRow icon={Building2}  title="Architecture" subtitle="50 States" spots={filteredArchSpots} onSeeAll={() => { setActiveFilter('Architecture'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Sun}        title="Florida"      subtitle="Buildings & Locations" spots={filteredFlSpots} onSeeAll={() => { setActiveFilter('Florida'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Heart}      title="Engagement"   subtitle="50 States" spots={filteredEngSpots}  onSeeAll={() => { setActiveFilter('Engagement'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Car}        title="Car Photography" subtitle="50 States" spots={filteredCarSpots} onSeeAll={() => { setActiveFilter('Car'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
 
             {/* Trending photos mosaic */}
             {filteredPosts.length > 0 && (
