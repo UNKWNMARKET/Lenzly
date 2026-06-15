@@ -597,6 +597,17 @@ export default function Profile() {
       {modal === 'reviews' && (
         <ReviewsModal hired={u.hired} rating={u.rating} priceRange={u.priceRange} onClose={closeModal} />
       )}
+
+      {storyViewerOpen && myStories.length > 0 && (
+        <StoryViewer
+          stories={myStories}
+          startIndex={0}
+          userId={user?.id ?? ''}
+          onClose={() => setStoryViewerOpen(false)}
+          onDelete={(id) => setMyStories((s: any[]) => s.filter((x: any) => x.id !== id))}
+          onViewed={() => {}}
+        />
+      )}
     </div>
     </PullToRefreshWrapper>
   )
@@ -754,17 +765,6 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
           </div>
         </div>
       </div>
-
-      {storyViewerOpen && myStories.length > 0 && (
-        <StoryViewer
-          stories={myStories}
-          startIndex={0}
-          userId={user?.id ?? ''}
-          onClose={() => setStoryViewerOpen(false)}
-          onDelete={(id) => setMyStories(s => s.filter(x => x.id !== id))}
-          onViewed={() => {}}
-        />
-      )}
     </div>
   )
 }
