@@ -31,7 +31,7 @@ export default function Navbar() {
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed top-8 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30' : 'bg-transparent'}`}
+        className={`fixed top-8 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30' : 'bg-[#0b0b0d]/80 backdrop-blur-md border-b border-white/[0.04]'}`}
       >
         <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
           {/* Logo */}
