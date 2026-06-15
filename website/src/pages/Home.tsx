@@ -34,17 +34,6 @@ const howItWorks = [
   { step: '03', title: 'Connect privately & get paid', desc: 'All negotiations happen in end-to-end encrypted messages. No middleman, no commission.' },
 ]
 
-const tickerItems = [
-  '✦ Free forever',
-  '✦ AES-256 encryption',
-  '✦ No algorithm',
-  '✦ Direct brand bookings',
-  '✦ GPS location maps',
-  '✦ Community first',
-  '✦ No commission cuts',
-  '✦ Built for photographers',
-]
-
 // 3D tilt card hook
 function useTilt() {
   const ref = useRef<HTMLDivElement>(null)
@@ -143,19 +132,8 @@ export default function Home() {
       })
   }, [])
 
-  const tickerDuped = [...tickerItems, ...tickerItems]
-
   return (
     <div className="overflow-x-hidden">
-      {/* ── Announcement ticker ── */}
-      <div className="border-b border-[#ecc85c]/8 bg-[#ecc85c]/[0.03] py-2 overflow-hidden">
-        <div className="flex whitespace-nowrap animate-ticker">
-          {tickerDuped.map((item, i) => (
-            <span key={i} className="text-[11px] text-[#ecc85c]/50 font-medium tracking-widest mx-8 shrink-0">{item}</span>
-          ))}
-        </div>
-      </div>
-
       {/* ── Hero ── */}
       <section ref={heroRef} className="relative min-h-[100svh] flex items-center pt-24 overflow-hidden">
         {/* Cursor spotlight */}

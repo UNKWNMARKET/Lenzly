@@ -31,7 +31,7 @@ export default function Navbar() {
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed top-8 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30 top-0' : 'bg-transparent'}`}
+        className={`fixed top-8 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30' : 'bg-transparent'}`}
       >
         <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
           {/* Logo */}
@@ -105,7 +105,7 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -8, scaleY: 0.97 }}
             transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             style={{ originY: 0 }}
-            className="fixed top-24 left-0 right-0 z-40 glass border-b border-white/5 px-6 py-5"
+            className="fixed top-[88px] left-0 right-0 z-40 glass border-b border-white/5 px-6 py-5"
           >
             <div className="space-y-1 mb-5">
               {links.map((l, i) => (

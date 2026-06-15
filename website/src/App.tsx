@@ -48,8 +48,30 @@ import BusinessRequests from './pages/business/BusinessRequests'
 import BusinessPage from './pages/business/BusinessPage'
 import BusinessJobs from './pages/business/BusinessJobs'
 
+const tickerItems = ['✦ Free forever','✦ AES-256 encryption','✦ No algorithm','✦ Direct brand bookings','✦ GPS location maps','✦ Community first','✦ No commission cuts','✦ Built for photographers']
+
+function TickerBar() {
+  const duped = [...tickerItems, ...tickerItems]
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[60] border-b border-[#ecc85c]/8 bg-[#0b0b0d]/95 backdrop-blur-sm py-2 overflow-hidden">
+      <div className="flex whitespace-nowrap animate-ticker">
+        {duped.map((item, i) => (
+          <span key={i} className="text-[11px] text-[#ecc85c]/50 font-medium tracking-widest mx-8 shrink-0">{item}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return (<><Navbar /><main>{children}</main><Footer /></>)
+  return (
+    <>
+      <TickerBar />
+      <Navbar />
+      <main className="pt-[88px]">{children}</main>
+      <Footer />
+    </>
+  )
 }
 
 function VisitTracker() {
