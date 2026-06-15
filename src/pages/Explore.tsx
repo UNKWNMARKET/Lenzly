@@ -447,21 +447,8 @@ export default function Explore() {
         {/* ═══════════════ "ALL" OVERVIEW — clean, swipeable previews ═══════════════ */}
         {isAll ? (
           <>
-            {/* Wedding Venues feature banner */}
-            <div
-              onClick={() => navigate('/weddings')}
-              className="w-full rounded-3xl bg-lenz-card border border-gold/30 flex items-center px-5 py-4 gap-4 active:opacity-70 transition-opacity"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
-                <Heart size={20} className="text-gold" fill="currentColor" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-gold/70 mb-0.5">Featured</p>
-                <p className="text-[16px] font-bold text-white leading-tight">Wedding Venues</p>
-                <p className="text-[11px] text-white/40 mt-0.5">100+ verified venues · 11 states</p>
-              </div>
-              <span className="text-white/40 text-xl font-light shrink-0">›</span>
-            </div>
+            {/* Wedding Venues feature banner — hidden for now, re-enable when ready */}
+            {/* <div onClick={() => navigate('/weddings')} ...> ... </div> */}
 
             {/* Community Discovered — horizontal scroll row + See All */}
             <section>
