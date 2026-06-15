@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring, type Variants } from 'framer-motion'
-import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap, Users, CheckCircle, X } from 'lucide-react'
+import { motion, useScroll, useTransform, useMotionValue, useSpring, type Variants } from 'framer-motion'
+import { MapPin, Lock, Briefcase, Camera, Star, ArrowRight, Download, ChevronRight, Shield, Zap, Users, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 interface Post { id: string; image_url: string; caption: string | null; profiles?: { name: string; avatar_url: string | null } }
@@ -464,7 +464,7 @@ export default function Home() {
             { icon: CheckCircle, title: 'Verified PROs', desc: 'Every PRO account is manually reviewed' },
             { icon: Zap, title: 'No Algorithm', desc: 'Your posts reach 100% of followers' },
             { icon: Users, title: 'Built for Pros', desc: 'A community focused on photography' },
-          ].map(({ icon: Icon, title, desc }, i) => (
+          ].map(({ icon: Icon, title, desc }) => (
             <motion.div
               key={title}
               variants={fadeUp}
