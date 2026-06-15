@@ -6,6 +6,7 @@ import AppLogo from '@/components/AppLogo'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import OGBadge from '@/components/OGBadge'
 import { getFounderCutoff, isFounderByDate } from '@/lib/founderUtils'
+import StoryViewer from '@/components/StoryViewer'
 import {
   Settings, Grid3X3, Heart, Bookmark,
   ExternalLink, MapPin, Edit3, Camera,
@@ -58,10 +59,23 @@ export default function Profile() {
   const [liveFollowing, setLiveFollowing] = useState<number | null>(null)
   const [livePostCount, setLivePostCount] = useState<number | null>(null)
   const [founderCutoffLoaded, setFounderCutoffLoaded] = useState(false)
+  const [myStories, setMyStories] = useState<any[]>([])
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false)
 
   useEffect(() => {
     getFounderCutoff().then(() => setFounderCutoffLoaded(true))
   }, [])
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('spot_stories')
+      .select('*, profiles(username, avatar_url)')
+      .eq('user_id', user.id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: true })
+      .then(({ data }) => { if (data) setMyStories(data) })
+  }, [user])
 
   // The current user's own uploaded posts
   const [myPosts, setMyPosts] = useState<MyPost[]>([])
@@ -275,16 +289,21 @@ export default function Profile() {
       <div className="px-4 -mt-14 relative z-10">
         <div className="flex items-end justify-between">
           <div className="relative inline-block">
-            <div className={u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
-              <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
-                {u.avatar
-                  ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
-                      {u.name.charAt(0).toUpperCase()}
-                    </div>
-                }
+            <button
+              onClick={() => myStories.length > 0 ? setStoryViewerOpen(true) : undefined}
+              className={myStories.length > 0 ? 'active:scale-95 transition-transform' : ''}
+            >
+              <div className={myStories.length > 0 ? 'story-ring-active' : u.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
+                <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+                  {u.avatar
+                    ? <img src={img.avatar(u.avatar)} alt={u.name} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/40">
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                  }
+                </div>
               </div>
-            </div>
+            </button>
             {founderCutoffLoaded && isFounderByDate(profile?.created_at) && (
               <OGBadge size="lg" className="absolute -bottom-1 -right-1 pointer-events-none" />
             )}
@@ -735,6 +754,17 @@ function ReviewsModal({ hired, rating, priceRange, onClose }: {
           </div>
         </div>
       </div>
+
+      {storyViewerOpen && myStories.length > 0 && (
+        <StoryViewer
+          stories={myStories}
+          startIndex={0}
+          userId={user?.id ?? ''}
+          onClose={() => setStoryViewerOpen(false)}
+          onDelete={(id) => setMyStories(s => s.filter(x => x.id !== id))}
+          onViewed={() => {}}
+        />
+      )}
     </div>
   )
 }

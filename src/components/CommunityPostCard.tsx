@@ -68,7 +68,8 @@ export default function CommunityPostCard({ post }: Props) {
     e.stopPropagation()
     const q = post.lat && post.lng
       ? `${post.lat},${post.lng}`
-      : encodeURIComponent(post.location_name)
+      : encodeURIComponent(post.location_name || '')
+    if (!q) return
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank')
   }
 
@@ -108,7 +109,7 @@ export default function CommunityPostCard({ post }: Props) {
         {/* Location */}
         <div className="flex items-center gap-1">
           <MapPin size={9} className="text-gold shrink-0" />
-          <p className="text-[11px] font-bold text-white truncate leading-tight">{post.location_name}</p>
+          <p className="text-[11px] font-bold text-white truncate leading-tight">{post.location_name || 'Unknown Location'}</p>
         </div>
 
         {/* Weather detail row */}

@@ -156,6 +156,19 @@
     border-radius: 50%;
   }
 
+  .story-ring-active {
+    background: linear-gradient(135deg, #C9A84C, #FFE08A, #C9A84C);
+    padding: 2px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.35), 0 0 14px 4px rgba(201, 168, 76, 0.45);
+    animation: story-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes story-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.35), 0 0 14px 4px rgba(201, 168, 76, 0.45); }
+    50% { box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.5), 0 0 22px 7px rgba(201, 168, 76, 0.6); }
+  }
+
   /* Heart like burst animation */
   @keyframes heart-burst {
     0%   { transform: scale(1); }

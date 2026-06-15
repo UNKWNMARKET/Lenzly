@@ -17,6 +17,7 @@ import Spinner from '@/components/Spinner'
 import FeedPostCard, { type FeedPost } from '@/components/FeedPostCard'
 import OGBadge from '@/components/OGBadge'
 import { getFounderCutoff, isFounderByDate } from '@/lib/founderUtils'
+import StoryViewer from '@/components/StoryViewer'
 
 type HireStep = 'idle' | 'form' | 'sent'
 
@@ -131,10 +132,28 @@ export default function PhotographerProfile() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [founderCutoffLoaded, setFounderCutoffLoaded] = useState(false)
+  const [profileStories, setProfileStories] = useState<any[]>([])
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false)
 
   useEffect(() => {
     getFounderCutoff().then(() => setFounderCutoffLoaded(true))
   }, [])
+
+  // Fetch active stories for this profile
+  useEffect(() => {
+    if (!id) return
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (!isUuid) return
+    supabase
+      .from('spot_stories')
+      .select('*, profiles(username, avatar_url)')
+      .eq('user_id', id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: true })
+      .then(({ data }) => { if (data) setProfileStories(data) })
+  }, [id])
+
+  const hasActiveStory = profileStories.length > 0
 
   const isUuidId = !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const isSelf = !!user && user.id === id
@@ -479,11 +498,16 @@ export default function PhotographerProfile() {
         <div className="flex items-end gap-4">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className={p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
-              <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
-                <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+            <button
+              onClick={() => hasActiveStory ? setStoryViewerOpen(true) : undefined}
+              className={hasActiveStory ? 'active:scale-95 transition-transform' : ''}
+            >
+              <div className={hasActiveStory ? 'story-ring-active' : p.verified ? 'story-ring' : 'story-ring-seen'} style={{ padding: '3px' }}>
+                <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-lenz-bg bg-lenz-card">
+                  <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                </div>
               </div>
-            </div>
+            </button>
             {p.available && !(founderCutoffLoaded && isFounderByDate((p as any).profile_created_at)) && (
               <span className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-lenz-bg" />
             )}
@@ -748,6 +772,17 @@ export default function PhotographerProfile() {
 
       {reportOpen && id && (
         <ReportSheet targetType="user" targetId={id} onClose={() => setReportOpen(false)} />
+      )}
+
+      {storyViewerOpen && profileStories.length > 0 && (
+        <StoryViewer
+          stories={profileStories}
+          startIndex={0}
+          userId={user?.id ?? ''}
+          onClose={() => setStoryViewerOpen(false)}
+          onDelete={() => {}}
+          onViewed={() => {}}
+        />
       )}
     </div>
     </div>
