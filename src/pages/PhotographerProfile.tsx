@@ -146,11 +146,16 @@ export default function PhotographerProfile() {
     if (!isUuid) return
     supabase
       .from('spot_stories')
-      .select('*, profiles(username, avatar_url)')
+      .select('*')
       .eq('user_id', id)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (data) setProfileStories(data) })
+      .then(async ({ data, error }) => {
+        if (error || !data || data.length === 0) return
+        const { data: prof } = await supabase
+          .from('profiles').select('id, username, avatar_url').eq('id', id).maybeSingle()
+        setProfileStories(data.map((s: any) => ({ ...s, profiles: prof ?? null })))
+      })
   }, [id])
 
   const hasActiveStory = profileStories.length > 0

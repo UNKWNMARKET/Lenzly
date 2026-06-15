@@ -70,11 +70,16 @@ export default function Profile() {
     if (!user) return
     supabase
       .from('spot_stories')
-      .select('*, profiles(username, avatar_url)')
+      .select('*')
       .eq('user_id', user.id)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (data) setMyStories(data) })
+      .then(async ({ data, error }) => {
+        if (error || !data || data.length === 0) return
+        const { data: prof } = await supabase
+          .from('profiles').select('id, username, avatar_url').eq('id', user.id).maybeSingle()
+        setMyStories(data.map((s: any) => ({ ...s, profiles: prof ?? null })))
+      })
   }, [user])
 
   // The current user's own uploaded posts
