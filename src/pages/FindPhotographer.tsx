@@ -129,13 +129,14 @@ export default function FindPhotographer() {
     if (view !== 'map') return
     const el = mapContainerRef.current
     if (!el) return
-    const stop = (e: TouchEvent) => e.stopPropagation()
+    const stop = (e: TouchEvent) => { e.stopPropagation() }
+    const stopMove = (e: TouchEvent) => { e.stopPropagation(); e.preventDefault() }
     el.addEventListener('touchstart', stop, { passive: true })
-    el.addEventListener('touchmove', stop, { passive: true })
+    el.addEventListener('touchmove', stopMove, { passive: false })
     el.addEventListener('touchend', stop, { passive: true })
     return () => {
       el.removeEventListener('touchstart', stop)
-      el.removeEventListener('touchmove', stop)
+      el.removeEventListener('touchmove', stopMove)
       el.removeEventListener('touchend', stop)
     }
   }, [view])
@@ -360,7 +361,7 @@ export default function FindPhotographer() {
             ) : null
           })()}
 
-          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
+          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px', touchAction: 'none' }}>
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}

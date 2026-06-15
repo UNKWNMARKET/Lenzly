@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'wouter'
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Fingerprint } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import AppLogo from '@/components/AppLogo'
+import { savePasskeyCredential, getPasskeyCredential, hasSavedPasskey } from '@/lib/passkey'
 
 const SAVED_EMAIL_KEY = 'lenzly_saved_email'
 const REMEMBER_KEY    = 'lenzly_remember_me'
@@ -16,8 +17,10 @@ export default function Login() {
   const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading]           = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
   const [rememberMe, setRememberMe]     = useState(true)
   const [focused, setFocused]           = useState<string | null>(null)
+  const [showPasskeyBtn, setShowPasskeyBtn] = useState(false)
 
   useEffect(() => {
     const savedRemember = localStorage.getItem(REMEMBER_KEY)
@@ -27,6 +30,7 @@ export default function Login() {
       const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY)
       if (savedEmail) setEmail(savedEmail)
     }
+    setShowPasskeyBtn(hasSavedPasskey())
   }, [])
 
   useEffect(() => {
@@ -47,6 +51,31 @@ export default function Login() {
     if (error) {
       toast.error(error.message)
       setLoading(false)
+    } else {
+      // Offer to save credentials as passkey (Face ID / Touch ID)
+      const saved = await savePasskeyCredential(email, password)
+      if (saved) setShowPasskeyBtn(true)
+    }
+  }
+
+  const handlePasskeyLogin = async () => {
+    setPasskeyLoading(true)
+    try {
+      const cred = await getPasskeyCredential()
+      if (!cred) {
+        toast.error('No saved passkey found')
+        setShowPasskeyBtn(false)
+        setPasskeyLoading(false)
+        return
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email: cred.email, password: cred.password })
+      if (error) {
+        toast.error('Passkey sign-in failed — please log in manually')
+        setPasskeyLoading(false)
+      }
+    } catch {
+      toast.error('Passkey sign-in cancelled')
+      setPasskeyLoading(false)
     }
   }
 
@@ -75,6 +104,33 @@ export default function Login() {
           <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-7 backdrop-blur-sm shadow-2xl">
             <h2 className="text-white font-semibold text-lg mb-1">Welcome back</h2>
             <p className="text-white/35 text-sm mb-6">Sign in to your account</p>
+
+            {/* Passkey / Face ID button */}
+            {showPasskeyBtn && (
+              <button
+                type="button"
+                onClick={handlePasskeyLogin}
+                disabled={passkeyLoading}
+                className="w-full mb-4 flex items-center justify-center gap-3 bg-white/5 border border-gold/30 hover:border-gold/60 active:scale-[0.98] rounded-2xl py-4 transition-all duration-150 disabled:opacity-50"
+              >
+                {passkeyLoading ? (
+                  <span className="w-5 h-5 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
+                ) : (
+                  <Fingerprint size={20} className="text-gold" />
+                )}
+                <span className="text-sm font-semibold text-white">
+                  {passkeyLoading ? 'Authenticating…' : 'Sign in with Face ID / Passkey'}
+                </span>
+              </button>
+            )}
+
+            {showPasskeyBtn && (
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-white/8" />
+                <span className="text-[10px] text-white/25 tracking-widest uppercase">or</span>
+                <div className="flex-1 h-px bg-white/8" />
+              </div>
+            )}
 
             <form onSubmit={handleLogin} className="space-y-3" autoComplete="on">
               {/* Email */}
