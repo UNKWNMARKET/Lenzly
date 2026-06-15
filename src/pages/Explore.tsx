@@ -556,7 +556,7 @@ export default function Explore() {
             )}
 
             {/* Category preview rows — one tidy swipeable strip each */}
-            <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => ptr.scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} />
+            <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => { setActiveFilter('AI Spots'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
             <PreviewRow icon={Building2}  title="Architecture" subtitle="50 States" spots={filteredArchSpots} onSeeAll={() => { setActiveFilter('Architecture'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
             <PreviewRow icon={Sun}        title="Florida"      subtitle="Buildings & Locations" spots={filteredFlSpots} onSeeAll={() => { setActiveFilter('Florida'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
             <PreviewRow icon={Heart}      title="Engagement"   subtitle="50 States" spots={filteredEngSpots}  onSeeAll={() => { setActiveFilter('Engagement'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
@@ -606,6 +606,14 @@ export default function Explore() {
         ) : (
           /* ═══════════════ FOCUSED CATEGORY — full grid + that filter strip ═══════════════ */
           <>
+            {activeFilter === 'AI Spots' && (
+              <FocusedSection
+                icon={Zap} title="AI-Discovered Spots" subtitle="Top picks worldwide"
+                count={filteredAiSpots.length}
+                filters={[]} active="" onFilter={() => {}}
+                spots={filteredAiSpots} empty="No AI spots found."
+              />
+            )}
             {activeFilter === 'Architecture' && (
               <FocusedSection
                 icon={Building2} title="Architecture" subtitle="All 50 States"
