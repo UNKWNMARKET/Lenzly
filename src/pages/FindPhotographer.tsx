@@ -123,8 +123,10 @@ export default function FindPhotographer() {
   const mapLoadedRef = useRef(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Prevent map touch events from bubbling up and triggering page swipe
+  // Prevent map touch events from bubbling up and triggering page swipe.
+  // Must depend on `view` so it re-runs once the map div is actually in the DOM.
   useEffect(() => {
+    if (view !== 'map') return
     const el = mapContainerRef.current
     if (!el) return
     const stop = (e: TouchEvent) => e.stopPropagation()
@@ -136,7 +138,7 @@ export default function FindPhotographer() {
       el.removeEventListener('touchmove', stop)
       el.removeEventListener('touchend', stop)
     }
-  }, [])
+  }, [view])
   // Geocoded coords for photographers whose profile only has a text location
   const [geocodedCoords, setGeocodedCoords] = useState<Record<string, { lat: number; lng: number }>>({})
 
@@ -358,7 +360,7 @@ export default function FindPhotographer() {
             ) : null
           })()}
 
-          <div ref={mapContainerRef} className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
+          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}

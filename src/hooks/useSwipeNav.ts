@@ -5,7 +5,7 @@ import { useLocation } from 'wouter'
 const SWIPE_TABS = ['/', '/explore', '/find', '/profile']
 
 const THRESHOLD          = 60   // min horizontal px to count as a swipe
-const THRESHOLD_MAP      = 120  // much higher threshold when on the map page
+const THRESHOLD_MAP      = 999  // effectively disabled on map page — use tabs to navigate
 const THRESHOLD_EXPLORE  = 150  // very high on explore — full of horizontal carousels
 const RATIO              = 2.5  // horizontal must be this much more than vertical
 
@@ -13,10 +13,10 @@ const RATIO              = 2.5  // horizontal must be this much more than vertic
 function isTouchOnMap(e: React.TouchEvent): boolean {
   const target = e.target as HTMLElement
   return !!(
+    target.closest('[data-map-container]') ||
     target.closest('.leaflet-container') ||
     target.closest('.leaflet-pane') ||
-    target.closest('[class*="leaflet"]') ||
-    target.closest('[class*="map"]')
+    target.closest('[class*="leaflet"]')
   )
 }
 
