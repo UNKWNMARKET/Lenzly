@@ -31,9 +31,9 @@ export default function Navbar() {
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30' : 'bg-transparent'}`}
+        className={`fixed top-8 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'glass shadow-2xl shadow-black/30 top-0' : 'bg-transparent'}`}
       >
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <motion.span
@@ -46,7 +46,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-10">
             {links.map((l, i) => (
               <motion.a
                 key={l.label}
@@ -63,7 +63,7 @@ export default function Navbar() {
 
           {/* Desktop actions */}
           <motion.div
-            className="hidden md:flex items-center gap-4"
+            className="hidden md:flex items-center gap-5"
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
@@ -71,15 +71,13 @@ export default function Navbar() {
             {isAdmin && (
               <Link to="/admin" className="text-sm text-[#ecc85c]/70 hover:text-[#ecc85c] transition-colors font-medium">Admin</Link>
             )}
+            <Link to="/login" className="text-sm text-white/40 hover:text-white transition-colors font-medium">Login</Link>
             <Link to="/business/login" className="text-sm text-white/40 hover:text-[#ecc85c] transition-colors font-medium">Brand Login</Link>
-            <motion.a
-              href="https://apps.apple.com"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-gold text-xs py-2.5 px-5"
-            >
-              <Download size={12} /> Download Free
-            </motion.a>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Link to="/signup" className="btn-gold text-xs py-2.5 px-5">
+                <Download size={12} /> Join Free
+              </Link>
+            </motion.div>
           </motion.div>
 
           {/* Mobile hamburger */}
@@ -107,7 +105,7 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -8, scaleY: 0.97 }}
             transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             style={{ originY: 0 }}
-            className="fixed top-16 left-0 right-0 z-40 glass border-b border-white/5 px-6 py-5"
+            className="fixed top-24 left-0 right-0 z-40 glass border-b border-white/5 px-6 py-5"
           >
             <div className="space-y-1 mb-5">
               {links.map((l, i) => (
@@ -123,6 +121,10 @@ export default function Navbar() {
                   {l.label}
                 </motion.a>
               ))}
+              <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.18 }} className="flex gap-4 pt-1">
+                <Link to="/login" onClick={() => setOpen(false)} className="py-3 text-sm text-white/55 hover:text-white transition-colors">Login</Link>
+                <Link to="/business/login" onClick={() => setOpen(false)} className="py-3 text-sm text-[#ecc85c]/60 hover:text-[#ecc85c] transition-colors">Brand Login</Link>
+              </motion.div>
             </div>
             <motion.a
               href="https://apps.apple.com"

@@ -156,7 +156,7 @@ export default function Home() {
       </div>
 
       {/* ── Hero ── */}
-      <section ref={heroRef} className="relative min-h-[100svh] flex items-center pt-16 overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[100svh] flex items-center pt-24 overflow-hidden">
         {/* Cursor spotlight */}
         <div
           className="pointer-events-none fixed z-0 w-[600px] h-[600px] rounded-full transition-all duration-300"
