@@ -17,11 +17,15 @@ import { haptics } from '@/lib/haptics'
 const CATEGORIES = ['Portrait', 'Landscape', 'Street', 'Wedding', 'Concert', 'Commercial', 'Travel', 'Nature', 'Fashion', 'Other']
 
 const RATIOS = [
-  { label: 'Original', w: 0, h: 0 },
-  { label: '1:1',      w: 1, h: 1 },
-  { label: '4:5',      w: 4, h: 5 },
-  { label: '16:9',     w: 16, h: 9 },
+  { label: 'Free',     w: -1, h: -1 },
+  { label: 'Original', w: 0,  h: 0  },
+  { label: '1:1',      w: 1,  h: 1  },
+  { label: '4:5',      w: 4,  h: 5  },
+  { label: '16:9',     w: 16, h: 9  },
 ]
+
+type FH = 'nw' | 'ne' | 'sw' | 'se' | 'move'
+type Box = { x: number; y: number; w: number; h: number }
 
 // ── Crop Editor ───────────────────────────────────────────────────────────────
 function CropEditor({ src, onConfirm, onCancel }: {
@@ -29,21 +33,30 @@ function CropEditor({ src, onConfirm, onCancel }: {
   onConfirm: (croppedDataUrl: string) => void
   onCancel: () => void
 }) {
-  const [ratioIdx, setRatioIdx]   = useState(2) // default 4:5
-  const [natSize, setNatSize]     = useState({ w: 0, h: 0 })
-  const [cSize, setCSize]         = useState({ w: 0, h: 0 })
-  const [scale, setScale]         = useState(1)
-  const [offset, setOffset]       = useState({ x: 0, y: 0 })
-  const [dragging, setDragging]   = useState(false)
-  const imgRef                    = useRef<HTMLImageElement>(null)
-  const containerRef              = useRef<HTMLDivElement>(null)
-  const lastTouchRef              = useRef<{ x: number; y: number }[]>([])
-  const baseOffRef                = useRef({ x: 0, y: 0 })
-  const baseScaleRef              = useRef(1)
-  const basePinchRef              = useRef(0)
+  const [ratioIdx, setRatioIdx] = useState(3)           // default 4:5
+  const [natSize, setNatSize]   = useState({ w: 0, h: 0 })
+  const [cSize,   setCSize]     = useState({ w: 0, h: 0 })
 
-  const ratio    = RATIOS[ratioIdx]
-  const isNative = ratio.w === 0 // show full image, no crop box
+  // preset mode state
+  const [scale,   setScale]   = useState(1)
+  const [offset,  setOffset]  = useState({ x: 0, y: 0 })
+  const [dragging,setDragging]= useState(false)
+
+  // free mode state
+  const [freeBox, setFreeBox] = useState<Box>({ x: 0, y: 0, w: 200, h: 200 })
+
+  const imgRef        = useRef<HTMLImageElement>(null)
+  const containerRef  = useRef<HTMLDivElement>(null)
+  const lastTouchRef  = useRef<{ x: number; y: number }[]>([])
+  const baseOffRef    = useRef({ x: 0, y: 0 })
+  const baseScaleRef  = useRef(1)
+  const basePinchRef  = useRef(0)
+  const freeHandleRef = useRef<FH | null>(null)
+  const freeStartRef  = useRef({ tx: 0, ty: 0, box: { x: 0, y: 0, w: 0, h: 0 } })
+
+  const ratio   = RATIOS[ratioIdx]
+  const isFree  = ratio.w === -1
+  const isNative= ratio.w === 0
 
   // ── Measure container ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -59,27 +72,44 @@ function CropEditor({ src, onConfirm, onCancel }: {
   const cW = cSize.w || window.innerWidth
   const cH = cSize.h || (window.innerHeight - 200)
 
-  // ── Crop box dimensions (centered, constrained to container) ──────────────
+  // ── Preset crop box ───────────────────────────────────────────────────────
   const cropH = isNative
     ? (natSize.h > 0 ? Math.min(cH, Math.round(cW * natSize.h / natSize.w)) : cH)
     : Math.min(Math.round(cW * ratio.h / ratio.w), cH)
   const cropW = isNative
     ? (natSize.w > 0 ? Math.min(cW, Math.round(cropH * natSize.w / natSize.h)) : cW)
-    : Math.round(cropH * ratio.w / ratio.h)
+    : (isNative ? cW : Math.round(cropH * ratio.w / ratio.h))
   const boxL  = Math.round((cW - cropW) / 2)
   const boxT  = Math.round((cH - cropH) / 2)
 
-  // ── Image display: covers crop box, never distorts ────────────────────────
+  // ── Preset: image always covers crop box ──────────────────────────────────
   const fitScale = natSize.w > 0 ? Math.max(cropW / natSize.w, cropH / natSize.h) : 1
-  const dispW    = natSize.w * fitScale * scale
-  const dispH    = natSize.h * fitScale * scale
+  const dispW    = Math.max(cropW, natSize.w * fitScale * scale)
+  const dispH    = Math.max(cropH, natSize.h * fitScale * scale)
 
-  const clampOffset = (ox: number, oy: number, sc: number) => {
-    const dw   = natSize.w * fitScale * sc
-    const dh   = natSize.h * fitScale * sc
-    const maxX = Math.max(0, (dw - cropW) / 2)
-    const maxY = Math.max(0, (dh - cropH) / 2)
+  const clampOff = (ox: number, oy: number, sc: number) => {
+    const dw   = Math.max(cropW, natSize.w * fitScale * sc)
+    const dh   = Math.max(cropH, natSize.h * fitScale * sc)
+    const maxX = (dw - cropW) / 2
+    const maxY = (dh - cropH) / 2
     return { x: Math.max(-maxX, Math.min(maxX, ox)), y: Math.max(-maxY, Math.min(maxY, oy)) }
+  }
+
+  // ── Free: image fits in container ─────────────────────────────────────────
+  const freeFit = natSize.w > 0 ? Math.min(cW / natSize.w, cH / natSize.h) : 1
+  const fImgW = natSize.w * freeFit
+  const fImgH = natSize.h * freeFit
+  const fImgX = (cW - fImgW) / 2
+  const fImgY = (cH - fImgH) / 2
+
+  const clampFree = (b: Box): Box => {
+    const MIN = 44
+    let { x, y, w, h } = b
+    x = Math.max(fImgX, x)
+    y = Math.max(fImgY, y)
+    w = Math.max(MIN, Math.min(fImgX + fImgW - x, w))
+    h = Math.max(MIN, Math.min(fImgY + fImgH - y, h))
+    return { x, y, w, h }
   }
 
   const onImgLoad = () => {
@@ -87,16 +117,22 @@ function CropEditor({ src, onConfirm, onCancel }: {
     setNatSize({ w: img.naturalWidth, h: img.naturalHeight })
   }
 
-  // Reset pan/zoom on ratio change
   useEffect(() => { setScale(1); setOffset({ x: 0, y: 0 }) }, [ratioIdx])
 
-  // ── Touch handlers ────────────────────────────────────────────────────────
-  const onTouchStart = (e: React.TouchEvent) => {
+  // Init free box when entering free mode or image loads
+  useEffect(() => {
+    if (!isFree || !natSize.w || !cSize.w) return
+    const pad = 32
+    setFreeBox({ x: fImgX + pad, y: fImgY + pad, w: fImgW - pad * 2, h: fImgH - pad * 2 })
+  }, [isFree, natSize.w, cSize.w])
+
+  // ── Preset touch ──────────────────────────────────────────────────────────
+  const onPresetStart = (e: React.TouchEvent) => {
     e.preventDefault()
     setDragging(true)
-    lastTouchRef.current  = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }))
-    baseOffRef.current    = offset
-    baseScaleRef.current  = scale
+    lastTouchRef.current = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }))
+    baseOffRef.current   = offset
+    baseScaleRef.current = scale
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX
       const dy = e.touches[0].clientY - e.touches[1].clientY
@@ -104,23 +140,75 @@ function CropEditor({ src, onConfirm, onCancel }: {
     }
   }
 
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onPresetMove = (e: React.TouchEvent) => {
     e.preventDefault()
     if (e.touches.length === 1) {
       const dx = e.touches[0].clientX - (lastTouchRef.current[0]?.x ?? e.touches[0].clientX)
       const dy = e.touches[0].clientY - (lastTouchRef.current[0]?.y ?? e.touches[0].clientY)
-      setOffset(clampOffset(baseOffRef.current.x + dx, baseOffRef.current.y + dy, baseScaleRef.current))
+      setOffset(clampOff(baseOffRef.current.x + dx, baseOffRef.current.y + dy, baseScaleRef.current))
     } else if (e.touches.length === 2) {
       const dx   = e.touches[0].clientX - e.touches[1].clientX
       const dy   = e.touches[0].clientY - e.touches[1].clientY
       const dist = Math.sqrt(dx * dx + dy * dy)
       const ns   = Math.max(1, Math.min(6, baseScaleRef.current * (dist / basePinchRef.current)))
       setScale(ns)
-      setOffset(clampOffset(baseOffRef.current.x, baseOffRef.current.y, ns))
+      setOffset(clampOff(baseOffRef.current.x, baseOffRef.current.y, ns))
     }
   }
 
-  const onTouchEnd = () => { setDragging(false); lastTouchRef.current = [] }
+  const onPresetEnd = () => { setDragging(false); lastTouchRef.current = [] }
+
+  // ── Free touch ────────────────────────────────────────────────────────────
+  const onFreeStart = (e: React.TouchEvent) => {
+    e.preventDefault()
+    const rect = containerRef.current!.getBoundingClientRect()
+    const tx   = e.touches[0].clientX - rect.left
+    const ty   = e.touches[0].clientY - rect.top
+    const { x, y, w, h } = freeBox
+    const HIT = 36 // touch hit zone
+
+    let handle: FH | null = null
+    if      (Math.abs(tx - x)       <= HIT && Math.abs(ty - y)       <= HIT) handle = 'nw'
+    else if (Math.abs(tx - (x + w)) <= HIT && Math.abs(ty - y)       <= HIT) handle = 'ne'
+    else if (Math.abs(tx - x)       <= HIT && Math.abs(ty - (y + h)) <= HIT) handle = 'sw'
+    else if (Math.abs(tx - (x + w)) <= HIT && Math.abs(ty - (y + h)) <= HIT) handle = 'se'
+    else if (tx > x && tx < x + w && ty > y && ty < y + h)                   handle = 'move'
+
+    freeHandleRef.current = handle
+    if (handle) freeStartRef.current = { tx, ty, box: { ...freeBox } }
+  }
+
+  const onFreeMove = (e: React.TouchEvent) => {
+    e.preventDefault()
+    const handle = freeHandleRef.current
+    if (!handle) return
+    const rect = containerRef.current!.getBoundingClientRect()
+    const tx   = e.touches[0].clientX - rect.left
+    const ty   = e.touches[0].clientY - rect.top
+    const dx   = tx - freeStartRef.current.tx
+    const dy   = ty - freeStartRef.current.ty
+    const s    = freeStartRef.current.box
+    const MIN  = 44
+
+    let nb: Box = { ...s }
+    if (handle === 'move') {
+      nb = { ...s, x: s.x + dx, y: s.y + dy }
+    } else if (handle === 'nw') {
+      const nx = Math.min(s.x + dx, s.x + s.w - MIN), ny = Math.min(s.y + dy, s.y + s.h - MIN)
+      nb = { x: nx, y: ny, w: s.w - (nx - s.x), h: s.h - (ny - s.y) }
+    } else if (handle === 'ne') {
+      const ny = Math.min(s.y + dy, s.y + s.h - MIN)
+      nb = { x: s.x, y: ny, w: Math.max(MIN, s.w + dx), h: s.h - (ny - s.y) }
+    } else if (handle === 'sw') {
+      const nx = Math.min(s.x + dx, s.x + s.w - MIN)
+      nb = { x: nx, y: s.y, w: s.w - (nx - s.x), h: Math.max(MIN, s.h + dy) }
+    } else {
+      nb = { x: s.x, y: s.y, w: Math.max(MIN, s.w + dx), h: Math.max(MIN, s.h + dy) }
+    }
+    setFreeBox(clampFree(nb))
+  }
+
+  const onFreeEnd = () => { freeHandleRef.current = null }
 
   // ── Export ────────────────────────────────────────────────────────────────
   const confirmCrop = () => {
@@ -128,184 +216,208 @@ function CropEditor({ src, onConfirm, onCancel }: {
     const canvas = document.createElement('canvas')
     const ctx    = canvas.getContext('2d')!
     const MAX    = 2048
-    const sc     = fitScale * scale
-    const imgL   = (cropW - natSize.w * sc) / 2 + offset.x
-    const imgT   = (cropH - natSize.h * sc) / 2 + offset.y
-    let srcX     = Math.max(0, -imgL / sc)
-    let srcY     = Math.max(0, -imgT / sc)
-    let srcW     = Math.min(natSize.w - srcX, cropW / sc)
-    let srcH     = Math.min(natSize.h - srcY, cropH / sc)
-    const ds     = Math.min(1, MAX / Math.max(srcW, srcH))
+
+    let srcX: number, srcY: number, srcW: number, srcH: number
+
+    if (isFree) {
+      srcX = (freeBox.x - fImgX) / freeFit
+      srcY = (freeBox.y - fImgY) / freeFit
+      srcW = freeBox.w / freeFit
+      srcH = freeBox.h / freeFit
+    } else {
+      const sc  = fitScale * scale
+      const iL  = (cropW - natSize.w * sc) / 2 + offset.x
+      const iT  = (cropH - natSize.h * sc) / 2 + offset.y
+      srcX = Math.max(0, -iL / sc)
+      srcY = Math.max(0, -iT / sc)
+      srcW = Math.min(natSize.w - srcX, cropW / sc)
+      srcH = Math.min(natSize.h - srcY, cropH / sc)
+    }
+
+    const ds = Math.min(1, MAX / Math.max(srcW, srcH))
     canvas.width  = Math.round(srcW * ds)
     canvas.height = Math.round(srcH * ds)
     ctx.drawImage(imgRef.current, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height)
-    const webpUrl = canvas.toDataURL('image/webp', 0.95)
-    onConfirm(webpUrl.startsWith('data:image/webp') ? webpUrl : canvas.toDataURL('image/jpeg', 0.97))
+    const url = canvas.toDataURL('image/webp', 0.95)
+    onConfirm(url.startsWith('data:image/webp') ? url : canvas.toDataURL('image/jpeg', 0.97))
   }
 
-  // ── Image position ────────────────────────────────────────────────────────
-  const imgStyle: React.CSSProperties = {
-    position:      'absolute',
-    width:         dispW || cropW,
-    height:        dispH || cropH,
-    left:          boxL + (cropW - dispW) / 2 + offset.x,
-    top:           boxT + (cropH - dispH) / 2 + offset.y,
-    pointerEvents: 'none',
-    userSelect:    'none',
-    willChange:    'transform',
-  }
+  // ── Image CSS position ────────────────────────────────────────────────────
+  const imgStyle: React.CSSProperties = isFree
+    ? {
+        position: 'absolute', width: fImgW, height: fImgH,
+        left: fImgX, top: fImgY, pointerEvents: 'none', userSelect: 'none',
+      }
+    : {
+        position: 'absolute',
+        width:  dispW, height: dispH,
+        left:   boxL + (cropW - dispW) / 2 + offset.x,
+        top:    boxT  + (cropH - dispH) / 2 + offset.y,
+        pointerEvents: 'none', userSelect: 'none', willChange: 'transform',
+      }
 
-  const CS  = 24 // corner bracket size
-  const CW  = 3  // corner bracket stroke
-
+  const CS = 26 // corner bracket size
+  const CW = 3  // corner bracket stroke
   const zoomPct = Math.round(scale * 100)
+
+  // 4-panel dark overlay — rock-solid, no box-shadow tricks
+  const panels = isFree
+    ? [
+        { l: 0,              t: 0,              w: cW,              h: freeBox.y           }, // top
+        { l: 0,              t: freeBox.y,      w: freeBox.x,       h: freeBox.h           }, // left
+        { l: freeBox.x + freeBox.w, t: freeBox.y, w: cW - freeBox.x - freeBox.w, h: freeBox.h }, // right
+        { l: 0,              t: freeBox.y + freeBox.h, w: cW,       h: cH - freeBox.y - freeBox.h }, // bottom
+      ]
+    : [
+        { l: 0,    t: 0,    w: cW,   h: boxT           }, // top
+        { l: 0,    t: boxT, w: boxL, h: cropH          }, // left
+        { l: boxL + cropW, t: boxT, w: cW - boxL - cropW, h: cropH }, // right
+        { l: 0,    t: boxT + cropH, w: cW,  h: cH - boxT - cropH  }, // bottom
+      ]
 
   return (
     <div className="fixed inset-0 z-[80] bg-black flex flex-col select-none">
       {/* Header */}
-      <div
-        className="flex items-center justify-between px-5 pb-3 shrink-0"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}
-      >
-        <button
-          onClick={onCancel}
-          className="w-16 text-left text-[15px] text-white/50 font-medium active:text-white transition-colors"
-        >
+      <div className="flex items-center justify-between px-5 pb-3 shrink-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}>
+        <button onClick={onCancel}
+          className="w-16 text-left text-[15px] text-white/50 font-medium active:text-white transition-colors">
           Cancel
         </button>
         <div className="flex flex-col items-center">
           <p className="text-white text-[12px] font-bold tracking-[0.16em] uppercase">Crop Photo</p>
-          {scale > 1.01 && (
+          {!isFree && scale > 1.01 && (
             <p className="text-gold/70 text-[10px] font-semibold mt-0.5">{zoomPct}%</p>
           )}
         </div>
-        <button
-          onClick={confirmCrop}
-          className="w-16 text-right text-[15px] font-semibold text-gold active:opacity-60 transition-opacity"
-        >
+        <button onClick={confirmCrop}
+          className="w-16 text-right text-[15px] font-semibold text-gold active:opacity-60 transition-opacity">
           Done
         </button>
       </div>
 
       {/* Crop canvas */}
       <div className="flex-1 relative overflow-hidden bg-[#0a0a0a] min-h-0">
-        <div
-          ref={containerRef}
-          className="absolute inset-0"
-          style={{ touchAction: 'none' }}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          {/* Image — positioned absolutely, never distorted */}
+        <div ref={containerRef} className="absolute inset-0" style={{ touchAction: 'none' }}
+          onTouchStart={isFree ? onFreeStart : onPresetStart}
+          onTouchMove={isFree  ? onFreeMove  : onPresetMove}
+          onTouchEnd={isFree   ? onFreeEnd   : onPresetEnd}>
+
+          {/* Image */}
           <img ref={imgRef} src={src} alt="" onLoad={onImgLoad} draggable={false} style={imgStyle} />
 
-          {/* Dark overlay carving out the crop box */}
-          <div
-            className="absolute inset-0 pointer-events-none transition-opacity duration-200"
-            style={{
-              boxShadow: `0 0 0 9999px rgba(0,0,0,${dragging ? 0.72 : 0.60})`,
-              left: boxL, top: boxT, width: cropW, height: cropH,
-            }}
-          />
+          {/* 4-panel dark overlay — no box-shadow, guaranteed correct */}
+          {panels.map((p, i) => (
+            <div key={i} className="absolute pointer-events-none"
+              style={{ left: p.l, top: p.t, width: Math.max(0, p.w), height: Math.max(0, p.h),
+                backgroundColor: `rgba(0,0,0,${dragging ? 0.72 : 0.62})`,
+                transition: 'background-color 0.15s' }} />
+          ))}
 
-          {/* Rule-of-thirds grid */}
-          <div
-            className="absolute pointer-events-none transition-opacity duration-200"
-            style={{
-              left: boxL, top: boxT, width: cropW, height: cropH,
-              backgroundImage: [
-                'linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)',
-                'linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)',
-              ].join(','),
-              backgroundSize: `${cropW / 3}px ${cropH / 3}px`,
-              opacity: dragging ? 1 : 0.5,
-            }}
-          />
+          {/* Rule-of-thirds grid inside crop area */}
+          {(() => {
+            const gx = isFree ? freeBox.x : boxL
+            const gy = isFree ? freeBox.y : boxT
+            const gw = isFree ? freeBox.w : cropW
+            const gh = isFree ? freeBox.h : cropH
+            return (
+              <div className="absolute pointer-events-none"
+                style={{ left: gx, top: gy, width: gw, height: gh,
+                  backgroundImage: [
+                    'linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)',
+                    'linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)',
+                  ].join(','),
+                  backgroundSize: `${gw / 3}px ${gh / 3}px`,
+                  opacity: dragging ? 1 : 0.4, transition: 'opacity 0.2s' }} />
+            )
+          })()}
 
           {/* Crop box border */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              left: boxL, top: boxT, width: cropW, height: cropH,
-              border: `1px solid rgba(255,255,255,${dragging ? 0.8 : 0.4})`,
-              transition: 'border-color 0.2s',
-            }}
-          />
+          {(() => {
+            const bx = isFree ? freeBox.x : boxL
+            const by = isFree ? freeBox.y : boxT
+            const bw = isFree ? freeBox.w : cropW
+            const bh = isFree ? freeBox.h : cropH
+            return (
+              <div className="absolute pointer-events-none"
+                style={{ left: bx, top: by, width: bw, height: bh,
+                  border: `1px solid rgba(255,255,255,${dragging ? 0.75 : 0.35})`,
+                  transition: 'border-color 0.15s' }} />
+            )
+          })()}
 
-          {/* Corner brackets — gold when idle, white when dragging */}
-          {[
-            { l: boxL - 1,          t: boxT - 1,          bT: true,  bL: true  },
-            { l: boxL + cropW - CS, t: boxT - 1,          bT: true,  bR: true  },
-            { l: boxL - 1,          t: boxT + cropH - CS, bB: true,  bL: true  },
-            { l: boxL + cropW - CS, t: boxT + cropH - CS, bB: true,  bR: true  },
-          ].map((c, i) => (
-            <div
-              key={i}
-              className="absolute pointer-events-none transition-colors duration-200"
-              style={{
-                left: c.l, top: c.t, width: CS, height: CS, borderRadius: 3,
-                borderTop:    c.bT ? `${CW}px solid ${dragging ? 'white' : '#C9A84C'}` : undefined,
-                borderBottom: c.bB ? `${CW}px solid ${dragging ? 'white' : '#C9A84C'}` : undefined,
-                borderLeft:   c.bL ? `${CW}px solid ${dragging ? 'white' : '#C9A84C'}` : undefined,
-                borderRight:  c.bR ? `${CW}px solid ${dragging ? 'white' : '#C9A84C'}` : undefined,
-              }}
-            />
+          {/* Corner brackets */}
+          {(() => {
+            const bx = isFree ? freeBox.x : boxL
+            const by = isFree ? freeBox.y : boxT
+            const bw = isFree ? freeBox.w : cropW
+            const bh = isFree ? freeBox.h : cropH
+            const col = dragging ? 'white' : '#C9A84C'
+            return [
+              { l: bx - 1,       t: by - 1,       bT: true, bL: true  },
+              { l: bx + bw - CS, t: by - 1,       bT: true, bR: true  },
+              { l: bx - 1,       t: by + bh - CS, bB: true, bL: true  },
+              { l: bx + bw - CS, t: by + bh - CS, bB: true, bR: true  },
+            ].map((c, i) => (
+              <div key={i} className="absolute pointer-events-none transition-colors duration-150"
+                style={{ left: c.l, top: c.t, width: CS, height: CS, borderRadius: 3,
+                  borderTop:    c.bT ? `${CW}px solid ${col}` : undefined,
+                  borderBottom: c.bB ? `${CW}px solid ${col}` : undefined,
+                  borderLeft:   c.bL ? `${CW}px solid ${col}` : undefined,
+                  borderRight:  c.bR ? `${CW}px solid ${col}` : undefined }} />
+            ))
+          })()}
+
+          {/* Free mode: large invisible touch targets on corners */}
+          {isFree && ([
+            { l: freeBox.x - 22,              t: freeBox.y - 22,              h: 'nw' },
+            { l: freeBox.x + freeBox.w - 22,  t: freeBox.y - 22,              h: 'ne' },
+            { l: freeBox.x - 22,              t: freeBox.y + freeBox.h - 22,  h: 'sw' },
+            { l: freeBox.x + freeBox.w - 22,  t: freeBox.y + freeBox.h - 22, h: 'se' },
+          ] as { l: number; t: number; h: string }[]).map((c, i) => (
+            <div key={i} className="absolute" style={{ left: c.l, top: c.t, width: 44, height: 44 }} />
           ))}
         </div>
       </div>
 
-      {/* Ratio picker + hint */}
-      <div
-        className="shrink-0 pt-5 pb-2"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
-      >
-        {/* Pill buttons */}
-        <div className="flex justify-center gap-3 px-4">
+      {/* Ratio picker */}
+      <div className="shrink-0 pt-4 pb-2"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 18px)' }}>
+        <div className="flex justify-center gap-2 px-3 overflow-x-auto scrollbar-none">
           {RATIOS.map((r, i) => {
             const active = i === ratioIdx
+            const iconW = r.w <= 0 ? 24 : r.w >= r.h ? 28 : Math.round(28 * r.w / r.h)
+            const iconH = r.h <= 0 ? 22 : r.h >= r.w ? 26 : Math.round(26 * r.h / r.w)
             return (
-              <button
-                key={r.label}
-                onClick={() => setRatioIdx(i)}
+              <button key={r.label} onClick={() => setRatioIdx(i)}
                 className={cn(
-                  'flex flex-col items-center gap-2 px-4 py-3 rounded-2xl transition-all duration-200 min-w-[64px]',
-                  active
-                    ? 'bg-gold/15 border border-gold/50'
-                    : 'bg-white/5 border border-white/10 active:bg-white/10'
-                )}
-              >
-                {/* Aspect ratio icon */}
+                  'flex flex-col items-center gap-2 px-3 py-3 rounded-2xl transition-all duration-200 shrink-0 min-w-[58px]',
+                  active ? 'bg-gold/15 border border-gold/50' : 'bg-white/5 border border-white/10 active:bg-white/10'
+                )}>
                 <div className="flex items-center justify-center" style={{ width: 32, height: 28 }}>
-                  {r.w === 0 ? (
-                    // Original: show actual image ratio preview
-                    <div
-                      className={cn('border-[2px] border-dashed rounded', active ? 'border-gold' : 'border-white/40')}
-                      style={{
-                        width:  natSize.w >= natSize.h ? 28 : Math.max(16, Math.round(28 * natSize.w / (natSize.h || 1))),
-                        height: natSize.h >= natSize.w ? 26 : Math.max(14, Math.round(26 * natSize.h / (natSize.w || 1))),
-                      }}
-                    />
-                  ) : (
-                    <div
-                      className={cn('border-[2px] rounded', active ? 'border-gold' : 'border-white/40')}
-                      style={{
-                        width:  r.w >= r.h ? 28 : Math.round(28 * r.w / r.h),
-                        height: r.h >= r.w ? 26 : Math.round(26 * r.h / r.w),
-                      }}
-                    />
-                  )}
+                  {r.w === -1
+                    ? <div className={cn('border-[2px] border-dashed rounded', active ? 'border-gold' : 'border-white/40')}
+                        style={{ width: 24, height: 24 }} />
+                    : r.w === 0
+                    ? <div className={cn('border-[2px] border-dashed rounded', active ? 'border-gold' : 'border-white/40')}
+                        style={{
+                          width:  natSize.w >= natSize.h ? 28 : Math.max(14, Math.round(28 * natSize.w / (natSize.h || 1))),
+                          height: natSize.h >= natSize.w ? 26 : Math.max(12, Math.round(26 * natSize.h / (natSize.w || 1))),
+                        }} />
+                    : <div className={cn('border-[2px] rounded', active ? 'border-gold' : 'border-white/40')}
+                        style={{ width: iconW, height: iconH }} />
+                  }
                 </div>
-                <span className={cn('text-[11px] font-semibold tracking-wide leading-none', active ? 'text-gold' : 'text-white/40')}>
+                <span className={cn('text-[10px] font-semibold tracking-wide leading-none',
+                  active ? 'text-gold' : 'text-white/40')}>
                   {r.label}
                 </span>
               </button>
             )
           })}
         </div>
-
-        <p className="text-center text-[11px] text-white/25 mt-3 px-4">
-          Pinch to zoom · drag to reposition
+        <p className="text-center text-[10px] text-white/25 mt-3 px-4">
+          {isFree ? 'Drag corners or inside to move' : 'Pinch to zoom · drag to reposition'}
         </p>
       </div>
     </div>
