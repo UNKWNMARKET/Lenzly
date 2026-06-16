@@ -361,7 +361,7 @@ export default function FindPhotographer() {
             ) : null
           })()}
 
-          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
+          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px', touchAction: 'none' }}>
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}
