@@ -123,20 +123,20 @@ export default function FindPhotographer() {
   const mapLoadedRef = useRef(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Prevent map touch events from bubbling up and triggering page swipe.
-  // Must depend on `view` so it re-runs once the map div is actually in the DOM.
+  // Stop touch events from bubbling to the page scroll container so the map
+  // can pan freely, but do NOT call preventDefault — that would kill Leaflet's
+  // own touch-drag handling and make the map unscrollable.
   useEffect(() => {
     if (view !== 'map') return
     const el = mapContainerRef.current
     if (!el) return
     const stop = (e: TouchEvent) => { e.stopPropagation() }
-    const stopMove = (e: TouchEvent) => { e.stopPropagation(); e.preventDefault() }
     el.addEventListener('touchstart', stop, { passive: true })
-    el.addEventListener('touchmove', stopMove, { passive: false })
+    el.addEventListener('touchmove', stop, { passive: true })
     el.addEventListener('touchend', stop, { passive: true })
     return () => {
       el.removeEventListener('touchstart', stop)
-      el.removeEventListener('touchmove', stopMove)
+      el.removeEventListener('touchmove', stop)
       el.removeEventListener('touchend', stop)
     }
   }, [view])
@@ -361,7 +361,7 @@ export default function FindPhotographer() {
             ) : null
           })()}
 
-          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px', touchAction: 'none' }}>
+          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}
