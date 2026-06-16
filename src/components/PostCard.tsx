@@ -4,6 +4,7 @@ import { cn, formatCount, timeAgo } from '@/lib/utils'
 import { useLocation } from 'wouter'
 import { toast } from 'sonner'
 import type { Post } from '@/data/mockData'
+import SharePostSheet from './SharePostSheet'
 
 interface Props {
   post: Post
@@ -24,6 +25,7 @@ export default function PostCard({ post }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [commentText, setCommentText] = useState('')
 
   function handleLike() {
@@ -32,12 +34,8 @@ export default function PostCard({ post }: Props) {
   }
 
   function handleShare() {
-    if (navigator.share) {
-      navigator.share({ title: post.photographer.username, text: post.caption, url: window.location.href })
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      toast.success('Link copied!')
-    }
+    setShowShare(true)
+    setShowMore(false)
   }
 
   function handleCopyLink() {
@@ -272,6 +270,18 @@ export default function PostCard({ post }: Props) {
             </button>
           </div>
         </div>
+      )}
+
+      {showShare && (
+        <SharePostSheet
+          postId={String(post.id)}
+          imageUrl={post.image}
+          caption={post.caption}
+          postAuthorId={post.photographer.id}
+          postAuthorUsername={post.photographer.username}
+          locationName={post.location}
+          onClose={() => setShowShare(false)}
+        />
       )}
     </article>
   )

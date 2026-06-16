@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { ChevronLeft, MapPin, X, Clock, MoreHorizontal } from 'lucide-react'
+import { ChevronLeft, MapPin, X, Clock, MoreHorizontal, RefreshCw } from 'lucide-react'
 import Spinner from '@/components/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -129,6 +129,29 @@ function ArchiveViewer({
     onClose()
   }
 
+  const handleReshare = async () => {
+    setShowMenu(false)
+    // Check daily limit
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
+    const { count } = await supabase
+      .from('spot_stories')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', startOfDay.toISOString())
+    if ((count ?? 0) >= 5) { toast.error("Daily story limit reached (5)"); return }
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const { error } = await supabase.from('spot_stories').insert({
+      user_id: userId,
+      image_url: story.image_url,
+      caption: story.caption,
+      location_name: story.location_name,
+      expires_at: expiresAt,
+    })
+    if (error) { toast.error('Could not reshare'); return }
+    toast.success('Story reshared for another 24h!')
+  }
+
   const deleted = isDeleted(story.expires_at)
   const expired = isExpired(story.expires_at)
 
@@ -229,6 +252,19 @@ function ArchiveViewer({
             <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-6" />
             {!confirmDelete ? (
               <div className="space-y-2">
+                <button
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl active:bg-white/5 transition-colors"
+                  onTouchEnd={e => { e.stopPropagation(); handleReshare() }}
+                  onClick={handleReshare}
+                >
+                  <div className="w-10 h-10 rounded-full bg-gold/15 flex items-center justify-center">
+                    <RefreshCw size={16} className="text-gold" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-gold font-semibold text-[15px]">Reshare Story</p>
+                    <p className="text-white/30 text-xs mt-0.5">Post again for another 24 hours</p>
+                  </div>
+                </button>
                 <button
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl active:bg-white/5 transition-colors"
                   onTouchEnd={e => { e.stopPropagation(); setConfirmDelete(true) }}
