@@ -21,7 +21,7 @@ export default function Login() {
   const [rememberMe, setRememberMe]     = useState(true)
   const [focused, setFocused]           = useState<string | null>(null)
   const [showPasskeyBtn, setShowPasskeyBtn] = useState(false)
-  const [mounted, setMounted]           = useState(false)
+  const [idle, setIdle]                 = useState(false)
 
   useEffect(() => {
     const savedRemember = localStorage.getItem(REMEMBER_KEY)
@@ -32,7 +32,8 @@ export default function Login() {
       if (savedEmail) setEmail(savedEmail)
     }
     setShowPasskeyBtn(hasSavedPasskey())
-    const t = setTimeout(() => setMounted(true), 60)
+    // Start idle pulse after entrance animations complete
+    const t = setTimeout(() => setIdle(true), 1400)
     return () => clearTimeout(t)
   }, [])
 
@@ -93,23 +94,27 @@ export default function Login() {
 
       {/* ── Atmospheric background ── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Primary gold bloom — top center */}
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-[#C9A84C]/[0.07] blur-[120px]" />
-        {/* Secondary accent — bottom left */}
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-[#C9A84C]/[0.05] blur-[90px]" />
-        {/* Tertiary — right edge */}
-        <div className="absolute top-1/3 -right-16 w-48 h-48 rounded-full bg-[#C9A84C]/[0.04] blur-[70px]" />
+        {/* Primary gold bloom — drifts slowly */}
+        <div className="orb-top absolute -top-40 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-[#C9A84C]/[0.07] blur-[120px]" />
+        {/* Bottom-left secondary */}
+        <div className="orb-bot absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-[#C9A84C]/[0.05] blur-[90px]" />
+        {/* Right-edge tertiary */}
+        <div className="orb-side absolute top-1/3 -right-16 w-48 h-48 rounded-full bg-[#C9A84C]/[0.04] blur-[70px]" />
 
-        {/* Fine grid */}
+        {/* Fine dot grid */}
         <div className="absolute inset-0 opacity-[0.022]" style={{
           backgroundImage: 'linear-gradient(rgba(201,168,76,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.5) 1px, transparent 1px)',
           backgroundSize: '64px 64px',
         }} />
 
-        {/* Decorative aperture ring */}
-        <svg className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[420px] h-[420px] opacity-[0.045]" viewBox="0 0 420 420" fill="none">
+        {/* Aperture ring — slow continuous rotation */}
+        <svg
+          className="aperture-ring absolute top-0 left-1/2 w-[420px] h-[420px] opacity-[0.048]"
+          style={{ transformOrigin: 'center center' }}
+          viewBox="0 0 420 420" fill="none"
+        >
           <circle cx="210" cy="210" r="200" stroke="#C9A84C" strokeWidth="0.75"/>
-          <circle cx="210" cy="210" r="170" stroke="#C9A84C" strokeWidth="0.5"/>
+          <circle cx="210" cy="210" r="170" stroke="#C9A84C" strokeWidth="0.4"/>
           <circle cx="210" cy="210" r="140" stroke="#C9A84C" strokeWidth="0.75"/>
           {[0,45,90,135,180,225,270,315].map(deg => {
             const r = (deg * Math.PI) / 180
@@ -124,36 +129,24 @@ export default function Login() {
 
       <div className="relative flex-1 flex flex-col items-center justify-center px-6 py-10">
 
-        {/* ── Logo block ── */}
-        <div
-          className="text-center mb-10 flex flex-col items-center gap-3"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(-14px)',
-            transition: 'opacity 0.6s ease, transform 0.6s ease',
-          }}
-        >
+        {/* ── Logo block — fades up ── */}
+        <div className="login-logo text-center mb-10 flex flex-col items-center gap-3">
           <AppLogo className="h-10" />
           <div className="flex items-center gap-3">
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-[#C9A84C]/30" />
-            <p className="text-[9px] text-white/25 tracking-[0.5em] uppercase font-light">Photography Platform</p>
-            <div className="h-px w-10 bg-gradient-to-l from-transparent to-[#C9A84C]/30" />
+            {/* Divider lines grow outward */}
+            <div className="login-divline h-px w-10 bg-gradient-to-r from-transparent to-[#C9A84C]/30" />
+            <p className="login-sub text-[9px] text-white/25 tracking-[0.5em] uppercase font-light">Photography Platform</p>
+            <div className="login-divline h-px w-10 bg-gradient-to-l from-transparent to-[#C9A84C]/30" style={{ animationDelay: '0.42s' }} />
           </div>
         </div>
 
-        {/* ── Card ── */}
-        <div
-          className="w-full max-w-sm"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'opacity 0.65s ease 0.1s, transform 0.65s ease 0.1s',
-          }}
-        >
-          {/* Glass card */}
-          <div className="relative bg-white/[0.025] border border-white/[0.07] rounded-3xl p-7 backdrop-blur-md shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
+        {/* ── Card — scales in ── */}
+        <div className="login-card w-full max-w-sm">
 
-            {/* Subtle top highlight */}
+          {/* Glass card with shimmer sweep */}
+          <div className="card-shimmer relative bg-white/[0.025] border border-white/[0.07] rounded-3xl p-7 backdrop-blur-md shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
+
+            {/* Top edge highlight */}
             <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-full" />
 
             {/* Heading */}
@@ -164,14 +157,14 @@ export default function Login() {
               <p className="text-white/35 text-[13px]">Sign in to continue to Lenzly</p>
             </div>
 
-            {/* Passkey / Face ID */}
+            {/* Passkey / Face ID — breathes with gold glow */}
             {showPasskeyBtn && (
               <>
                 <button
                   type="button"
                   onClick={handlePasskeyLogin}
                   disabled={passkeyLoading}
-                  className="w-full mb-4 flex items-center justify-center gap-2.5 bg-white/[0.04] border border-[#C9A84C]/25 hover:border-[#C9A84C]/50 active:scale-[0.98] rounded-2xl py-[14px] transition-all duration-200 disabled:opacity-50 hover:bg-white/[0.07] hover:shadow-[0_0_24px_rgba(201,168,76,0.08)]"
+                  className={`login-passkey w-full mb-4 flex items-center justify-center gap-2.5 bg-white/[0.04] border border-[#C9A84C]/25 active:scale-[0.98] rounded-2xl py-[14px] transition-all duration-200 disabled:opacity-50`}
                 >
                   {passkeyLoading
                     ? <span className="w-[18px] h-[18px] rounded-full border-2 border-[#C9A84C]/30 border-t-[#C9A84C] animate-spin" />
@@ -191,8 +184,8 @@ export default function Login() {
 
             <form onSubmit={handleLogin} className="space-y-3" autoComplete="on">
 
-              {/* Email */}
-              <div className="relative">
+              {/* Email — slides in from left */}
+              <div className="login-field-1 relative">
                 <Mail size={14} className={`absolute left-[14px] top-1/2 -translate-y-1/2 transition-colors duration-200 ${focused === 'email' ? 'text-[#C9A84C]/70' : 'text-white/20'}`} />
                 <input
                   type="email" name="email" placeholder="Email address" value={email}
@@ -203,8 +196,8 @@ export default function Login() {
                 />
               </div>
 
-              {/* Password */}
-              <div className="relative">
+              {/* Password — slides in from left, staggered */}
+              <div className="login-field-2 relative">
                 <Lock size={14} className={`absolute left-[14px] top-1/2 -translate-y-1/2 transition-colors duration-200 ${focused === 'password' ? 'text-[#C9A84C]/70' : 'text-white/20'}`} />
                 <input
                   type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" value={password}
@@ -238,15 +231,15 @@ export default function Login() {
                 </Link>
               </div>
 
-              {/* Submit */}
+              {/* Submit — pulses gently when idle */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 relative overflow-hidden rounded-2xl py-[15px] transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[13px] font-bold text-[#060608] shadow-[0_6px_28px_rgba(201,168,76,0.28)] hover:shadow-[0_8px_36px_rgba(201,168,76,0.42)]"
+                className={`w-full mt-2 relative overflow-hidden rounded-2xl py-[15px] transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[13px] font-bold text-[#060608] ${idle && !loading ? 'login-btn-idle' : ''}`}
                 style={{ background: 'linear-gradient(135deg, #D4AF5A 0%, #C9A84C 50%, #B8952E 100%)' }}
               >
-                {/* Shimmer overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-700" />
+                {/* Shimmer sweep on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.09] to-transparent -translate-x-full hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                 {loading ? (
                   <>
                     <span className="w-4 h-4 rounded-full border-2 border-[#060608]/25 border-t-[#060608] animate-spin" />
@@ -260,13 +253,7 @@ export default function Login() {
           </div>
 
           {/* Footer */}
-          <p
-            className="text-center text-[12px] text-white/22 mt-5"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transition: 'opacity 0.7s ease 0.3s',
-            }}
-          >
+          <p className="login-footer text-center text-[12px] text-white/22 mt-5">
             New to LENZLY?{' '}
             <Link href="/auth/signup">
               <span className="text-[#C9A84C]/70 hover:text-[#C9A84C] font-medium cursor-pointer transition-colors">Create an account</span>
@@ -276,13 +263,7 @@ export default function Login() {
       </div>
 
       {/* Bottom tagline */}
-      <p
-        className="relative text-center text-[9px] text-white/[0.08] pb-5 tracking-[0.5em] uppercase"
-        style={{
-          opacity: mounted ? 1 : 0,
-          transition: 'opacity 0.8s ease 0.4s',
-        }}
-      >
+      <p className="login-tagline relative text-center text-[9px] text-white/[0.08] pb-5 tracking-[0.5em] uppercase">
         The Photography Community
       </p>
     </div>
