@@ -123,21 +123,23 @@ export default function FindPhotographer() {
   const mapLoadedRef = useRef(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Stop touch events from bubbling to the page scroll container so the map
-  // can pan freely, but do NOT call preventDefault — that would kill Leaflet's
-  // own touch-drag handling and make the map unscrollable.
+  // When map view is active, lock the outer -webkit-overflow-scrolling scroll
+  // container. That native iOS momentum-scroll layer grabs every touch sequence
+  // before any JS handler or CSS touch-action can see it, making Leaflet
+  // unresponsive. Setting overflow:hidden disables it for the duration.
   useEffect(() => {
-    if (view !== 'map') return
-    const el = mapContainerRef.current
+    const el = ptr.scrollRef.current
     if (!el) return
-    const stop = (e: TouchEvent) => { e.stopPropagation() }
-    el.addEventListener('touchstart', stop, { passive: true })
-    el.addEventListener('touchmove', stop, { passive: true })
-    el.addEventListener('touchend', stop, { passive: true })
+    if (view === 'map') {
+      el.style.overflow = 'hidden'
+      ;(el.style as any).webkitOverflowScrolling = 'unset'
+    } else {
+      el.style.overflow = ''
+      ;(el.style as any).webkitOverflowScrolling = ''
+    }
     return () => {
-      el.removeEventListener('touchstart', stop)
-      el.removeEventListener('touchmove', stop)
-      el.removeEventListener('touchend', stop)
+      el.style.overflow = ''
+      ;(el.style as any).webkitOverflowScrolling = ''
     }
   }, [view])
   // Geocoded coords for photographers whose profile only has a text location
@@ -348,20 +350,26 @@ export default function FindPhotographer() {
 
       {/* Map View */}
       {view === 'map' && (
-        <div className="px-4">
+        <div className="relative">
           {/* Geocoding progress hint */}
           {(() => {
             const needsGeocode = filtered.filter(p => p.location && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0)))
             const resolved = needsGeocode.filter(p => geocodedCoords[String(p.id)])
             return needsGeocode.length > 0 && resolved.length < needsGeocode.length ? (
-              <div className="flex items-center gap-2 mb-2 px-1">
+              <div className="flex items-center gap-2 mb-2 px-5">
                 <div className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0" />
                 <p className="text-[11px] text-white/30">Placing {resolved.length}/{needsGeocode.length} photographers on map…</p>
               </div>
             ) : null
           })()}
 
-          <div ref={mapContainerRef} data-map-container className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px', touchAction: 'none' }}>
+          {/* Map fills remaining viewport — overflow:hidden on outer container means
+              Leaflet gets all touches; no iOS momentum-scroll layer in the way */}
+          <div
+            ref={mapContainerRef}
+            data-map-container
+            style={{ height: 'calc(100dvh - 140px)', touchAction: 'none' }}
+          >
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}
@@ -393,45 +401,16 @@ export default function FindPhotographer() {
             )}
           </div>
 
-          {/* Photographer chips below map */}
-          <div className="mt-3 space-y-3">
-            {filtered.map(p => (
-              <div key={p.id} className="flex items-center gap-3 p-3 card">
-                <div className={p.verified ? 'story-ring' : 'story-ring-seen'}>
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-lenz-card">
-                    <img src={p.avatar} className="w-full h-full object-cover" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-semibold text-white truncate">{p.name}</span>
-                    {p.verified && <VerifiedBadge size={11} />}
-                    {p.pro && (
-                      <span className="text-[8px] font-bold tracking-widest text-lenz-bg bg-gold px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="flex items-center gap-0.5">
-                      <MapPin size={9} className="text-white/30" />
-                      <span className="text-[11px] text-white/30">{p.city}</span>
-                    </div>
-                    <span className="text-white/15">·</span>
-                    <span className="text-[11px] text-white/30">{p.specialty[0]}</span>
-                    {p.secondShooter && (
-                      <>
-                        <span className="text-white/15">·</span>
-                        <span className="text-[11px] text-gold">2nd Shooter</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <Star size={11} className="text-gold fill-gold" />
-                  <span className="text-xs text-white/60">{p.rating}</span>
-                </div>
+          {/* Floating result count over map */}
+          {filtered.length > 0 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500]">
+              <div className="px-4 py-2 rounded-full bg-lenz-bg/90 border border-lenz-border backdrop-blur-sm shadow-lg">
+                <p className="text-xs font-semibold text-white/70">
+                  <span className="text-gold font-bold">{filtered.length}</span> photographer{filtered.length !== 1 ? 's' : ''} · tap pins to view
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
