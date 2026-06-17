@@ -3,7 +3,7 @@ import { useLocation } from 'wouter'
 import {
   ChevronLeft, ChevronRight, Bell, Lock, Eye, CreditCard,
   HelpCircle, FileText, Shield, LogOut, Trash2,
-  Smartphone, Globe, Star, MessageSquare, X, KeyRound
+  Smartphone, Globe, Star, MessageSquare, X, KeyRound, LayoutDashboard
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -419,6 +419,23 @@ export default function Settings() {
             onPress={() => navigate('/privacy')}
           />
         </div>
+
+        {/* Admin Panel - only visible to admin */}
+        {user?.email?.toLowerCase() === 'eisdorferjesse@gmail.com' && (
+          <>
+            <div className="px-4 pt-5 pb-2">
+              <p className="text-[10px] font-bold tracking-[0.2em] text-gold/60 uppercase">Admin</p>
+            </div>
+            <div className="bg-lenz-card/30 border-y border-lenz-border/50">
+              <Row
+                icon={LayoutDashboard}
+                label="Admin Dashboard"
+                sublabel="Manage users, posts, and platform"
+                onPress={() => navigate('/admin')}
+              />
+            </div>
+          </>
+        )}
 
         {/* Danger Zone */}
         <div className="px-4 pt-5 pb-2">

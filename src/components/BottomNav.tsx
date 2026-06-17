@@ -184,7 +184,7 @@ export default function BottomNav() {
                     <Icon
                       size={21}
                       strokeWidth={active ? 2.2 : 1.6}
-                      className={cn('transition-all duration-200', active ? 'text-gold' : 'text-white/35')}
+                      className={cn('transition-all duration-200', active ? 'text-gold nav-active-glow' : 'text-white/35')}
                     />
                     <span className={cn(
                       'text-[9px] font-semibold tracking-wider uppercase leading-[1.15] transition-colors duration-200',

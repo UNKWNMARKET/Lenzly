@@ -431,3 +431,83 @@
 .leaflet-bar a:hover {
   background: #1a1a1a !important;
 }
+
+/* ── Global UI Polish ── */
+
+/* Faster, snappier active states on all buttons */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: page-fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes page-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Snappy press feedback on interactive elements */
+.press-scale {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.press-scale:active {
+  transform: scale(0.96);
+}
+
+/* Better modal sheet animation */
+.sheet-enter {
+  animation: sheet-slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* Smoother toggle transition */
+.toggle-thumb {
+  transition: left 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gold glow on active nav items */
+.nav-active-glow {
+  filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.5));
+}
+
+/* Smooth skeleton pulse */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-wave {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Smooth image fade-in */
+img {
+  transition: opacity 0.2s ease;
+}
+
+/* Remove iOS button styling */
+input, textarea, select, button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Smooth scrolling everywhere */
+* {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better focus states */
+:focus-visible {
+  outline: 2px solid rgba(201, 168, 76, 0.5);
+  outline-offset: 2px;
+}
