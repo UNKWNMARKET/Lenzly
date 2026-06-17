@@ -268,6 +268,7 @@
   .login-field-1 { animation: field-slide    0.5s  cubic-bezier(0.22,1,0.36,1) 0.38s both; }
   .login-field-2 { animation: field-slide    0.5s  cubic-bezier(0.22,1,0.36,1) 0.48s both; }
   .login-divline { transform-origin: left center; animation: line-grow 0.7s cubic-bezier(0.22,1,0.36,1) 0.35s both; }
+  .signup-step   { animation: login-fade-up 0.35s cubic-bezier(0.22,1,0.36,1) both; }
 
   .orb-top  { animation: orb-drift   9s  ease-in-out infinite; }
   .orb-bot  { animation: orb-drift-2 12s ease-in-out infinite; }

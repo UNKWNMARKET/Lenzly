@@ -6,8 +6,10 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import AppLogo from '@/components/AppLogo'
 
-type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error'
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
 type Step = 0 | 1 | 2 | 3 | 4
+
+const RESERVED = new Set(['admin','lenzly','support','help','root','official','staff','moderator','mod','system','null','undefined'])
 
 function AppleIcon() {
   return (
@@ -38,6 +40,10 @@ async function checkUsernameAvailable(username: string): Promise<boolean> {
   return (count ?? 0) === 0
 }
 
+function isValidUsername(u: string) {
+  return /^[a-z0-9._]{3,30}$/.test(u) && !u.startsWith('.') && !u.endsWith('.')
+}
+
 function PasswordStrength({ password }: { password: string }) {
   const checks = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)]
   const score = checks.filter(Boolean).length
@@ -58,7 +64,7 @@ function PasswordStrength({ password }: { password: string }) {
   )
 }
 
-const STEPS = ['Username', 'Verify email', 'Set password', 'Your name']
+const STEPS = ['Choose a username', 'Verify your email', 'Set a password', 'Your name']
 
 export default function SignUp() {
   const [, navigate] = useLocation()
@@ -93,19 +99,22 @@ export default function SignUp() {
   const [focused, setFocused] = useState<string | null>(null)
 
   useEffect(() => {
-    if (username.length < 3) { setUsernameStatus('idle'); return }
+    if (username.length === 0) { setUsernameStatus('idle'); return }
+    if (!isValidUsername(username)) { setUsernameStatus('invalid'); return }
+    if (RESERVED.has(username)) { setUsernameStatus('taken'); return }
     setUsernameStatus('checking')
     latestUsername.current = username
+    const captured = username
     const timer = setTimeout(async () => {
       try {
-        const available = await checkUsernameAvailable(username)
-        if (latestUsername.current !== username) return
+        const available = await checkUsernameAvailable(captured)
+        if (latestUsername.current !== captured) return
         setUsernameStatus(available ? 'available' : 'taken')
       } catch {
-        if (latestUsername.current !== username) return
+        if (latestUsername.current !== captured) return
         setUsernameStatus('error')
       }
-    }, 400)
+    }, 450)
     return () => clearTimeout(timer)
   }, [username])
 
@@ -121,14 +130,16 @@ export default function SignUp() {
     }`
 
   const handleStep1 = async () => {
-    if (username.length < 3) { toast.error('Username must be at least 3 characters'); return }
+    if (!isValidUsername(username)) { toast.error('Username must be 3–30 chars: letters, numbers, . and _ only'); return }
+    if (RESERVED.has(username)) { toast.error('That username is reserved'); return }
     if (usernameStatus === 'checking') { toast.error('Please wait — checking username'); return }
     if (usernameStatus === 'taken') { toast.error('That username is already taken'); return }
-    if (usernameStatus === 'error') { toast.error('Could not verify username'); return }
+    if (usernameStatus === 'error') { toast.error('Could not verify username — try again'); return }
+    if (usernameStatus !== 'available') { toast.error('Please wait for username check to complete'); return }
     setLoading(true)
     try {
       const available = await checkUsernameAvailable(username)
-      if (!available) { setUsernameStatus('taken'); toast.error('Username just taken, try another'); return }
+      if (!available) { setUsernameStatus('taken'); toast.error('Username just taken — try another'); return }
     } catch { toast.error('Could not verify username'); return }
     finally { setLoading(false) }
     setStep(2)
@@ -136,6 +147,7 @@ export default function SignUp() {
 
   const sendOtp = async () => {
     if (!email.trim()) { toast.error('Enter your email address'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Enter a valid email address'); return }
     setLoading(true)
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
@@ -149,7 +161,7 @@ export default function SignUp() {
   }
 
   const verifyOtp = async () => {
-    if (otp.length !== 8) { toast.error('Enter the 8-digit code'); return }
+    if (otp.length !== 6) { toast.error('Enter the 6-digit code'); return }
     setLoading(true)
     const { error } = await supabase.auth.verifyOtp({
       email: email.trim().toLowerCase(),
@@ -187,32 +199,38 @@ export default function SignUp() {
     navigate('/onboarding')
   }
 
+  const usernameHint = () => {
+    if (usernameStatus === 'available' && username.length >= 3) return <p className="text-[11px] text-emerald-400 px-1">@{username} is available ✓</p>
+    if (usernameStatus === 'taken') return <p className="text-[11px] text-red-400 px-1">@{username} is already taken</p>
+    if (usernameStatus === 'invalid' && username.length > 0) return <p className="text-[11px] text-yellow-400 px-1">Letters, numbers, . and _ only (3–30 chars)</p>
+    if (usernameStatus === 'error') return <p className="text-[11px] text-yellow-400 px-1">Could not check — try again</p>
+    return <p className="text-[11px] text-white/20 px-1">Letters, numbers, . and _ only</p>
+  }
+
   return (
     <div className="min-h-screen bg-[#060606] flex flex-col safe-top safe-bottom overflow-hidden relative">
       {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#C9A84C]/8 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-[#C9A84C]/4 blur-[80px]" />
+        <div className="orb-top absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#C9A84C]/8 blur-[100px]" />
+        <div className="orb-bot absolute bottom-0 right-0 w-64 h-64 rounded-full bg-[#C9A84C]/4 blur-[80px]" />
       </div>
 
       <div className="relative flex-1 flex flex-col items-center justify-center px-6 py-10">
         {/* Hero */}
-        <div className="text-center mb-10 flex flex-col items-center gap-3">
+        <div className="login-logo text-center mb-10 flex flex-col items-center gap-3">
           <AppLogo className="h-11" />
           <p className="text-[10px] text-white/25 tracking-[0.45em] uppercase">Join the Community</p>
         </div>
 
         <div className="w-full max-w-sm">
-          {/* Card */}
-          <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-7 backdrop-blur-sm shadow-2xl">
+          <div className="login-card bg-white/[0.03] border border-white/8 rounded-3xl p-7 backdrop-blur-sm shadow-2xl">
 
             {/* ── STEP 0: Social sign-up ── */}
             {step === 0 && (
-              <>
+              <div className="signup-step">
                 <h2 className="text-white font-semibold text-lg mb-1">Create your account</h2>
                 <p className="text-white/35 text-sm mb-6">Join the photography community</p>
 
-                {/* Apple */}
                 <button
                   onClick={() => handleSocialSignup('apple')}
                   disabled={!!socialLoading}
@@ -224,7 +242,6 @@ export default function SignUp() {
                   Continue with Apple
                 </button>
 
-                {/* Google */}
                 <button
                   onClick={() => handleSocialSignup('google')}
                   disabled={!!socialLoading}
@@ -236,14 +253,12 @@ export default function SignUp() {
                   Continue with Google
                 </button>
 
-                {/* Divider */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-1 h-px bg-white/8" />
                   <span className="text-[10px] text-white/25 tracking-widest uppercase">or</span>
                   <div className="flex-1 h-px bg-white/8" />
                 </div>
 
-                {/* Email sign-up */}
                 <button
                   onClick={() => setStep(1)}
                   className="w-full flex items-center justify-center gap-2 bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 shadow-[0_4px_20px_rgba(201,168,76,0.3)]"
@@ -251,7 +266,7 @@ export default function SignUp() {
                   <Mail size={16} />
                   Sign up with email
                 </button>
-              </>
+              </div>
             )}
 
             {/* Step indicator for steps 1–4 */}
@@ -259,61 +274,79 @@ export default function SignUp() {
               <>
                 <div className="flex items-center gap-1.5 mb-5">
                   {([1, 2, 3, 4] as const).map(s => (
-                    <div key={s} className={`h-1 rounded-full transition-all duration-300 ${s === step ? 'flex-[2] bg-gold' : s < step ? 'flex-1 bg-gold/30' : 'flex-1 bg-white/10'}`} />
+                    <div key={s} className={`h-1 rounded-full transition-all duration-500 ${s === step ? 'flex-[2] bg-gold' : s < step ? 'flex-1 bg-gold/40' : 'flex-1 bg-white/10'}`} />
                   ))}
                 </div>
-                <p className="text-white/40 text-xs tracking-wider uppercase mb-0.5">Step {step} of 4</p>
+                <p className="text-white/30 text-[11px] tracking-wider uppercase mb-0.5">Step {step} of 4</p>
                 <h2 className="text-white font-semibold text-lg mb-5">{STEPS[step - 1]}</h2>
               </>
             )}
 
-            {/* ── STEPS 1–4 ── */}
+            {/* ── STEP 1: Username ── */}
             {step === 1 && (
-              <div className="space-y-3">
+              <div className="signup-step space-y-3">
                 <div className="space-y-1.5">
                   <div className="relative">
                     <AtSign size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'username' ? 'text-gold/60' : 'text-white/25'}`} />
                     <input
-                      type="text" placeholder="Pick a username" value={username}
-                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''))}
-                      onFocus={() => setFocused('username')} onBlur={() => setFocused(null)}
+                      type="text"
+                      placeholder="Pick a username"
+                      value={username}
+                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 30))}
+                      onFocus={() => setFocused('username')}
+                      onBlur={() => setFocused(null)}
+                      onKeyDown={e => e.key === 'Enter' && handleStep1()}
                       autoFocus
-                      className={`${fieldClass('username')} ${usernameStatus === 'available' ? 'border-emerald-500/50' : usernameStatus === 'taken' ? 'border-red-500/50' : ''} pr-12`}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="username"
+                      className={`${fieldClass('username')} ${
+                        usernameStatus === 'available' ? 'border-emerald-500/50' :
+                        usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-500/40' : ''
+                      } pr-12`}
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2">
                       {usernameStatus === 'checking' && <Spinner size="sm" />}
                       {usernameStatus === 'available' && <CheckCircle size={15} className="text-emerald-400" />}
-                      {usernameStatus === 'taken' && <XCircle size={15} className="text-red-400" />}
+                      {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <XCircle size={15} className="text-red-400" />}
                       {usernameStatus === 'error' && <AlertCircle size={15} className="text-yellow-400" />}
                     </span>
                   </div>
-                  {usernameStatus === 'available' && username.length >= 3 && (
-                    <p className="text-[11px] text-emerald-400 px-1">@{username} is available ✓</p>
-                  )}
-                  {usernameStatus === 'taken' && (
-                    <p className="text-[11px] text-red-400 px-1">@{username} is taken</p>
-                  )}
-                  {usernameStatus === 'idle' && username.length === 0 && (
-                    <p className="text-[11px] text-white/20 px-1">Letters, numbers, . and _ only</p>
-                  )}
+                  {usernameHint()}
                 </div>
-                <button onClick={handleStep1}
-                  disabled={loading || usernameStatus === 'taken' || usernameStatus === 'checking' || usernameStatus === 'error' || username.length < 3}
-                  className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
-                  {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : <>{`Continue`} <ArrowRight size={15} /></>}
+
+                <button
+                  onClick={handleStep1}
+                  disabled={loading || usernameStatus !== 'available'}
+                  className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {loading
+                    ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
+                    : <>Continue <ArrowRight size={15} /></>}
+                </button>
+
+                <button onClick={() => setStep(0)} className="flex items-center gap-1.5 text-xs text-white/25 hover:text-white/50 transition-colors mx-auto pt-1">
+                  <ArrowLeft size={12} /> Back
                 </button>
               </div>
             )}
 
-            {/* ── STEP 2 ── */}
+            {/* ── STEP 2: Email + OTP ── */}
             {step === 2 && (
-              <div className="space-y-3">
+              <div className="signup-step space-y-3">
                 <div className="relative">
                   <Mail size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'email' ? 'text-gold/60' : 'text-white/25'}`} />
-                  <input type="email" placeholder="Email address" value={email}
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
                     onChange={e => { setEmail(e.target.value); setOtpSent(false); setOtp('') }}
-                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
-                    autoFocus autoCapitalize="none" autoCorrect="off"
+                    onFocus={() => setFocused('email')}
+                    onBlur={() => setFocused(null)}
+                    onKeyDown={e => e.key === 'Enter' && !otpSent && sendOtp()}
+                    autoFocus
+                    autoCapitalize="none"
+                    autoCorrect="off"
                     disabled={otpSent}
                     className={`${fieldClass('email')} disabled:opacity-50`}
                   />
@@ -322,23 +355,32 @@ export default function SignUp() {
                 {!otpSent ? (
                   <button onClick={sendOtp} disabled={loading || !email.trim()}
                     className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
-                    {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : 'Send verification code'}
+                    {loading
+                      ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
+                      : 'Send verification code'}
                   </button>
                 ) : (
                   <>
                     <div className="space-y-1.5">
-                      <input type="text" inputMode="numeric" pattern="[0-9]*"
-                        placeholder="· · · · · · · ·"
-                        maxLength={8}
-                        value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="· · · · · ·"
+                        maxLength={6}
+                        value={otp}
+                        onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        onKeyDown={e => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
                         autoFocus
-                        className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.5em] font-mono text-white placeholder-white/15 outline-none transition-all"
+                        className="w-full bg-white/5 border border-white/8 focus:border-gold/60 rounded-2xl py-4 text-center text-2xl tracking-[0.6em] font-mono text-white placeholder-white/15 outline-none transition-all"
                       />
-                      <p className="text-[11px] text-white/25 text-center">Code sent to {email}</p>
+                      <p className="text-[11px] text-white/25 text-center">6-digit code sent to {email}</p>
                     </div>
-                    <button onClick={verifyOtp} disabled={loading || otp.length !== 8}
+                    <button onClick={verifyOtp} disabled={loading || otp.length !== 6}
                       className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
-                      {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : <>{`Verify`} <ArrowRight size={15} /></>}
+                      {loading
+                        ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
+                        : <>Verify <ArrowRight size={15} /></>}
                     </button>
                     <p className="text-center">
                       <button onClick={sendOtp} disabled={resendCooldown > 0 || loading}
@@ -349,23 +391,28 @@ export default function SignUp() {
                   </>
                 )}
 
-                <button onClick={() => setStep(0)}
-                  className="flex items-center gap-1.5 text-xs text-white/25 hover:text-white/50 transition-colors mx-auto pt-1">
+                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-xs text-white/25 hover:text-white/50 transition-colors mx-auto pt-1">
                   <ArrowLeft size={12} /> Back
                 </button>
               </div>
             )}
 
-            {/* ── STEP 3 ── */}
+            {/* ── STEP 3: Password ── */}
             {step === 3 && (
-              <div className="space-y-3">
+              <div className="signup-step space-y-3">
                 <div>
                   <div className="relative">
                     <Lock size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'password' ? 'text-gold/60' : 'text-white/25'}`} />
-                    <input type={showPassword ? 'text' : 'password'} placeholder="Choose a password"
-                      value={password} onChange={e => setPassword(e.target.value)}
-                      onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
-                      autoFocus autoComplete="new-password"
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Choose a password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setFocused('password')}
+                      onBlur={() => setFocused(null)}
+                      onKeyDown={e => e.key === 'Enter' && handleStep3()}
+                      autoFocus
+                      autoComplete="new-password"
                       className={`${fieldClass('password')} pr-12`}
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -377,20 +424,28 @@ export default function SignUp() {
                 </div>
                 <button onClick={handleStep3} disabled={loading || password.length < 8}
                   className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2 mt-1">
-                  {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : <>{`Continue`} <ArrowRight size={15} /></>}
+                  {loading
+                    ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
+                    : <>Continue <ArrowRight size={15} /></>}
                 </button>
               </div>
             )}
 
-            {/* ── STEP 4 ── */}
+            {/* ── STEP 4: Name + Terms ── */}
             {step === 4 && (
-              <div className="space-y-3">
+              <div className="signup-step space-y-3">
                 <div className="relative">
                   <User size={15} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused === 'name' ? 'text-gold/60' : 'text-white/25'}`} />
-                  <input type="text" placeholder="Your full name" value={name}
+                  <input
+                    type="text"
+                    placeholder="Your full name"
+                    value={name}
                     onChange={e => setName(e.target.value)}
-                    onFocus={() => setFocused('name')} onBlur={() => setFocused(null)}
-                    autoFocus autoComplete="name"
+                    onFocus={() => setFocused('name')}
+                    onBlur={() => setFocused(null)}
+                    onKeyDown={e => e.key === 'Enter' && handleStep4()}
+                    autoFocus
+                    autoComplete="name"
                     className={fieldClass('name')}
                   />
                 </div>
@@ -417,10 +472,12 @@ export default function SignUp() {
 
                 <button onClick={handleStep4} disabled={loading || !name.trim() || !agreedToTerms}
                   className="w-full bg-gold hover:bg-gold/90 active:scale-[0.98] text-[#060606] font-semibold text-sm py-4 rounded-2xl transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2">
-                  {loading ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" /> : 'Create my account'}
+                  {loading
+                    ? <span className="w-4 h-4 rounded-full border-2 border-[#060606]/30 border-t-[#060606] animate-spin" />
+                    : 'Create my account'}
                 </button>
 
-                <p className="text-center text-[11px] text-white/20">You'll design your profile on the next screen</p>
+                <p className="text-center text-[11px] text-white/20">You'll set up your profile on the next screen</p>
               </div>
             )}
           </div>
