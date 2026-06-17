@@ -62,7 +62,7 @@ export default function Login() {
     setSocialLoading(provider)
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: 'ionic://localhost/auth/callback' },
     })
     if (error) { toast.error(error.message); setSocialLoading(null) }
   }

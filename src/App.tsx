@@ -32,6 +32,7 @@ import Login from './pages/auth/Login'
 import SignUp from './pages/auth/SignUp'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
+import AuthCallback from './pages/auth/Callback'
 import PostSpot from './pages/PostSpot'
 import UploadPost from './pages/UploadPost'
 import EditProfile from './pages/EditProfile'
@@ -117,6 +118,7 @@ function Router() {
       {/* Auth */}
       <Route path="/auth/login" component={Login} />
       <Route path="/auth/signup" component={SignUp} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/auth/forgot-password" component={ForgotPassword} />
       <Route path="/auth/reset-password" component={ResetPassword} />
 
@@ -248,7 +250,7 @@ function GlobalSpotModal() {
 }
 
 const NAV_HIDDEN_EXACT = new Set([
-  '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password',
+  '/auth/login', '/auth/signup', '/auth/callback', '/auth/forgot-password', '/auth/reset-password',
   '/spot', '/onboarding', '/search', '/brands', '/privacy', '/terms',
   '/upload', '/profile/edit', '/settings', '/pro', '/pro/checkout',
   '/notifications', '/messages', '/story-archive',
