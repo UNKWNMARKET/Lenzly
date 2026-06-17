@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'wouter'
 import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw, ChevronRight } from 'lucide-react'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw, ChevronRight, ArrowLeft } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
 import type { PhotoSpot } from '@/data/mockData'
 import { useSpotModal } from '@/contexts/SpotModalContext'
@@ -368,7 +368,17 @@ export default function Explore() {
     <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
-        <h1 className="text-xl font-bold tracking-[0.12em] gold-text mb-3">EXPLORE</h1>
+        <div className="flex items-center gap-3 mb-3">
+          {!isAll && (
+            <button
+              onClick={() => { setActiveFilter('All'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+            >
+              <ArrowLeft size={16} className="text-white/70" />
+            </button>
+          )}
+          <h1 className="text-xl font-bold tracking-[0.12em] gold-text">{isAll ? 'EXPLORE' : activeFilter.toUpperCase()}</h1>
+        </div>
 
         {/* Search */}
         <div className="relative">
