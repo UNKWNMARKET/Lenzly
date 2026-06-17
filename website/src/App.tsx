@@ -32,6 +32,8 @@ import Settings from './pages/app/Settings'
 import EditProfile from './pages/app/EditProfile'
 import ChangePassword from './pages/app/ChangePassword'
 
+import AuthCallback from './pages/AuthCallback'
+
 // Admin
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -97,6 +99,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Authenticated app */}
           <Route path="/app" element={<AppLayout />}>

@@ -224,9 +224,13 @@ function DeepLinkHandler() {
       const accessToken = params.get('access_token')
       const refreshToken = params.get('refresh_token')
       const type = params.get('type')
-      if (type === 'recovery' && accessToken && refreshToken) {
+      if (accessToken && refreshToken) {
         await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-        navigate('/auth/reset-password')
+        if (type === 'recovery') {
+          navigate('/auth/reset-password')
+        } else {
+          navigate('/')
+        }
       }
     })
     return () => { handler.then(h => h.remove()) }

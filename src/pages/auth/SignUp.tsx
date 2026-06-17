@@ -69,7 +69,7 @@ export default function SignUp() {
     setSocialLoading(provider)
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: 'ionic://localhost/auth/callback' },
+      options: { redirectTo: 'https://lenzly.com/auth/callback' },
     })
     if (error) { toast.error(error.message); setSocialLoading(null) }
   }
