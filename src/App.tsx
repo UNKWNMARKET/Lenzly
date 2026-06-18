@@ -4,6 +4,7 @@ import { App as CapApp } from '@capacitor/app'
 import { supabase } from '@/lib/supabase'
 import { trackVisit } from '@/lib/trackVisit'
 import { Toaster } from 'sonner'
+import { Analytics } from '@vercel/analytics/react'
 import ErrorBoundary from './components/ErrorBoundary'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
@@ -217,6 +218,7 @@ export default function App() {
           </ProProvider>
         </AuthProvider>
       </ThemeProvider>
+      <Analytics />
     </ErrorBoundary>
   )
 }
