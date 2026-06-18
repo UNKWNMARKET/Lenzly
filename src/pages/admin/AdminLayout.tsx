@@ -102,26 +102,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Main */}
       <main className="flex-1 md:ml-60 flex flex-col overflow-hidden h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-[#080808]/90 backdrop-blur-md border-b border-[#1a1a1a] px-6 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-[#080808]/90 backdrop-blur-md border-b border-[#1a1a1a] px-4 py-4 flex items-center gap-3">
+          {/* Back to app — always visible on mobile */}
           <button
-            onClick={() => setSidebarOpen(s => !s)}
-            className="md:hidden p-1.5 rounded-lg text-white/40 hover:text-white transition-colors"
+            onClick={() => navigate('/settings')}
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/8 text-white active:scale-90 transition-all md:hidden"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            <ArrowLeft size={18} />
           </button>
 
-          <div className="hidden md:block">
-            <h2 className="text-sm font-semibold text-white/60">
+          {/* Hamburger — mobile */}
+          <button
+            onClick={() => setSidebarOpen(s => !s)}
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/8 text-white active:scale-90 transition-all md:hidden"
+          >
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+
+          <div className="flex-1">
+            <h2 className="text-sm font-semibold text-white/70">
               {nav.find(n => n.path === '/admin' ? location === '/admin' : location.startsWith(n.path))?.label ?? 'Admin'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2">
             <button className="p-2 rounded-lg text-white/30 hover:text-white/60 transition-colors relative">
               <Bell size={17} />
             </button>
             <Link href="/">
-              <button className="text-xs text-white/30 hover:text-white/60 transition-colors">
+              <button className="hidden md:block text-xs text-white/30 hover:text-white/60 transition-colors">
                 ← View App
               </button>
             </Link>
