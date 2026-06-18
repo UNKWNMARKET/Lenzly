@@ -2,9 +2,9 @@ import { ReactNode, useState } from 'react'
 import { useLocation, Link } from 'wouter'
 import {
   LayoutDashboard, MapPin, Users, Image, Building2,
-  Settings, LogOut, Menu, X, Camera, Bell, ChevronRight
+  Settings, Menu, X, Camera, Bell, ChevronRight, ArrowLeft
 } from 'lucide-react'
-import { useAdminAuth } from '@/contexts/AdminAuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
 const nav = [
@@ -17,9 +17,10 @@ const nav = [
 ]
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { admin, logout } = useAdminAuth()
-  const [location] = useLocation()
+  const { user } = useAuth()
+  const [location, navigate] = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const adminLabel = user?.email ?? 'Administrator'
 
   return (
     <div className="bg-[#050505] flex" style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'hidden' }}>
@@ -72,20 +73,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
               <span className="text-xs font-bold text-[#C9A84C] uppercase">
-                {admin?.username?.[0] ?? 'A'}
+                {adminLabel[0] ?? 'A'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{admin?.username}</p>
+              <p className="text-xs font-semibold text-white truncate">{adminLabel}</p>
               <p className="text-[10px] text-white/30">Administrator</p>
             </div>
           </div>
           <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400/70 hover:text-red-400 hover:bg-red-950/20 transition-all"
+            onClick={() => navigate('/settings')}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all"
           >
-            <LogOut size={16} />
-            Sign Out
+            <ArrowLeft size={16} />
+            Exit Admin
           </button>
         </div>
       </aside>

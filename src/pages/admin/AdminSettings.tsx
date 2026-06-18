@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Save, RefreshCw } from 'lucide-react'
-import { useAdminAuth } from '@/contexts/AdminAuthContext'
 import { toast } from 'sonner'
 
 interface Settings {
@@ -42,29 +41,34 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputCls = 'w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#C9A84C]/40 transition-colors'
 
+const STORAGE_KEY = 'lenzly_admin_settings'
+
 export default function AdminSettings() {
-  const { api } = useAdminAuth()
   const [settings, setSettings] = useState<Settings>(DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  async function load() {
+  function load() {
     setLoading(true)
-    const res = await api('/settings')
-    if (res.ok) setSettings(await res.json())
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      setSettings(raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS)
+    } catch {
+      setSettings(DEFAULTS)
+    }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  async function save() {
+  function save() {
     setSaving(true)
-    const res = await api('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(settings),
-    })
-    if (res.ok) toast.success('Settings saved')
-    else toast.error('Failed to save')
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+      toast.success('Settings saved')
+    } catch {
+      toast.error('Failed to save')
+    }
     setSaving(false)
   }
 
@@ -75,7 +79,7 @@ export default function AdminSettings() {
   if (loading) return <div className="text-center py-12 text-white/30 text-sm">Loading…</div>
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-lg page-enter">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Settings</h1>

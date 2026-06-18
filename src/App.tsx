@@ -47,7 +47,6 @@ import PostDetail from './pages/PostDetail'
 import Weddings from './pages/Weddings'
 import StoryArchive from './pages/StoryArchive'
 import HashtagFeed from './pages/HashtagFeed'
-import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminSpots from './pages/admin/AdminSpots'
@@ -62,11 +61,19 @@ import BrandHireRequest from './pages/brand/BrandHireRequest'
 import BrandShortlist from './pages/brand/BrandShortlist'
 import BrandRequests from './pages/brand/BrandRequests'
 import BrandSettings from './pages/brand/BrandSettings'
-import { useAdminAuth } from './contexts/AdminAuthContext'
+
+const ADMIN_EMAIL = 'eisdorferjesse@gmail.com'
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
-  const { admin } = useAdminAuth()
-  if (!admin) return <AdminLogin />
+  const { user, loading } = useAuth()
+  const [, navigate] = useLocation()
+  if (loading) return (
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+      <div className="w-6 h-6 rounded-full border-2 border-gold/25 border-t-gold animate-spin" />
+    </div>
+  )
+  if (!user) { navigate('/auth/login'); return null }
+  if (user.email?.toLowerCase() !== ADMIN_EMAIL) { navigate('/'); return null }
   return (
     <AdminLayout>
       <Component />
