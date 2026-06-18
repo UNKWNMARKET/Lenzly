@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 interface Props {
   src: string
@@ -17,6 +17,7 @@ interface Props {
  */
 export default function ProtectedImage({ src, alt = '', className, style, watermark, onClick }: Props) {
   const ref = useRef<HTMLDivElement>(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     const el = ref.current
@@ -46,12 +47,17 @@ export default function ProtectedImage({ src, alt = '', className, style, waterm
       <img
         src={src}
         alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
         className="w-full h-full object-cover object-center"
         style={{
           WebkitUserSelect: 'none',
           userSelect: 'none',
           WebkitTouchCallout: 'none', // disables iOS long-press "Save Image"
           pointerEvents: 'none',
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 0.4s ease',
         } as React.CSSProperties}
         draggable={false}
         onContextMenu={e => e.preventDefault()}

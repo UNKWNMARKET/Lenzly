@@ -34,6 +34,7 @@ export default function BottomNav() {
   }, [])
 
   const navRowRef = useRef<HTMLDivElement>(null)
+  const navWidthRef = useRef(0)
   const dragRef = useRef<{ startX: number; startPct: number } | null>(null)
   const [dragPct, setDragPct] = useState<number | null>(null) // 0-1 across tabs
   const [dragging, setDragging] = useState(false)
@@ -59,6 +60,9 @@ export default function BottomNav() {
   const onPillTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation()
     setDragging(true)
+    // Cache the nav width once at drag start to avoid forcing layout reflow
+    // on every touch-move event.
+    navWidthRef.current = navRowRef.current?.getBoundingClientRect().width ?? 0
     dragRef.current = { startX: e.touches[0].clientX, startPct: pillCenterPct }
     haptics.light?.()
   }
@@ -66,7 +70,7 @@ export default function BottomNav() {
   const onPillTouchMove = (e: React.TouchEvent) => {
     if (!dragRef.current || !navRowRef.current) return
     e.stopPropagation()
-    const navW = navRowRef.current.getBoundingClientRect().width
+    const navW = navWidthRef.current
     const dx = e.touches[0].clientX - dragRef.current.startX
     const dPct = (dx / navW) * 100
     // Clamp between first and last tab center

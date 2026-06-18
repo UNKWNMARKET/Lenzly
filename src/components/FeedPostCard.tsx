@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useLocation } from 'wouter'
 import { Heart, MessageCircle, Send, Bookmark, MapPin, MoreVertical, Trash2, Archive, Flag, Download, Link, Share2, X, Camera, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -48,7 +48,7 @@ function timeAgo(iso: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export default function FeedPostCard({
+function FeedPostCard({
   post, currentUserId, hasStory, onDeleted,
 }: {
   post: FeedPost
@@ -760,3 +760,5 @@ export default function FeedPostCard({
     </article>
   )
 }
+
+export default memo(FeedPostCard)

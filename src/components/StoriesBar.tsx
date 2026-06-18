@@ -116,7 +116,7 @@ export default function StoriesBar() {
               {myStories.length > 0 ? (
                 <div className={ring(myStories.some(s => !viewedIds.has(s.id)))}>
                   <div className="w-[58px] h-[58px] rounded-full overflow-hidden border-2 border-lenz-bg">
-                    <img src={img.thumb(myStories[myStories.length - 1].image_url)} className="w-full h-full object-cover" />
+                    <img src={img.thumb(myStories[myStories.length - 1].image_url)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                 </div>
               ) : (

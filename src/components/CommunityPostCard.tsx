@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { MapPin, Navigation, Cloud, Sun, CloudRain, CloudSnow, Wind, Thermometer } from 'lucide-react'
 import { img } from '@/lib/image'
 import { useLocation } from 'wouter'
@@ -39,7 +39,7 @@ function weatherLabel(code: number) {
   return 'Stormy'
 }
 
-export default function CommunityPostCard({ post }: Props) {
+function CommunityPostCard({ post }: Props) {
   const [, navigate] = useLocation()
   const [weather, setWeather] = useState<Weather | null>(null)
 
@@ -148,3 +148,5 @@ export default function CommunityPostCard({ post }: Props) {
     </div>
   )
 }
+
+export default memo(CommunityPostCard)

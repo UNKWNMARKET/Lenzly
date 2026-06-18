@@ -180,6 +180,7 @@
 
   .heart-burst {
     animation: heart-burst 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+    will-change: transform;
   }
 
   /* Floating camera animation for comment likes */
@@ -191,6 +192,7 @@
 
   .camera-float {
     animation: camera-float 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    will-change: transform, opacity;
   }
 
   /* ── Login screen animations ── */
