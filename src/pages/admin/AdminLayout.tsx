@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Main */}
       <main className="flex-1 md:ml-60 flex flex-col overflow-hidden h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-[#080808]/90 backdrop-blur-md border-b border-[#1a1a1a] px-4 py-4 flex items-center gap-3">
+        <header className="sticky top-0 z-30 bg-[#080808]/90 backdrop-blur-md border-b border-[#1a1a1a] px-4 pb-4 flex items-center gap-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
           {/* Back to app — always visible on mobile */}
           <button
             onClick={() => navigate('/settings')}
