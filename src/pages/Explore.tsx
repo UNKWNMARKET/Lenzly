@@ -1,136 +1,702 @@
-import { useState } from 'react'
-import { Search, Zap, MapPin, TrendingUp } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useLocation } from 'wouter'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { Search, Zap, MapPin, TrendingUp, Building2, Sun, Heart, Car, Users, Sparkles, X, AlertCircle, RefreshCw, ChevronRight, ArrowLeft } from 'lucide-react'
 import LocationSpotCard from '@/components/LocationSpotCard'
+import type { PhotoSpot } from '@/data/mockData'
+import { useSpotModal } from '@/contexts/SpotModalContext'
 import BusinessBanner from '@/components/BusinessBanner'
 import { photoSpots, posts, specialtyFilters } from '@/data/mockData'
+import { architectureSpots } from '@/data/architectureData'
+import { floridaSpots } from '@/data/floridaData'
+import { floridaSpots200 } from '@/data/floridaSpots200'
+
+const allFloridaSpots = [...floridaSpots, ...floridaSpots200]
+import { engagementSpotData, carSpotData } from '@/data/allSpotsData'
+import { statesSpots, floridaExtraSpots } from '@/data/statesSpots'
+import { engagementExtraSpots } from '@/data/engagementSpots'
+
+const allEngagementSpots = [...engagementSpotData, ...engagementExtraSpots]
+import { useLocationSearch, spotMatchesLocation } from '@/hooks/useLocationSearch'
+import { searchUSCities } from '@/data/usCities'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { img } from '@/lib/image'
+import CommunityPostCard from '@/components/CommunityPostCard'
+
+const FL_CITIES = ['All', 'Miami', 'Miami Beach', 'Tampa', 'Orlando', 'Jacksonville', 'St. Augustine', 'Key West', 'Sarasota', 'Fort Lauderdale', 'Naples', 'Gainesville', 'Pensacola', 'Daytona Beach']
+
+const US_STATES = [
+  'All','AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+]
+
+const allFilters = [...specialtyFilters, 'Architecture', 'Florida', 'Engagement', 'Car']
+
+
+// (liveSpotToPhotoSpot removed — Community Discovered now uses posts directly)
+
+
+
+// Build a deduped list of all searchable "City, ST" locations from every data source
+const LOCATION_INDEX: { label: string; city: string; state: string }[] = (() => {
+  const seen = new Set<string>()
+  const out: { label: string; city: string; state: string }[] = []
+  const add = (city?: string, state?: string) => {
+    if (!city || !state) return
+    const label = `${city}, ${state}`
+    if (seen.has(label)) return
+    seen.add(label)
+    out.push({ label, city, state })
+  }
+  architectureSpots.forEach(s => add(s.city, s.state))
+  allFloridaSpots.forEach(s => add(s.city, 'FL'))
+  allEngagementSpots.forEach(s => add(s.city, s.state))
+  carSpotData.forEach(s => add(s.city, s.state))
+  statesSpots.forEach(s => add(s.city, s.state))
+  return out.sort((a, b) => a.label.localeCompare(b.label))
+})()
+
+// Horizontal preview row used in the "All" overview — keeps each category to a
+// single tidy swipeable strip with a "See all" jump instead of a giant grid.
+function PreviewRow({
+  icon: Icon, title, subtitle, spots, onSeeAll,
+}: {
+  icon: typeof Building2
+  title: string
+  subtitle?: string
+  spots: { id: string | number }[]
+  onSeeAll: () => void
+}) {
+  if (spots.length === 0) return null
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={14} className="text-gold shrink-0" />
+          <h2 className="text-sm font-bold text-white tracking-wide truncate">{title}</h2>
+          {subtitle && <span className="text-[10px] text-white/30 shrink-0">{subtitle}</span>}
+        </div>
+        <button onClick={onSeeAll} className="text-[11px] text-gold font-medium shrink-0 ml-2">
+          See all →
+        </button>
+      </div>
+      <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+        {spots.slice(0, 8).map(spot => (
+          <div key={spot.id} className="w-40 shrink-0">
+            <LocationSpotCard spot={spot as any} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// Focused single-category view: header + one filter strip + full grid.
+function FocusedSection({
+  icon: Icon, title, subtitle, count, filters, active, onFilter, spots, empty,
+}: {
+  icon: typeof Building2
+  title: string
+  subtitle?: string
+  count: number
+  filters: string[]
+  active: string
+  onFilter: (v: string) => void
+  spots: { id: string | number }[]
+  empty: string
+}) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={14} className="text-gold shrink-0" />
+          <h2 className="text-sm font-bold text-white tracking-wide">{title}</h2>
+          {subtitle && <span className="text-[10px] text-white/30 shrink-0">{subtitle}</span>}
+        </div>
+        <span className="text-[11px] text-white/30 shrink-0">{count} spots</span>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto no-scrollbar py-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {filters.map(f => (
+          <button
+            key={f}
+            onClick={() => onFilter(f)}
+            className={cn(
+              'shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider transition-all duration-200 whitespace-nowrap',
+              active === f
+                ? 'bg-gold text-lenz-bg'
+                : 'bg-lenz-card border border-lenz-border text-white/40 hover:border-white/20'
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {spots.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-white/20 text-sm">{empty}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {spots.map(spot => (
+            <LocationSpotCard key={spot.id} spot={spot as any} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+type CommunityPost = {
+  id: string
+  image_url: string
+  location_name: string
+  lat: number | null
+  lng: number | null
+  category: string | null
+  created_at: string
+  user_id: string
+  profiles: { username: string | null; avatar_url: string | null; private_account?: boolean } | null
+}
 
 export default function Explore() {
+  const [, navigate] = useLocation()
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [communityError, setCommunityError] = useState(false)
+  const [activeState, setActiveState] = useState('All')
+  const [activeFlCity, setActiveFlCity] = useState('All')
+  const [activeEngState, setActiveEngState] = useState('All')
+  const [activeCarState, setActiveCarState] = useState('All')
+  const { openSpot } = useSpotModal()
 
-  const filteredPosts = posts.filter(p => {
-    const matchesFilter = activeFilter === 'All' || p.category === activeFilter
-    const matchesQuery = !query || p.caption.toLowerCase().includes(query.toLowerCase()) ||
-      p.location.toLowerCase().includes(query.toLowerCase()) ||
-      p.photographer.name.toLowerCase().includes(query.toLowerCase())
+  // Community Discovered: real posts from the DB that have a tagged location
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([])
+  const [communityLoading, setCommunityLoading] = useState(true)
+  const [showAllCommunity, setShowAllCommunity] = useState(false)
+
+  // Debounce search input — filters run on debouncedQuery, not every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 250)
+    return () => clearTimeout(t)
+  }, [query])
+
+  // Close suggestions when user scrolls the page
+  useEffect(() => {
+    const onScroll = () => setShowSuggestions(false)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const fetchCommunityPosts = useCallback(async () => {
+    // Step 1: fetch posts with location tags (user_id → auth.users, NOT profiles — must join separately)
+    const { data: postsData, error } = await supabase
+      .from('posts')
+      .select('id, image_url, location_name, lat, lng, category, created_at, user_id')
+      .not('location_name', 'is', null)
+      .eq('show_in_community', true)
+      .neq('archived', true)
+      .order('created_at', { ascending: false })
+      .limit(500)
+    if (error) { console.error('[community]', error.message); setCommunityError(true); setCommunityLoading(false); return }
+    setCommunityError(false)
+    if (!postsData || postsData.length === 0) { setCommunityPosts([]); setCommunityLoading(false); return }
+
+    // Step 2: fetch profiles for those users separately
+    const userIds = [...new Set(postsData.map((p: any) => p.user_id))]
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, private_account')
+      .in('id', userIds)
+    const profileMap: Record<string, any> = {}
+    for (const p of profilesData ?? []) profileMap[p.id] = p
+
+    // Step 3: merge, exclude private accounts, exclude empty location names
+    const rows = postsData
+      .map((p: any) => ({ ...p, profiles: profileMap[p.user_id] ?? null }))
+      .filter((p: any) => !p.profiles?.private_account && p.location_name?.trim())
+    setCommunityPosts(rows)
+    setCommunityLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchCommunityPosts()
+    const channel = supabase.channel('community_posts_live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchCommunityPosts)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  const ptr = usePullToRefresh({ onRefresh: fetchCommunityPosts })
+  const locQuery = useLocationSearch(debouncedQuery)
+
+  // Live location suggestions as the user types — every US city + spot locations
+  const locationSuggestions = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (q.length < 2) return []
+    const seen = new Set<string>()
+    const out: { label: string; city: string; state: string }[] = []
+
+    // Spot-data locations first (these have actual content)
+    for (const l of LOCATION_INDEX) {
+      if (l.label.toLowerCase().includes(q) || l.city.toLowerCase().includes(q)) {
+        if (!seen.has(l.label)) { seen.add(l.label); out.push(l) }
+      }
+    }
+    // Then the full US cities database
+    for (const c of searchUSCities(query, 10)) {
+      const label = `${c.city}, ${c.state}`
+      if (!seen.has(label)) { seen.add(label); out.push({ label, city: c.city, state: c.state }) }
+    }
+    return out.slice(0, 8)
+  }, [query])
+
+  const filteredCommunityPosts = useMemo(() =>
+    communityPosts.filter(p => {
+      if (!debouncedQuery) return true
+      const loc = p.location_name?.toLowerCase() ?? ''
+      return loc.includes(debouncedQuery.toLowerCase()) ||
+        (p.profiles?.username ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+    }), [communityPosts, debouncedQuery])
+
+  // Architecture filter bug fix: the original ternary was inverted —
+  // `activeFilter === 'Architecture' ? activeFilter !== 'Architecture'` always returned false.
+  const filteredPosts = useMemo(() => posts.filter(p => {
+    const matchesFilter =
+      activeFilter === 'All' ||
+      activeFilter === 'Architecture' ||
+      p.category === activeFilter
+    if (!debouncedQuery) return matchesFilter
+    if (locQuery.isLocationSearch) {
+      return matchesFilter && spotMatchesLocation({ location: p.location }, locQuery)
+    }
+    const matchesQuery =
+      p.caption.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      p.location.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      p.photographer.name.toLowerCase().includes(debouncedQuery.toLowerCase())
     return matchesFilter && matchesQuery
-  })
+  }), [activeFilter, debouncedQuery, locQuery])
+
+  const filteredArchSpots = useMemo(() => {
+    return architectureSpots.filter(s => {
+      const stateOk = activeState === 'All' || s.state === activeState
+      if (!debouncedQuery) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.architectureStyle ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+      )
+    })
+  }, [activeState, debouncedQuery, locQuery])
+
+  const filteredFlSpots = useMemo(() =>
+    allFloridaSpots.filter(s => {
+      const cityOk = activeFlCity === 'All' || s.city === activeFlCity
+      if (!debouncedQuery) return cityOk
+      if (locQuery.isLocationSearch) {
+        return cityOk && spotMatchesLocation({ city: s.city, state: 'FL', name: s.name }, locQuery)
+      }
+      return cityOk && (
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.architectureStyle ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+      )
+    }), [activeFlCity, debouncedQuery, locQuery])
+
+  const filteredEngSpots = useMemo(() =>
+    allEngagementSpots.filter(s => {
+      const stateOk = activeEngState === 'All' || s.state === activeEngState
+      if (!debouncedQuery) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase())
+      )
+    }), [activeEngState, debouncedQuery, locQuery])
+
+  const filteredCarSpots = useMemo(() =>
+    carSpotData.filter(s => {
+      const stateOk = activeCarState === 'All' || s.state === activeCarState
+      if (!debouncedQuery) return stateOk
+      if (locQuery.isLocationSearch) {
+        return stateOk && spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+      }
+      return stateOk && (
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.city + ' ' + s.state).toLowerCase().includes(debouncedQuery.toLowerCase())
+      )
+    }), [activeCarState, debouncedQuery, locQuery])
+
+  const allPhotoSpotsPool = useMemo(
+    () => [...photoSpots, ...statesSpots, ...floridaExtraSpots],
+    []
+  )
+  const filteredAiSpots = useMemo(() => allPhotoSpotsPool.filter(s => {
+    if (!s.aiDiscovered) return false
+    if (!debouncedQuery) return true
+    if (locQuery.isLocationSearch) return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+    return s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      (s.state ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+  }), [allPhotoSpotsPool, debouncedQuery, locQuery])
+
+  const filteredAllSpots = useMemo(() => allPhotoSpotsPool.filter(s => {
+    if (!debouncedQuery) return true
+    if (locQuery.isLocationSearch) return spotMatchesLocation({ city: s.city, state: s.state, name: s.name }, locQuery)
+    return s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      s.city.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      (s.state ?? '').toLowerCase().includes(debouncedQuery.toLowerCase())
+  }), [allPhotoSpotsPool, debouncedQuery, locQuery])
+
+  const isAll = activeFilter === 'All'
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
-        <h1 className="text-xl font-bold tracking-[0.12em] gold-text mb-3">EXPLORE</h1>
+        <div className="flex items-center gap-3 mb-3">
+          {!isAll && (
+            <button
+              onClick={() => { setActiveFilter('All'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+            >
+              <ArrowLeft size={16} className="text-white/70" />
+            </button>
+          )}
+          <h1 className="text-xl font-bold tracking-[0.12em] gold-text">{isAll ? 'EXPLORE' : activeFilter.toUpperCase()}</h1>
+        </div>
 
         {/* Search */}
         <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 z-10" />
           <input
             value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search locations, photographers, styles..."
-            className="w-full bg-lenz-card border border-lenz-border rounded-full pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
+            onChange={e => { setQuery(e.target.value); setShowSuggestions(true) }}
+            onFocus={() => setShowSuggestions(true)}
+            placeholder="Search 'Miami FL', 'New York', 'Chicago IL'..."
+            className="w-full bg-lenz-card border border-lenz-border rounded-full pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-gold/40 transition-colors"
           />
-        </div>
+          {query && (
+            <button onClick={() => { setQuery(''); setShowSuggestions(false) }} className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
+              <X size={14} className="text-white/30 hover:text-white/60" />
+            </button>
+          )}
 
-        {/* Filter chips */}
+          {/* Clickable location suggestions */}
+          {showSuggestions && locationSuggestions.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 mt-1.5 bg-lenz-card border border-lenz-border rounded-2xl overflow-hidden shadow-xl shadow-black/50 max-h-72 overflow-y-auto">
+              {locationSuggestions.map(s => (
+                <button
+                  key={s.label}
+                  onClick={() => { setQuery(s.label); setShowSuggestions(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors border-b border-lenz-border/40 last:border-0"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gold/15 flex items-center justify-center shrink-0">
+                    <MapPin size={13} className="text-gold" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-white">{s.city}</p>
+                    <p className="text-[10px] text-white/40">{s.state}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Location detection pill */}
+        {locQuery.isLocationSearch && (
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/30 rounded-full px-3 py-1">
+              <MapPin size={11} className="text-gold" />
+              <span className="text-[11px] text-gold font-medium">
+                Showing results for: {locQuery.city ? `${locQuery.city}${locQuery.state ? `, ${locQuery.state}` : ''}` : locQuery.state}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Category filter chips */}
         <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-          {specialtyFilters.map(f => (
+          {allFilters.map(f => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
               className={cn(
-                'shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-200',
+                'shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-200',
                 activeFilter === f
                   ? 'bg-gold text-lenz-bg'
                   : 'bg-lenz-card border border-lenz-border text-white/50 hover:border-white/20'
               )}
             >
+              {f === 'Architecture' && <Building2 size={11} />}
+              {f === 'Florida' && <Sun size={11} />}
+              {f === 'Engagement' && <Heart size={11} />}
+              {f === 'Car' && <Car size={11} />}
               {f}
             </button>
           ))}
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-6">
-        {/* AI Photo Spots Section */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Zap size={14} className="text-gold fill-gold" />
-              <h2 className="text-sm font-bold text-white tracking-wide">AI-Discovered Spots</h2>
-            </div>
-            <button className="text-[11px] text-gold font-medium">View All</button>
-          </div>
+      <div className="px-4 py-4 space-y-8">
 
-          <div className="grid grid-cols-2 gap-3">
-            {photoSpots.filter(s => s.aiDiscovered).slice(0, 4).map(spot => (
-              <LocationSpotCard key={spot.id} spot={spot} />
-            ))}
-          </div>
-        </section>
+        {/* ═══════════════ "ALL" OVERVIEW — clean, swipeable previews ═══════════════ */}
+        {isAll ? (
+          <>
+            {/* Wedding Venues feature banner — hidden for now, re-enable when ready */}
+            {/* <div onClick={() => navigate('/weddings')} ...> ... </div> */}
 
-        {/* Trending section */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp size={14} className="text-white/40" />
-            <h2 className="text-sm font-bold text-white tracking-wide">Trending Photos</h2>
-          </div>
-
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-white/30 text-sm">No results for "{query}"</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1">
-              {filteredPosts.map((post, i) => (
-                <div
-                  key={post.id}
-                  className={cn(
-                    'relative overflow-hidden cursor-pointer group bg-lenz-card',
-                    i % 5 === 0 ? 'col-span-2 aspect-[16/9]' : 'aspect-square'
+            {/* Community Discovered — horizontal scroll row + See All */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-gold" />
+                  <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
+                  {!communityLoading && filteredCommunityPosts.length > 0 && (
+                    <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
+                      {filteredCommunityPosts.length}
+                    </span>
                   )}
-                >
-                  <img
-                    src={post.image}
-                    alt=""
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                    <p className="text-xs font-semibold text-white truncate">{post.photographer.username}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <MapPin size={9} className="text-gold" />
-                      <p className="text-[10px] text-white/60 truncate">{post.location}</p>
-                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-white/30">Live</span>
+                  </div>
+                  {!communityLoading && !communityError && filteredCommunityPosts.length > 0 && (
+                    <button
+                      onClick={() => setShowAllCommunity(true)}
+                      className="flex items-center gap-0.5 text-xs text-gold font-semibold active:opacity-70"
+                    >
+                      See All <ChevronRight size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {communityLoading ? (
+                <div className="flex gap-3 overflow-hidden">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="w-40 shrink-0 aspect-[3/4] rounded-xl bg-lenz-card animate-pulse" />
+                  ))}
+                </div>
+              ) : communityError ? (
+                <div className="rounded-2xl bg-lenz-card border border-rose-500/20 p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
+                    <AlertCircle size={18} className="text-rose-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/60">Could not load community posts</p>
+                    <button
+                      onClick={() => { setCommunityLoading(true); setCommunityError(false); fetchCommunityPosts() }}
+                      className="flex items-center gap-1.5 text-xs text-gold mt-1.5 font-medium"
+                    >
+                      <RefreshCw size={11} /> Retry
+                    </button>
                   </div>
                 </div>
-              ))}
+              ) : filteredCommunityPosts.length === 0 ? (
+                <div className="rounded-2xl bg-lenz-card border border-lenz-border p-6 text-center">
+                  <MapPin size={22} className="text-white/20 mx-auto mb-2" />
+                  <p className="text-white/30 text-sm">No tagged locations yet</p>
+                  <p className="text-white/20 text-xs mt-1">Upload a photo and tag a location to appear here</p>
+                </div>
+              ) : (
+                <div className="-mx-4 px-4">
+                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    {filteredCommunityPosts.slice(0, 20).map(post => (
+                      <div key={post.id} className="w-40 shrink-0">
+                        <CommunityPostCard post={post} />
+                      </div>
+                    ))}
+                    {/* See All end cap */}
+                    {filteredCommunityPosts.length > 20 && (
+                      <div className="w-40 shrink-0 aspect-[3/4] rounded-xl bg-lenz-card border border-lenz-border flex flex-col items-center justify-center gap-2 cursor-pointer active:bg-white/5"
+                        onClick={() => setShowAllCommunity(true)}>
+                        <div className="w-10 h-10 rounded-full bg-gold/15 flex items-center justify-center">
+                          <ChevronRight size={20} className="text-gold" />
+                        </div>
+                        <p className="text-xs font-bold text-gold">See All</p>
+                        <p className="text-[10px] text-white/30">{filteredCommunityPosts.length} spots</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Community Discovered — full-screen modal */}
+            {showAllCommunity && (
+              <div className="fixed inset-0 z-50 bg-lenz-bg flex flex-col">
+                <header className="sticky top-0 z-10 glass-dark px-4 py-3 flex items-center gap-3 safe-top border-b border-lenz-border">
+                  <button onClick={() => setShowAllCommunity(false)} className="p-2 -ml-2 active:opacity-60">
+                    <X size={20} className="text-white/70" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-sm font-bold text-white tracking-wide">Community Discovered</h2>
+                    <p className="text-[10px] text-white/30 mt-0.5">{filteredCommunityPosts.length} spots tagged by photographers</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-white/30">Live</span>
+                  </div>
+                </header>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-3 p-4 pb-24">
+                    {filteredCommunityPosts.map(post => (
+                      <CommunityPostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Category preview rows — one tidy swipeable strip each */}
+            <PreviewRow icon={Zap}       title="AI-Discovered Spots"            spots={filteredAiSpots}   onSeeAll={() => { setActiveFilter('AI Spots'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Building2}  title="Architecture" subtitle="50 States" spots={filteredArchSpots} onSeeAll={() => { setActiveFilter('Architecture'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Sun}        title="Florida"      subtitle="Buildings & Locations" spots={filteredFlSpots} onSeeAll={() => { setActiveFilter('Florida'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Heart}      title="Engagement"   subtitle="50 States" spots={filteredEngSpots}  onSeeAll={() => { setActiveFilter('Engagement'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+            <PreviewRow icon={Car}        title="Car Photography" subtitle="50 States" spots={filteredCarSpots} onSeeAll={() => { setActiveFilter('Car'); ptr.scrollRef.current?.scrollTo({ top: 0 }) }} />
+
+            {/* Trending photos mosaic */}
+            {filteredPosts.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp size={14} className="text-white/40" />
+                  <h2 className="text-sm font-bold text-white tracking-wide">Trending Photos</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {filteredPosts.map((post, i) => (
+                    <div
+                      key={post.id}
+                      className={cn(
+                        'relative overflow-hidden cursor-pointer group bg-lenz-card',
+                        i % 5 === 0 ? 'col-span-2 aspect-[16/9]' : 'aspect-square'
+                      )}
+                    >
+                      <img
+                        src={post.image}
+                        alt=""
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
+                        <p className="text-xs font-semibold text-white truncate">{post.photographer.username}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <MapPin size={9} className="text-gold" />
+                          <p className="text-[10px] text-white/60 truncate">{post.location}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Business Banner */}
+            <div className="-mx-4">
+              <BusinessBanner />
             </div>
-          )}
-        </section>
-
-        {/* Business Banner */}
-        <div className="-mx-4">
-          <BusinessBanner />
-        </div>
-
-        {/* All Photo Spots */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin size={14} className="text-white/40" />
-            <h2 className="text-sm font-bold text-white tracking-wide">All Photo Spots</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {photoSpots.map(spot => (
-              <LocationSpotCard key={spot.id} spot={spot} />
-            ))}
-          </div>
-        </section>
+          </>
+        ) : (
+          /* ═══════════════ FOCUSED CATEGORY — full grid + that filter strip ═══════════════ */
+          <>
+            {activeFilter === 'AI Spots' && (
+              <FocusedSection
+                icon={Zap} title="AI-Discovered Spots" subtitle="Top picks worldwide"
+                count={filteredAiSpots.length}
+                filters={[]} active="" onFilter={() => {}}
+                spots={filteredAiSpots} empty="No AI spots found."
+              />
+            )}
+            {activeFilter === 'Architecture' && (
+              <FocusedSection
+                icon={Building2} title="Architecture" subtitle="All 50 States"
+                count={filteredArchSpots.length}
+                filters={US_STATES} active={activeState} onFilter={setActiveState}
+                spots={filteredArchSpots} empty="No architecture spots match your search."
+              />
+            )}
+            {activeFilter === 'Florida' && (
+              <FocusedSection
+                icon={Sun} title="Florida" subtitle="Buildings & Locations"
+                count={filteredFlSpots.length}
+                filters={FL_CITIES} active={activeFlCity} onFilter={setActiveFlCity}
+                spots={filteredFlSpots} empty="No spots match your search."
+              />
+            )}
+            {activeFilter === 'Engagement' && (
+              <FocusedSection
+                icon={Heart} title="Engagement" subtitle="All 50 States"
+                count={filteredEngSpots.length}
+                filters={US_STATES} active={activeEngState} onFilter={setActiveEngState}
+                spots={filteredEngSpots} empty="No engagement spots match your search."
+              />
+            )}
+            {activeFilter === 'Car' && (
+              <FocusedSection
+                icon={Car} title="Car Photography" subtitle="All 50 States"
+                count={filteredCarSpots.length}
+                filters={US_STATES} active={activeCarState} onFilter={setActiveCarState}
+                spots={filteredCarSpots} empty="No car photography spots match your search."
+              />
+            )}
+            {/* Specialty filters (Portrait, Street, etc.) fall back to the trending feed */}
+            {!['Architecture', 'Florida', 'Engagement', 'Car'].includes(activeFilter) && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp size={14} className="text-white/40" />
+                  <h2 className="text-sm font-bold text-white tracking-wide">{activeFilter}</h2>
+                </div>
+                {filteredPosts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-white/30 text-sm">No results for "{activeFilter}"</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1">
+                    {filteredPosts.map((post, i) => (
+                      <div
+                        key={post.id}
+                        className={cn(
+                          'relative overflow-hidden cursor-pointer group bg-lenz-card',
+                          i % 5 === 0 ? 'col-span-2 aspect-[16/9]' : 'aspect-square'
+                        )}
+                      >
+                        <img src={post.image} alt="" loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
+                          <p className="text-xs font-semibold text-white truncate">{post.photographer.username}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <MapPin size={9} className="text-gold" />
+                            <p className="text-[10px] text-white/60 truncate">{post.location}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </div>
+    </PullToRefreshWrapper>
   )
 }

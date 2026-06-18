@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:gn="http://www.goodnotes.com/gn-svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#0A0A0A"/>
+  <ellipse cx="540" cy="500" rx="420" ry="380" fill="#C9A84C" opacity="0.06"/>
+  <ellipse cx="540" cy="500" rx="260" ry="220" fill="#C9A84C" opacity="0.05"/>
+  <circle cx="120" cy="180" r="1.5" fill="#C9A84C" opacity="0.18"/>
+  <circle cx="200" cy="90" r="1" fill="#C9A84C" opacity="0.12"/>
+  <circle cx="950" cy="160" r="1.5" fill="#C9A84C" opacity="0.18"/>
+  <circle cx="880" cy="240" r="1" fill="#C9A84C" opacity="0.10"/>
+  <circle cx="160" cy="920" r="1.5" fill="#C9A84C" opacity="0.14"/>
+  <circle cx="940" cy="900" r="1.5" fill="#C9A84C" opacity="0.14"/>
+  <circle cx="80" cy="540" r="1" fill="#C9A84C" opacity="0.10"/>
+  <circle cx="1000" cy="540" r="1" fill="#C9A84C" opacity="0.10"/>
+  <rect x="200" y="88" width="680" height="1" fill="#C9A84C" opacity="0.25"/>
+  <circle cx="540" cy="390" r="168" fill="none" stroke="#C9A84C" stroke-width="1.5" opacity="0.25"/>
+  <circle cx="540" cy="390" r="130" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.20"/>
+  <circle cx="540" cy="390" r="110" fill="#111111"/>
+  <line x1="540" y1="290" x2="540" y2="490" stroke="#C9A84C" stroke-width="0.8" opacity="0.18"/>
+  <line x1="453" y1="340" x2="627" y2="440" stroke="#C9A84C" stroke-width="0.8" opacity="0.18"/>
+  <line x1="453" y1="440" x2="627" y2="340" stroke="#C9A84C" stroke-width="0.8" opacity="0.18"/>
+  <circle cx="540" cy="390" r="68" fill="#0D0D0D" stroke="#C9A84C" stroke-width="1.2" opacity="0.5"/>
+  <circle cx="540" cy="390" r="60" fill="#131313"/>
+  <ellipse cx="522" cy="372" rx="14" ry="9" fill="#C9A84C" opacity="0.10"/>
+  <circle cx="540" cy="390" r="24" fill="#C9A84C" opacity="0.08"/>
+  <circle cx="540" cy="390" r="10" fill="#C9A84C" opacity="0.15"/>
+  <text x="540" y="572" font-family="Georgia, serif" font-size="92" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="24">LENZLY</text>
+  <rect x="338" y="588" width="404" height="2" fill="#C9A84C" opacity="0.7"/>
+  <text x="540" y="638" font-family="Georgia, serif" font-size="20" fill="#C9A84C" text-anchor="middle" letter-spacing="6" opacity="0.9">WHERE PHOTOGRAPHERS MEET</text>
+  <rect x="178" y="704" width="192" height="44" rx="22" fill="#1A1A1A" stroke="#C9A84C" stroke-width="1" opacity="0.85"/>
+  <text x="274" y="731" font-family="Arial, sans-serif" font-size="14" fill="#C9A84C" text-anchor="middle" letter-spacing="1.5">DISCOVER SPOTS</text>
+  <rect x="392" y="704" width="192" height="44" rx="22" fill="#1A1A1A" stroke="#C9A84C" stroke-width="1" opacity="0.85"/>
+  <text x="488" y="731" font-family="Arial, sans-serif" font-size="14" fill="#C9A84C" text-anchor="middle" letter-spacing="1.5">SHARE WORK</text>
+  <rect x="608" y="704" width="192" height="44" rx="22" fill="#1A1A1A" stroke="#C9A84C" stroke-width="1" opacity="0.85"/>
+  <text x="704" y="731" font-family="Arial, sans-serif" font-size="14" fill="#C9A84C" text-anchor="middle" letter-spacing="1.5">GET HIRED</text>
+  <text x="540" y="830" font-family="Arial, sans-serif" font-size="15" fill="#FFFFFF" text-anchor="middle" opacity="0.35" letter-spacing="2">AVAILABLE ON THE APP STORE</text>
+  <rect x="200" y="900" width="680" height="1" fill="#C9A84C" opacity="0.25"/>
+  <text x="540" y="948" font-family="Arial, sans-serif" font-size="16" fill="#FFFFFF" text-anchor="middle" opacity="0.30" letter-spacing="3">@LENZLY</text>
+</svg>

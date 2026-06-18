@@ -1,0 +1,171 @@
+workflows:
+  ios-app-store:
+    name: LENZLY iOS App Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: master
+          include: true
+          source: true
+
+    integrations:
+      app_store_connect: Codemagic Admin
+
+    environment:
+      groups:
+        - ios_credentials        # contains APPLE_DIST_PRIVATE_KEY
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.unkwnmarket.lenzly"
+        DEVELOPMENT_TEAM: "S9HC8WQ7YH"
+      node: 22
+      xcode: 26
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+
+      - name: Build web app
+        script: npm run build
+
+      - name: Sync Capacitor
+        script: npx cap sync ios
+
+      - name: Set build number
+        script: |
+          # Codemagic's $BUILD_NUMBER reset to a low value when the app was
+          # recreated, but App Store Connect already has builds up to ~228 for
+          # version 1.0 and rejects any upload that isn't higher. So we query the
+          # latest build number that exists on App Store Connect and increment it.
+          set -e
+          APP_APPLE_ID=$(app-store-connect list-apps \
+            --bundle-id-identifier "$BUNDLE_ID" --json | jq -r '.[0].id')
+          echo "App Apple ID: $APP_APPLE_ID"
+
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_APPLE_ID" 2>/dev/null || echo "")
+          echo "Latest TestFlight build number: ${LATEST:-none}"
+
+          if [ -z "$LATEST" ]; then
+            # Fallback: stay safely above the known 228 builds and keep climbing
+            NEW_BUILD=$(( BUILD_NUMBER + 300 ))
+          else
+            NEW_BUILD=$(( LATEST + 1 ))
+          fi
+
+          echo "Setting CFBundleVersion to: $NEW_BUILD"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" ios/App/App/Info.plist
+
+      - name: Resolve Swift packages
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      - name: Set up code signing
+        script: |
+          set -e
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          # Fresh keychain — no cached revoked cert can survive
+          keychain initialize
+
+          # Decode the private key stored in Codemagic's secure environment
+          # Same key every build = same cert reused every build (no 409 limit errors)
+          echo "$APPLE_DIST_PRIVATE_KEY" | base64 --decode > /tmp/ios_dist_key.pem
+
+          # Wipe locally cached provisioning profiles
+          rm -rf "$PROFILES_DIR"
+          mkdir -p "$PROFILES_DIR"
+
+          # First build: no cert matches this key → creates a new cert + new profile
+          # Every build after: finds the matching cert → reuses it (no new cert created)
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key "@file:/tmp/ios_dist_key.pem" \
+            --profiles-dir "$PROFILES_DIR"
+
+          # Install the cert into the keychain
+          keychain add-certificates
+
+          echo "=== Keychain identities ==="
+          security find-identity -v -p codesigning
+
+          # Verify a profile landed on disk
+          PROFILE_COUNT=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | wc -l | tr -d ' ')
+          echo "Profiles downloaded: $PROFILE_COUNT"
+          if [ "$PROFILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No profile downloaded — check API key permissions and cert limit."
+            exit 1
+          fi
+
+          for f in "$PROFILES_DIR"/*.mobileprovision; do
+            [ -f "$f" ] || continue
+            security cms -D -i "$f" -o /tmp/profile.plist
+            echo "  Name : $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist)"
+            echo "  UUID : $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/profile.plist)"
+          done
+
+          # Generate export_options.plist and configure Xcode project
+          xcode-project use-profiles
+
+      - name: Build and export IPA
+        script: |
+          set -e
+          mkdir -p /tmp/xcodebuild_logs
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          PROFILE_PATH=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -1)
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No provisioning profile installed"
+            exit 1
+          fi
+
+          security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist)
+          echo "Using profile UUID: $PROFILE_UUID"
+
+          if [ "$PROFILE_UUID" = "3251be6b-b092-46a1-a599-c14b249f8de9" ]; then
+            echo "ERROR: Old revoked profile reinstalled — delete it from Apple Developer Portal."
+            exit 1
+          fi
+
+          set -o pipefail
+
+          # Do NOT pass any code-signing settings (CODE_SIGN_IDENTITY,
+          # CODE_SIGN_STYLE, PROVISIONING_PROFILE, DEVELOPMENT_TEAM) as global
+          # xcodebuild CLI overrides. They propagate to every target in the build —
+          # including SPM packages (IONCameraLib, IONGeolocationLib, etc.) that use
+          # Automatic signing and will conflict or error with distribution settings.
+          # xcode-project use-profiles has already written all signing settings into
+          # the App target's xcodeproj; those per-target values are used automatically.
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            archive \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            2>&1 | tee /tmp/xcodebuild_logs/archive.log
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath "$CM_BUILD_DIR/ipa" \
+            2>&1 | tee /tmp/xcodebuild_logs/export.log
+
+    artifacts:
+      - "**/*.ipa"
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

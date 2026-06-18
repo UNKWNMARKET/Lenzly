@@ -1,0 +1,40 @@
+## Summary
+
+Complete first-version build of LENZLY, a dark photography platform for discovering photo spots, connecting photographers, and getting hired by brands.
+
+### What's included
+
+**Core App (React + Vite + TypeScript)**
+- Feed, Explore, Find a Photographer, and Profile tabs
+- Instagram-style photo feed with likes, bookmarks, and double-tap
+- AI-discovered photo spots with 5-day weather forecasts (Open-Meteo API) and golden hour tips
+- Live Leaflet map of photographers with dark CartoDB tile layer
+- 50-state architecture spots with GPS, shooting tips, and weather data
+- Florida spotlight: 19 spots across 11 cities with 8 local photographer profiles
+- Brand portal for companies to discover and hire freelance photographers
+
+**Admin Console**
+- Express.js backend (port 3001) with JWT auth and bcrypt password hashing
+- Full-screen admin layout bypassing the mobile 430px constraint
+- Dashboard, Photo Spots, Photographers, Posts, Brands, and Settings pages
+- Brand application review (approve / reject / delete)
+- Live-editable app settings (name, color, pricing, maintenance mode, emails)
+
+**Legal & Compliance**
+- Privacy Policy (GDPR / CCPA / COPPA compliant)
+- Terms of Service (14 sections)
+- Trademark-clean brand names throughout
+
+**iOS / App Store**
+- Capacitor iOS wrapper (bundle ID: com.lenzly.app)
+- Codemagic CI/CD workflow for cloud App Store builds
+- Live on Vercel: https://lenzly-tau.vercel.app
+
+## Test plan
+- [ ] Visit https://lenzly-tau.vercel.app and verify all 4 tabs load
+- [ ] Tap a photo spot and confirm weather forecast + shooting tips appear
+- [ ] Switch to Map view in Find a Photographer and verify pins render
+- [ ] Visit /admin and log in — confirm all 6 admin sections load
+- [ ] Visit /privacy and /terms and confirm pages render
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)

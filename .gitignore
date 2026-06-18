@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+
+.vercel
+
+# Capacitor
+ios/App/Pods
+ios/App/App.xcworkspace/xcuserdata
+android/.gradle
+android/app/build

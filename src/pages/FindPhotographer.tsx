@@ -1,11 +1,37 @@
-import { useState, useEffect, useRef } from 'react'
-import { Search, SlidersHorizontal, List, Map as MapIcon, X, CheckCircle, Star, MapPin } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Spinner from '@/components/Spinner'
+import PullToRefreshWrapper from '@/components/PullToRefreshWrapper'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { Search, SlidersHorizontal, List, Map as MapIcon, X, Star, MapPin } from 'lucide-react'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import PhotographerCard from '@/components/PhotographerCard'
 import { photographers, specialtyFilters } from '@/data/mockData'
+import { useRealPhotographers } from '@/hooks/useRealPhotographers'
+import { useBlockedUsers } from '@/hooks/useBlockedUsers'
+import { useLocation } from 'wouter'
+
 import { cn, formatCount } from '@/lib/utils'
 
 // Lazy-load the map to avoid SSR issues
 let MapContainer: any, TileLayer: any, Marker: any, Popup: any, L: any
+
+// Geocode cache: location string → {lat, lng} or null (if not found)
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>()
+
+async function geocodeLocation(location: string): Promise<{ lat: number; lng: number } | null> {
+  const key = location.trim().toLowerCase()
+  if (geocodeCache.has(key)) return geocodeCache.get(key)!
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1&countrycodes=us`
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    const data = await res.json()
+    const result = data[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null
+    geocodeCache.set(key, result)
+    return result
+  } catch {
+    return null
+  }
+}
 
 async function loadLeaflet() {
   const [leafletModule, reactLeafletModule] = await Promise.all([
@@ -17,6 +43,7 @@ async function loadLeaflet() {
 }
 
 function PhotographerMapPin({ photographer: p }: { photographer: (typeof photographers)[0] }) {
+  const [, navigate] = useLocation()
   const icon = L?.divIcon({
     html: `
       <div style="
@@ -52,7 +79,12 @@ function PhotographerMapPin({ photographer: p }: { photographer: (typeof photogr
             <span className="text-xs text-white">{p.rating}</span>
             <span className="text-xs text-white/30 ml-1">{p.priceRange.split('–')[0]}</span>
           </div>
-          <button className="w-full btn-primary text-xs py-1.5">Hire</button>
+          <button
+            className="w-full btn-primary text-xs py-1.5"
+            onClick={() => navigate(`/photographer/${p.id}`)}
+          >
+            View Profile
+          </button>
         </div>
       </Popup>
     </Marker>
@@ -67,9 +99,20 @@ interface Filters {
 }
 
 export default function FindPhotographer() {
+  const [location] = useLocation()
   const [view, setView] = useState<'list' | 'map'>('list')
+
+  // Read specialty from URL query param (e.g. /find?specialty=Portrait)
+  const urlSpecialty = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const s = params.get('specialty')
+      return s && specialtyFilters.includes(s) ? s : 'All'
+    } catch { return 'All' }
+  })()
+
   const [filters, setFilters] = useState<Filters>({
-    specialty: 'All',
+    specialty: urlSpecialty,
     secondShooter: false,
     availableOnly: false,
     verifiedOnly: false,
@@ -78,6 +121,29 @@ export default function FindPhotographer() {
   const [query, setQuery] = useState('')
   const [mapReady, setMapReady] = useState(false)
   const mapLoadedRef = useRef(false)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+
+  // When map view is active, lock the outer -webkit-overflow-scrolling scroll
+  // container. That native iOS momentum-scroll layer grabs every touch sequence
+  // before any JS handler or CSS touch-action can see it, making Leaflet
+  // unresponsive. Setting overflow:hidden disables it for the duration.
+  useEffect(() => {
+    const el = ptr.scrollRef.current
+    if (!el) return
+    if (view === 'map') {
+      el.style.overflow = 'hidden'
+      ;(el.style as any).webkitOverflowScrolling = 'unset'
+    } else {
+      el.style.overflow = ''
+      ;(el.style as any).webkitOverflowScrolling = ''
+    }
+    return () => {
+      el.style.overflow = ''
+      ;(el.style as any).webkitOverflowScrolling = ''
+    }
+  }, [view])
+  // Geocoded coords for photographers whose profile only has a text location
+  const [geocodedCoords, setGeocodedCoords] = useState<Record<string, { lat: number; lng: number }>>({})
 
   useEffect(() => {
     if (view === 'map' && !mapLoadedRef.current) {
@@ -86,19 +152,62 @@ export default function FindPhotographer() {
     }
   }, [view])
 
-  const filtered = photographers.filter(p => {
-    if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
-    if (filters.secondShooter && !p.secondShooter) return false
-    if (filters.availableOnly && !p.available) return false
-    if (filters.verifiedOnly && !p.verified) return false
-    if (query && !p.name.toLowerCase().includes(query.toLowerCase()) &&
-        !p.city.toLowerCase().includes(query.toLowerCase()) &&
-        !p.specialty.join(' ').toLowerCase().includes(query.toLowerCase())) return false
-    return true
-  })
+  // Only real signed-up users — no fabricated sample photographers
+  const [refreshKey, setRefreshKey] = useState(0)
+  const { photographers: realPhotographers } = useRealPhotographers({ refreshKey })
+  const { blockedIds } = useBlockedUsers()
+  const allPhotographers = realPhotographers.filter(p => !blockedIds.has(String(p.id)))
+
+  // When map opens, geocode any photographer that has a location string but no real lat/lng
+  useEffect(() => {
+    if (view !== 'map') return
+    const toGeocode = allPhotographers.filter(p =>
+      p.show_location !== false &&
+      p.location && p.location.trim() && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0))
+    )
+    if (toGeocode.length === 0) return
+    // Stagger requests to respect Nominatim's 1 req/sec limit
+    toGeocode.forEach((p, i) => {
+      setTimeout(async () => {
+        const coords = await geocodeLocation(p.location)
+        if (coords) {
+          setGeocodedCoords(prev => ({ ...prev, [String(p.id)]: coords }))
+        }
+      }, i * 1100)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, allPhotographers.length])
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey(k => k + 1)
+    await new Promise(r => setTimeout(r, 600))
+  }, [])
+  const ptr = usePullToRefresh({ onRefresh: handleRefresh })
+
+  const filtered = allPhotographers
+    .filter(p => {
+      if (filters.specialty !== 'All' && !p.specialty.includes(filters.specialty)) return false
+      if (filters.secondShooter && !p.secondShooter) return false
+      if (filters.availableOnly && !p.available) return false
+      if (filters.verifiedOnly && !p.verified) return false
+      if (query && !p.name.toLowerCase().includes(query.toLowerCase()) &&
+          !p.city.toLowerCase().includes(query.toLowerCase()) &&
+          !p.specialty.join(' ').toLowerCase().includes(query.toLowerCase())) return false
+      return true
+    })
+    // Pro and verified surface first, then sort by followers + posts activity
+    .sort((a, b) => {
+      if (a.pro !== b.pro) return a.pro ? -1 : 1
+      if (a.verified !== b.verified) return a.verified ? -1 : 1
+      // Activity score: followers weighted higher than post count
+      const scoreA = (a.followers ?? 0) * 3 + (a.posts ?? 0)
+      const scoreB = (b.followers ?? 0) * 3 + (b.posts ?? 0)
+      return scoreB - scoreA
+    })
 
   return (
-    <div className="min-h-screen bg-lenz-bg pb-24">
+    <PullToRefreshWrapper {...ptr} className="h-full bg-lenz-bg">
+    <div className="min-h-full pb-24 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-dark px-4 pt-4 pb-3 safe-top">
         <div className="flex items-center justify-between mb-3">
@@ -241,8 +350,26 @@ export default function FindPhotographer() {
 
       {/* Map View */}
       {view === 'map' && (
-        <div className="px-4">
-          <div className="rounded-2xl overflow-hidden border border-lenz-border" style={{ height: '380px' }}>
+        <div className="relative">
+          {/* Geocoding progress hint */}
+          {(() => {
+            const needsGeocode = filtered.filter(p => p.location && (!p.lat || !p.lng || (p.lat === 0 && p.lng === 0)))
+            const resolved = needsGeocode.filter(p => geocodedCoords[String(p.id)])
+            return needsGeocode.length > 0 && resolved.length < needsGeocode.length ? (
+              <div className="flex items-center gap-2 mb-2 px-5">
+                <div className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0" />
+                <p className="text-[11px] text-white/30">Placing {resolved.length}/{needsGeocode.length} photographers on map…</p>
+              </div>
+            ) : null
+          })()}
+
+          {/* Map fills remaining viewport — overflow:hidden on outer container means
+              Leaflet gets all touches; no iOS momentum-scroll layer in the way */}
+          <div
+            ref={mapContainerRef}
+            data-map-container
+            style={{ height: 'calc(100dvh - 140px)', touchAction: 'none' }}
+          >
             {mapReady && MapContainer ? (
               <MapContainer
                 center={[39.5, -98.35]}
@@ -254,58 +381,39 @@ export default function FindPhotographer() {
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
-                {filtered.map(p => (
-                  <PhotographerMapPin key={p.id} photographer={p} />
-                ))}
+                {filtered.map(p => {
+                  // Respect the user's "Show My Location Publicly" setting
+                  if (p.show_location === false) return null
+                  const gc = geocodedCoords[String(p.id)]
+                  const lat = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lat : gc?.lat
+                  const lng = (p.lat && p.lng && !(p.lat === 0 && p.lng === 0)) ? p.lng : gc?.lng
+                  if (!lat || !lng) return null
+                  return <PhotographerMapPin key={p.id} photographer={{ ...p, lat, lng }} />
+                })}
               </MapContainer>
             ) : (
               <div className="w-full h-full bg-lenz-card flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <Spinner size="lg" className="mx-auto mb-2" />
                   <p className="text-xs text-white/30">Loading map...</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Photographer chips below map */}
-          <div className="mt-3 space-y-3">
-            {filtered.map(p => (
-              <div key={p.id} className="flex items-center gap-3 p-3 card">
-                <div className={p.verified ? 'story-ring' : 'story-ring-seen'}>
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-lenz-card">
-                    <img src={p.avatar} className="w-full h-full object-cover" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-semibold text-white truncate">{p.name}</span>
-                    {p.verified && <CheckCircle size={12} className="text-gold shrink-0" />}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="flex items-center gap-0.5">
-                      <MapPin size={9} className="text-white/30" />
-                      <span className="text-[11px] text-white/30">{p.city}</span>
-                    </div>
-                    <span className="text-white/15">·</span>
-                    <span className="text-[11px] text-white/30">{p.specialty[0]}</span>
-                    {p.secondShooter && (
-                      <>
-                        <span className="text-white/15">·</span>
-                        <span className="text-[11px] text-gold">2nd Shooter</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <Star size={11} className="text-gold fill-gold" />
-                  <span className="text-xs text-white/60">{p.rating}</span>
-                </div>
+          {/* Floating result count over map */}
+          {filtered.length > 0 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500]">
+              <div className="px-4 py-2 rounded-full bg-lenz-bg/90 border border-lenz-border backdrop-blur-sm shadow-lg">
+                <p className="text-xs font-semibold text-white/70">
+                  <span className="text-gold font-bold">{filtered.length}</span> photographer{filtered.length !== 1 ? 's' : ''} · tap pins to view
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
+    </PullToRefreshWrapper>
   )
 }

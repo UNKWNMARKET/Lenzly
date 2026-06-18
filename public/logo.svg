@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ── Background ── -->
+  <rect width="1024" height="1024" fill="#0A0804" rx="220"/>
+
+  <!-- Warm ambient glow behind aperture -->
+  <circle cx="512" cy="512" r="330" fill="#B87010" opacity="0.08"/>
+  <circle cx="512" cy="512" r="260" fill="#C07818" opacity="0.06"/>
+
+  <!-- Outer decorative ring -->
+  <circle cx="512" cy="512" r="322" fill="none" stroke="#B87010" stroke-width="2.5" opacity="0.35"/>
+
+  <!-- ── 6 Aperture Blade Arcs ──
+       Each: 90° CW sweep at R=220, offset 60° per blade.
+       All coordinates pre-computed (no rotation transforms used).
+       Overlapping opacities naturally brighten intersection zones,
+       mimicking real iris diaphragm light overlap. -->
+
+  <!-- Blade 0  -45° → 45°  (right) -->
+  <path d="M668,356 A220,220 0 0,1 668,668"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Blade 1  15° → 105°  (lower-right) -->
+  <path d="M724,569 A220,220 0 0,1 455,724"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Blade 2  75° → 165°  (lower-left) -->
+  <path d="M569,724 A220,220 0 0,1 300,569"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Blade 3  135° → 225°  (left) -->
+  <path d="M356,668 A220,220 0 0,1 356,356"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Blade 4  195° → 285°  (upper-left) -->
+  <path d="M300,455 A220,220 0 0,1 569,300"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Blade 5  255° → 345°  (upper-right) -->
+  <path d="M455,300 A220,220 0 0,1 724,455"
+        fill="none" stroke="#CC9820" stroke-width="68" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Highlight shimmer pass (thinner, lighter gold on upper blades) -->
+  <path d="M668,356 A220,220 0 0,1 668,668"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.20"/>
+  <path d="M724,569 A220,220 0 0,1 455,724"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.14"/>
+  <path d="M569,724 A220,220 0 0,1 300,569"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.13"/>
+  <path d="M356,668 A220,220 0 0,1 356,356"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.16"/>
+  <path d="M300,455 A220,220 0 0,1 569,300"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.22"/>
+  <path d="M455,300 A220,220 0 0,1 724,455"
+        fill="none" stroke="#F2DC6A" stroke-width="18" stroke-linecap="round" opacity="0.28"/>
+
+  <!-- ── Center lens opening ── -->
+  <circle cx="512" cy="512" r="112" fill="#0A0804"/>
+  <!-- Inner opening ring -->
+  <circle cx="512" cy="512" r="112" fill="none" stroke="#B87010" stroke-width="2" opacity="0.55"/>
+
+  <!-- Lens glass reflection highlights inside opening -->
+  <ellipse cx="473" cy="473" rx="28" ry="17" fill="#C8900A" opacity="0.16"/>
+  <ellipse cx="469" cy="469" rx="12" ry="7" fill="#F5E090" opacity="0.30"/>
+  <circle  cx="463" cy="463" r="4.5"         fill="#FFFFFF"  opacity="0.32"/>
+
+</svg>
